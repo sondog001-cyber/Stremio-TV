@@ -202,3 +202,11 @@ python -m unittest discover -s tests -v
 - Highfly premium sports stays separate for now.
 - Stremio TV does not proxy or restream video.
 - Stremio controls the in-app skin/layout.
+
+
+## Discovery-only source notes
+
+- **DaddyLive / DLHD (dlive.sx)** may be used as a **manual coverage reference only** to see which channels exist elsewhere.
+- It is **not** used as a runtime playback source in Stremio TV.
+- Stremio TV continues to prefer public/authorized machine-readable sources such as IPTV-org and other free public playlists.
+- If a curated channel is missing, add an authorized public M3U8/M3U source to `manual_sources.json` rather than scraping or embedding third-party premium streams.
