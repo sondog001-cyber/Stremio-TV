@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with strict exact-channel identity matching, expanded premium-network candidate coverage, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.11"
+    "description": "Curated Philadelphia-area live TV with strict exact-channel identity matching, expanded premium and public source scanning, Now/Next EPG, and two-probe playback validation.",
+    "version": "0.3.12"
   },
   "sources": {
     "playlists": [
@@ -335,6 +335,33 @@
         "priority": 13,
         "required": false,
         "fixture": "buddy-samsung-us.m3u"
+      },
+      {
+        "name": "IPTV-By-Shovo US",
+        "family": "shovo",
+        "url": "https://raw.githubusercontent.com/shovo127/IPTV-By-Shovo/main/streams/us.m3u",
+        "philly": false,
+        "priority": 14,
+        "required": false,
+        "fixture": "shovo-us.m3u"
+      },
+      {
+        "name": "World IPTV Checker Verified Output",
+        "family": "worldiptv",
+        "url": "https://romaxa55.github.io/world_ip_tv/output/index.m3u",
+        "philly": false,
+        "priority": 15,
+        "required": false,
+        "fixture": "worldiptv-verified.m3u"
+      },
+      {
+        "name": "jromero88 US Legacy",
+        "family": "jromero-legacy",
+        "url": "https://raw.githubusercontent.com/jromero88/iptv/master/channels/us.m3u",
+        "philly": false,
+        "priority": 30,
+        "required": false,
+        "fixture": "jromero-us.m3u"
       }
     ],
     "epg": "https://vcicio.github.io/US-EPG/merged_epg.xml.gz"
@@ -564,7 +591,10 @@
       "apsattv-orka",
       "rw-fast",
       "apsattv-fast",
-      "buddy-fast"
+      "buddy-fast",
+      "shovo",
+      "worldiptv",
+      "jromero-legacy"
     ],
     "canonical_id_aliases": {
       "MSNBC.us": "MSNOW.us",
