@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV package with major national cable networks, Philadelphia locals, native Stremio EPG, and up to three ranked backup streams per channel.",
-    "version": "0.3.1"
+    "version": "0.3.2"
   },
   "sources": {
     "playlists": [
