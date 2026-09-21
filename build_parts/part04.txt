@@ -493,9 +493,9 @@ def probe_candidate_entries(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Probe the full curated candidate pool before selecting channel streams.
 
-    In production, only candidates that pass the builder health test are returned
-    when require_passed_only is enabled. This lets a lower-priority source win if
-    it actually works, regardless of source family.
+    Production can require two successful probes separated by one global wait.
+    This catches transient/cached URLs without multiplying the wait by the
+    number of streams.
     """
     settings = config.get("stream_health") or {}
     enabled = enabled and bool(settings.get("enabled", True))
@@ -503,6 +503,8 @@ def probe_candidate_entries(
     timeout = int(settings.get("timeout_seconds", 6))
     max_workers = int(settings.get("max_workers", 16))
     verify_segment = bool(settings.get("verify_segment_for_all_candidates", True))
+    double_probe = bool(settings.get("double_probe", True))
+    second_probe_delay = int(settings.get("second_probe_delay_seconds", 60))
 
     rows: list[dict[str, Any]] = []
 
@@ -529,18 +531,59 @@ def probe_candidate_entries(
         jobs.setdefault(key, entry)
         refs[key].append(entry)
 
-    results: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_map = {
-            executor.submit(_probe_stream, entry, timeout, verify_segment): key
-            for key, entry in jobs.items()
-        }
-        for future in concurrent.futures.as_completed(future_map):
-            key = future_map[future]
-            try:
-                results[key] = future.result()
-            except Exception as exc:
-                results[key] = {"status": "failed", "detail": str(exc)[:180]}
+    def run_probe_batch(batch: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]]) -> dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]]:
+        batch_results: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_map = {
+                executor.submit(_probe_stream, entry, timeout, verify_segment): key
+                for key, entry in batch.items()
+            }
+            for future in concurrent.futures.as_completed(future_map):
+                key = future_map[future]
+                try:
+                    batch_results[key] = future.result()
+                except Exception as exc:
+                    batch_results[key] = {"status": "failed", "detail": str(exc)[:180]}
+        return batch_results
+
+    results = run_probe_batch(jobs)
+
+    first_pass = {
+        key: jobs[key]
+        for key, health in results.items()
+        if health.get("status") == "ok"
+    }
+
+    if double_probe and first_pass:
+        log(
+            f"Health stability check: {len(first_pass):,} candidates passed probe 1; "
+            f"waiting {second_probe_delay}s before probe 2"
+        )
+        time.sleep(max(0, second_probe_delay))
+        second_results = run_probe_batch(first_pass)
+
+        for key, first_health in list(results.items()):
+            if first_health.get("status") != "ok":
+                continue
+            second_health = second_results.get(key, {"status": "failed", "detail": "No second probe result"})
+            if second_health.get("status") == "ok":
+                results[key] = {
+                    **first_health,
+                    "status": "ok",
+                    "detail": "Passed two HLS/media probes",
+                    "probe_1": first_health,
+                    "probe_2": second_health,
+                    "stable": True,
+                }
+            else:
+                results[key] = {
+                    **second_health,
+                    "status": "failed",
+                    "detail": f"Probe 2 failed after probe 1 passed: {second_health.get('detail', 'unknown')}",
+                    "probe_1": first_health,
+                    "probe_2": second_health,
+                    "stable": False,
+                }
 
     for key, linked_entries in refs.items():
         health = results.get(key, {"status": "failed", "detail": "No probe result"})
@@ -553,9 +596,12 @@ def probe_candidate_entries(
             "tvg_id": entry.get("tvg_id"),
             "source": entry.get("source"),
             "family": entry.get("family"),
+            "source_type": entry.get("source_type"),
             "quality": entry.get("quality") or "Unknown",
             "url": entry.get("url"),
             "health": entry.get("health"),
+            "discovery_issue": entry.get("discovery_issue"),
+            "content_note": entry.get("content_note"),
         })
 
     counts = defaultdict(int)
