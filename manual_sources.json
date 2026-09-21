@@ -1,3 +1,15 @@
 {
-  "streams": []
+  "streams": [
+    {
+      "tvg_id": "WHYY.us",
+      "name": "WHYY",
+      "url": "https://whyydt.lls.pbs.org/out/v1/40b7857a84ee4302be8ab755a719cc14/index.m3u8",
+      "quality": "HD",
+      "source": "WHYY / PBS Official",
+      "family": "official-whyy",
+      "priority": 0,
+      "philly": true,
+      "headers": {}
+    }
+  ]
 }
