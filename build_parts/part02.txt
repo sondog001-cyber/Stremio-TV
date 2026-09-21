@@ -46,6 +46,99 @@ def entry_matches_pattern(entry: dict[str, Any], pattern: str) -> bool:
     p = norm(pattern)
     return bool(p) and p in norm(target)
 
+def _desired_id(pattern: str, curation: dict[str, Any]) -> str:
+    return (curation.get("canonical_id_aliases") or {}).get(pattern, pattern)
+
+
+def _logical_channel_key(value: str) -> str:
+    """Normalize branding while preserving meaningful short names such as USA/HGTV."""
+    value = (value or "").strip()
+    value = re.sub(r"\.us(?:@.*)?$", "", value, flags=re.I)
+    value = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", value)
+    value = value.replace("&", " and ")
+    value = QUALITY_RE.sub(" ", value)
+    value = re.sub(r"\b(?:east|west|eastern|western|feed|adaptive)\b", " ", value, flags=re.I)
+    value = re.sub(r"\b(?:channel|network|television)\b", " ", value, flags=re.I)
+    tokens = re.findall(r"[A-Za-z0-9]+", value.lower())
+    while len(tokens) > 1 and tokens[-1] in {"us", "usa"}:
+        tokens.pop()
+    return "".join(tokens)
+
+
+def canonicalize_approved_sources(entries: list[dict[str, Any]], config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Map user-approved unverified playlists onto our curated logical channel IDs.
+
+    This lets TVPass-style slug IDs and alternate network branding merge as
+    backup streams instead of creating duplicate Stremio channels.
+    """
+    curation = config.get("curation") or {}
+    approved = set(curation.get("approved_unverified_families") or [])
+    alias_map = curation.get("approved_source_aliases") or {}
+    if not approved:
+        return entries
+
+    desired_raw = [
+        p for key in ("philly_allow", "national_allow")
+        for p in curation.get(key, [])
+        if "." in (p or "")
+    ]
+    desired: list[str] = []
+    seen: set[str] = set()
+    for p in desired_raw:
+        target = _desired_id(p, curation)
+        marker = canonical_tvg_id(target)
+        if marker not in seen:
+            seen.add(marker)
+            desired.append(target)
+
+    desired_by_exact = {canonical_tvg_id(p): p for p in desired}
+    desired_by_key: dict[str, list[str]] = defaultdict(list)
+    alias_by_key: dict[str, list[str]] = defaultdict(list)
+    for p in desired:
+        key = _logical_channel_key(p)
+        if key:
+            desired_by_key[key].append(p)
+        for alias in alias_map.get(p, []):
+            akey = _logical_channel_key(alias)
+            if akey:
+                alias_by_key[akey].append(p)
+
+    out: list[dict[str, Any]] = []
+    for entry in entries:
+        if entry.get("family") not in approved:
+            out.append(entry)
+            continue
+
+        target: str | None = None
+        entry_id = (entry.get("tvg_id") or "").strip()
+        if entry_id:
+            target = desired_by_exact.get(canonical_tvg_id(entry_id))
+
+        if target is None:
+            keys = {
+                _logical_channel_key(entry.get("name", "")),
+                _logical_channel_key(entry.get("name_raw", "")),
+                _logical_channel_key(entry_id),
+            }
+            keys.discard("")
+            candidates: list[str] = []
+            for key in keys:
+                candidates.extend(desired_by_key.get(key, []))
+                candidates.extend(alias_by_key.get(key, []))
+            candidates = list(dict.fromkeys(candidates))
+            if len(candidates) == 1:
+                target = candidates[0]
+
+        if target:
+            item = dict(entry)
+            item["source_tvg_id"] = entry_id
+            item["tvg_id"] = target
+            out.append(item)
+        else:
+            out.append(entry)
+    return out
+
+
 def build_allowlist_coverage(entries: list[dict[str, Any]], config: dict[str, Any]) -> list[dict[str, Any]]:
     """Report whether each exact tvg-id allow-list entry exists in any source.
 
@@ -59,7 +152,7 @@ def build_allowlist_coverage(entries: list[dict[str, Any]], config: dict[str, An
     for kind, key in (("Philadelphia", "philly_allow"), ("National", "national_allow")):
         for pattern in curation.get(key, []):
             if "." in (pattern or ""):
-                patterns.append((kind, pattern))
+                patterns.append((kind, _desired_id(pattern, curation)))
 
     rows: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
