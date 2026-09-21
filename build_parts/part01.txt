@@ -157,9 +157,18 @@ def is_sd_stream(stream: dict[str, Any]) -> bool:
     return 0 < height < 720
 
 def parse_extinf(line: str) -> tuple[dict[str, str], str]:
+    """Split EXTINF on the first comma outside quoted attributes."""
     body = line[len("#EXTINF:") :]
-    if "," in body:
-        info, name = body.split(",", 1)
+    in_quotes = False
+    split_at = -1
+    for i, ch in enumerate(body):
+        if ch == '"':
+            in_quotes = not in_quotes
+        elif ch == "," and not in_quotes:
+            split_at = i
+            break
+    if split_at >= 0:
+        info, name = body[:split_at], body[split_at + 1 :]
     else:
         info, name = body, "Unnamed Channel"
     attrs = {k.lower(): v for k, v in ATTR_RE.findall(info)}
@@ -183,7 +192,7 @@ def parse_m3u(text: str, source: dict[str, Any]) -> list[dict[str, Any]]:
         if line.startswith("#EXTINF:"):
             attrs, name = parse_extinf(line)
             tvg_id = attrs.get("tvg-id", "").strip()
-            declared_quality = extract_quality(name, tvg_id)
+            declared_quality = extract_quality(f"{name} {attrs.get('tvg-name', '')}", tvg_id)
             # Free-TV/IPTV documents that non-HD entries are marked with Ⓢ.
             # If an entry from that project is unmarked, treat it as generic HD.
             if declared_quality is None and family == "free-tv" and "Ⓢ" not in name:
