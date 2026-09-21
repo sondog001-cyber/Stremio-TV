@@ -41,6 +41,7 @@
             entries.extend(discovered_entries)
 
         entries = canonicalize_approved_sources(entries, config)
+        entries, identity_rejected = enforce_exact_identity(entries, config)
         allowlist_coverage = build_allowlist_coverage(entries, config)
         entries, filtered_entries = curate_entries(entries, config)
         if (config.get("curation") or {}).get("enabled"):
@@ -199,6 +200,7 @@
             },
             "allowlist_ids_missing_entirely": sum(1 for r in allowlist_coverage if not r["found"]),
             "allowlist_ids_without_passing_stream": sum(1 for r in healthy_allowlist_coverage if not r["found"]),
+            "identity_rejected_candidates": len(identity_rejected),
             "dynamic_discovery_candidates": len(discovered_entries),
             "dynamic_discovery_events": len(discovery_results),
             "source_results": source_result
