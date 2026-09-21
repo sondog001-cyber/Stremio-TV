@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV package with major national cable networks, Philadelphia locals, native Stremio EPG, and up to three ranked backup streams per channel.",
-    "version": "0.3.2"
+    "version": "0.3.3"
   },
   "sources": {
     "playlists": [
@@ -51,25 +51,97 @@
         "priority": 3,
         "required": false,
         "fixture": "freecasthub.m3u"
+      },
+      {
+        "name": "TVPass (Unverified)",
+        "family": "tvpass",
+        "url": "https://raw.githubusercontent.com/judy-gotv/iptv/main/TVPass.m3u",
+        "philly": false,
+        "priority": 10,
+        "required": false,
+        "fixture": "tvpass.m3u"
+      },
+      {
+        "name": "InsolenceTVGo (Unverified)",
+        "family": "insolence",
+        "url": "https://raw.githubusercontent.com/InsolenceWillow/insolencetvgo/main/insolencetvgo.m3u",
+        "philly": false,
+        "priority": 11,
+        "required": false,
+        "fixture": "insolence.m3u"
       }
     ],
     "epg": "https://vcicio.github.io/US-EPG/merged_epg.xml.gz"
   },
   "favorites": [
-    "WPVI", "6ABC", "WCAU", "NBC 10", "KYW", "CBS 3", "WTXF", "FOX 29",
-    "WPHL", "WHYY", "Fox News Channel", "CNN", "MS NOW", "ESPN", "ESPN2",
-    "Fox Sports 1", "NBC Sports Philadelphia", "HGTV", "Magnolia Network", "TNT", "TBS"
+    "WPVI",
+    "6ABC",
+    "WCAU",
+    "NBC 10",
+    "KYW",
+    "CBS 3",
+    "WTXF",
+    "FOX 29",
+    "WPHL",
+    "WHYY",
+    "Fox News Channel",
+    "CNN",
+    "MS NOW",
+    "ESPN",
+    "ESPN2",
+    "Fox Sports 1",
+    "NBC Sports Philadelphia",
+    "HGTV",
+    "Magnolia Network",
+    "TNT",
+    "TBS"
   ],
   "catalogs": [
-    {"id":"favorites","name":"★ Favorites","category":"Favorites"},
-    {"id":"philly","name":"Philadelphia Locals","category":"Philadelphia Locals"},
-    {"id":"sports","name":"Sports","category":"Sports"},
-    {"id":"news","name":"National News","category":"News"},
-    {"id":"entertainment","name":"Entertainment","category":"Entertainment"},
-    {"id":"home","name":"Home & Lifestyle","category":"Home & Lifestyle"},
-    {"id":"documentary","name":"Discovery & Knowledge","category":"Documentary"},
-    {"id":"kids","name":"Kids & Family","category":"Kids"},
-    {"id":"movies","name":"Movies","category":"Movies"}
+    {
+      "id": "favorites",
+      "name": "★ Favorites",
+      "category": "Favorites"
+    },
+    {
+      "id": "philly",
+      "name": "Philadelphia Locals",
+      "category": "Philadelphia Locals"
+    },
+    {
+      "id": "sports",
+      "name": "Sports",
+      "category": "Sports"
+    },
+    {
+      "id": "news",
+      "name": "National News",
+      "category": "News"
+    },
+    {
+      "id": "entertainment",
+      "name": "Entertainment",
+      "category": "Entertainment"
+    },
+    {
+      "id": "home",
+      "name": "Home & Lifestyle",
+      "category": "Home & Lifestyle"
+    },
+    {
+      "id": "documentary",
+      "name": "Discovery & Knowledge",
+      "category": "Documentary"
+    },
+    {
+      "id": "kids",
+      "name": "Kids & Family",
+      "category": "Kids"
+    },
+    {
+      "id": "movies",
+      "name": "Movies",
+      "category": "Movies"
+    }
   ],
   "page_size": 100,
   "max_streams_per_channel": 3,
@@ -78,21 +150,236 @@
     "enabled": true,
     "description": "Expanded-basic style Philadelphia package. Only explicitly approved Philadelphia locals and major national cable networks are kept.",
     "philly_allow": [
-      "Telemundo.us@WCAU","Fox.us@WTXFTV","WPVI.us","WCAU.us","KYW.us","WTXF.us","WHYY.us","WPHL.us","WPSG.us",
-      "6ABC","ABC 6","NBC 10","CBS 3","FOX 29","WHYY","PHL17","WPHL","Philly 57","WPSG"
+      "Telemundo.us@WCAU",
+      "Fox.us@WTXFTV",
+      "WPVI.us",
+      "WCAU.us",
+      "KYW.us",
+      "WTXF.us",
+      "WHYY.us",
+      "WPHL.us",
+      "WPSG.us",
+      "6ABC",
+      "ABC 6",
+      "NBC 10",
+      "CBS 3",
+      "FOX 29",
+      "WHYY",
+      "PHL17",
+      "WPHL",
+      "Philly 57",
+      "WPSG"
     ],
     "national_allow": [
-      "FoxNewsChannel.us","CNN.us","MSNOW.us","MSNBC.us","CNBC.us","FoxBusinessNetwork.us","BloombergTelevision.us","NewsNation.us","WeatherChannel.us",
-      "ESPN.us","ESPN2.us","ESPNU.us","ESPNews.us","FoxSports1.us","FoxSports2.us","NFLNetwork.us","NBATV.us","MLBNetwork.us","NHLNetwork.us",
-      "GolfChannel.us","TennisChannel.us","CBSSportsNetwork.us","NBCSportsPhiladelphia.us","NBCSportsPhiladelphiaPlus.us","BigTenNetwork.us","SECNetwork.us",
-      "ACCN.us","USANetwork.us","TNT.us","TBS.us","AMC.us","FX.us","FXX.us","AandE.us","Bravo.us","E.us","Syfy.us","ParamountNetwork.us",
-      "ComedyCentral.us","TVLand.us","Freeform.us","truTV.us","BET.us","MTV.us","VH1.us","CMT.us","GameShowNetwork.us","OWN.us","Oxygen.us","WEtv.us",
-      "BBCAmerica.us","IFC.us","SundanceTV.us","Pop.us","HGTV.us","MagnoliaNetwork.us","FoodNetwork.us","TLC.us","TravelChannel.us","CookingChannel.us",
-      "HallmarkChannel.us","HallmarkMystery.us","Lifetime.us","LMN.us","DiscoveryChannel.us","History.us","NationalGeographic.us","NationalGeographicWild.us",
-      "AnimalPlanet.us","ScienceChannel.us","InvestigationDiscovery.us","SmithsonianChannel.us","DisneyChannel.us","DisneyJunior.us","DisneyXD.us",
-      "Nickelodeon.us","NickJr.us","Nicktoons.us","CartoonNetwork.us","Boomerang.us","PBSKids.us","TurnerClassicMovies.us","FXMovieChannel.us",
-      "HallmarkFamily.us","AE.us","BloombergTV.us","ACCNetwork.us"
-    ]
+      "FoxNewsChannel.us",
+      "CNN.us",
+      "MSNOW.us",
+      "MSNBC.us",
+      "CNBC.us",
+      "FoxBusinessNetwork.us",
+      "BloombergTelevision.us",
+      "NewsNation.us",
+      "WeatherChannel.us",
+      "ESPN.us",
+      "ESPN2.us",
+      "ESPNU.us",
+      "ESPNews.us",
+      "FoxSports1.us",
+      "FoxSports2.us",
+      "NFLNetwork.us",
+      "NBATV.us",
+      "MLBNetwork.us",
+      "NHLNetwork.us",
+      "GolfChannel.us",
+      "TennisChannel.us",
+      "CBSSportsNetwork.us",
+      "NBCSportsPhiladelphia.us",
+      "NBCSportsPhiladelphiaPlus.us",
+      "BigTenNetwork.us",
+      "SECNetwork.us",
+      "ACCN.us",
+      "USANetwork.us",
+      "TNT.us",
+      "TBS.us",
+      "AMC.us",
+      "FX.us",
+      "FXX.us",
+      "AandE.us",
+      "Bravo.us",
+      "E.us",
+      "Syfy.us",
+      "ParamountNetwork.us",
+      "ComedyCentral.us",
+      "TVLand.us",
+      "Freeform.us",
+      "truTV.us",
+      "BET.us",
+      "MTV.us",
+      "VH1.us",
+      "CMT.us",
+      "GameShowNetwork.us",
+      "OWN.us",
+      "Oxygen.us",
+      "WEtv.us",
+      "BBCAmerica.us",
+      "IFC.us",
+      "SundanceTV.us",
+      "Pop.us",
+      "HGTV.us",
+      "MagnoliaNetwork.us",
+      "FoodNetwork.us",
+      "TLC.us",
+      "TravelChannel.us",
+      "CookingChannel.us",
+      "HallmarkChannel.us",
+      "HallmarkMystery.us",
+      "Lifetime.us",
+      "LMN.us",
+      "DiscoveryChannel.us",
+      "History.us",
+      "NationalGeographic.us",
+      "NationalGeographicWild.us",
+      "AnimalPlanet.us",
+      "ScienceChannel.us",
+      "InvestigationDiscovery.us",
+      "SmithsonianChannel.us",
+      "DisneyChannel.us",
+      "DisneyJunior.us",
+      "DisneyXD.us",
+      "Nickelodeon.us",
+      "NickJr.us",
+      "Nicktoons.us",
+      "CartoonNetwork.us",
+      "Boomerang.us",
+      "PBSKids.us",
+      "TurnerClassicMovies.us",
+      "FXMovieChannel.us",
+      "HallmarkFamily.us",
+      "AE.us",
+      "BloombergTV.us",
+      "ACCNetwork.us"
+    ],
+    "approved_unverified_families": [
+      "tvpass",
+      "insolence"
+    ],
+    "canonical_id_aliases": {
+      "MSNBC.us": "MSNOW.us",
+      "AandE.us": "AE.us",
+      "ACCN.us": "ACCNetwork.us",
+      "BloombergTelevision.us": "BloombergTV.us"
+    },
+    "approved_source_aliases": {
+      "E.us": [
+        "E! Entertainment",
+        "E! Entertainment Television"
+      ],
+      "LMN.us": [
+        "Lifetime Movies Network",
+        "Lifetime Movie Network",
+        "LMN"
+      ],
+      "BloombergTV.us": [
+        "Bloomberg",
+        "Bloomberg TV"
+      ],
+      "MSNOW.us": [
+        "MS NOW",
+        "MSNBC"
+      ],
+      "GolfChannel.us": [
+        "Golf Channel",
+        "NBC Golf"
+      ],
+      "MagnoliaNetwork.us": [
+        "Magnolia Network",
+        "DIY Network"
+      ],
+      "OWN.us": [
+        "OWN",
+        "Oprah Winfrey Network"
+      ],
+      "TLC.us": [
+        "TLC",
+        "The Learning Channel"
+      ],
+      "InvestigationDiscovery.us": [
+        "Investigation Discovery",
+        "ID"
+      ],
+      "TurnerClassicMovies.us": [
+        "Turner Classic Movies",
+        "TCM"
+      ],
+      "FXMovieChannel.us": [
+        "FX Movie Channel",
+        "FXM"
+      ],
+      "AE.us": [
+        "A&E",
+        "A and E"
+      ],
+      "WEtv.us": [
+        "WeTV",
+        "WE TV"
+      ],
+      "ACCNetwork.us": [
+        "ACC Network"
+      ],
+      "CBSSportsNetwork.us": [
+        "CBS Sports Network"
+      ],
+      "BigTenNetwork.us": [
+        "Big Ten Network",
+        "BTN"
+      ],
+      "SECNetwork.us": [
+        "SEC Network"
+      ],
+      "WeatherChannel.us": [
+        "Weather Channel"
+      ],
+      "FoxNewsChannel.us": [
+        "Fox News",
+        "Fox News Channel"
+      ],
+      "FoxBusinessNetwork.us": [
+        "Fox Business",
+        "Fox Business Network"
+      ],
+      "DiscoveryChannel.us": [
+        "Discovery",
+        "Discovery Channel"
+      ],
+      "ScienceChannel.us": [
+        "Science",
+        "Science Channel"
+      ],
+      "CookingChannel.us": [
+        "Cooking",
+        "Cooking Channel"
+      ],
+      "TravelChannel.us": [
+        "Travel",
+        "Travel Channel"
+      ],
+      "HallmarkChannel.us": [
+        "Hallmark",
+        "Hallmark Channel"
+      ],
+      "MLBNetwork.us": [
+        "MLB",
+        "MLB Network"
+      ],
+      "NFLNetwork.us": [
+        "NFL",
+        "NFL Network"
+      ],
+      "NHLNetwork.us": [
+        "NHL",
+        "NHL Network"
+      ]
+    }
   },
   "stream_selection": {
     "target_hd": 2,
