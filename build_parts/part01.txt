@@ -31,6 +31,7 @@ import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Iterable
@@ -40,6 +41,7 @@ DEFAULT_CONFIG = ROOT / "config.json"
 DEFAULT_ALIASES = ROOT / "aliases.json"
 USER_AGENT = "StremioTV-Builder/0.3 (+GitHub Actions)"
 UTC = dt.timezone.utc
+PHILLY_TZ = ZoneInfo("America/New_York")
 PHILLY_TZ = ZoneInfo("America/New_York")
 
 ATTR_RE = re.compile(r'([A-Za-z0-9_-]+)="([^"]*)"')
