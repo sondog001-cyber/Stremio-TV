@@ -44,6 +44,17 @@
         channels = merge_channels(entries, config.get("favorites", []), max_streams, config)
         log(f"Merged into {len(channels):,} channels")
 
+        build_stamp = iso_z(dt.datetime.now(UTC))
+        for ch in channels:
+            ch["build_version"] = config["addon"]["version"]
+            ch["built_at"] = build_stamp
+
+        stream_health_results = probe_selected_streams(
+            channels,
+            config,
+            enabled=not bool(fixtures),
+        )
+
         if fixtures:
             epg_path = fixtures / "epg.xml.gz"
         else:
@@ -68,6 +79,7 @@
                 "method": method,
                 "score": round(score, 4),
             }
+            ch["epg_matched"] = bool(epg_id)
             if epg_id:
                 matches.append(row)
                 epg_to_channels[epg_id].append(ch["id"])
@@ -141,6 +153,7 @@
                 "sources": [s.get("source") for s in c["streams"]],
                 "families": sorted({s.get("family") for s in c["streams"] if s.get("family")}),
                 "qualities": [s.get("quality") or "Unknown" for s in c["streams"]],
+                "health": [(s.get("health") or {}).get("status", "not-tested") for s in c["streams"]],
                 "epg_id": channel_epg.get(c["id"]),
             }
             channel_rows.append(row)
@@ -169,5 +182,13 @@
             "public_base_url": public_base,
             "stream_target": {"hd": target_hd, "sd": target_sd, "max": max_streams},
             "channels_needing_sources": len(needs_sources),
+            "stream_health": {
+                status: sum(
+                    1
+                    for row in stream_health_results
+                    if (row.get("health") or {}).get("status") == status
+                )
+                for status in ("ok", "failed", "not-tested")
+            },
             "allowlist_ids_missing_entirely": sum(1 for r in allowlist_coverage if not r["found"]),
             "source_results": source_result
