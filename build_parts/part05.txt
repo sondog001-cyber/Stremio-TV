@@ -1,0 +1,189 @@
+e_json(catalog_dir / f"skip={skip}&date={day}.json", {"metasDetailed": page})
+            skip += page_size
+
+        final_skip = ((len(detailed) + page_size - 1) // page_size) * page_size
+        if final_skip == 0:
+            final_skip = page_size
+        write_json(catalog_dir / f"date={day}&skip={final_skip}.json", {"metasDetailed": []})
+        write_json(catalog_dir / f"skip={final_skip}&date={day}.json", {"metasDetailed": []})
+
+
+def build_manifest(config: dict[str, Any]) -> dict[str, Any]:
+    addon = config["addon"]
+    catalogs: list[dict[str, Any]] = [
+        {
+            "type": "tv",
+            "id": "channels",
+            "name": "Stremio TV Guide",
+            "extra": [{"name": "date"}, {"name": "skip"}],
+        }
+    ]
+    for cat in config.get("catalogs", []):
+        catalogs.append(
+            {
+                "type": "tv",
+                "id": cat["id"],
+                "name": cat["name"],
+                "extra": [{"name": "skip"}],
+            }
+        )
+
+    return {
+        "id": addon["id"],
+        "version": addon["version"],
+        "name": addon["name"],
+        "description": addon["description"],
+        "resources": ["catalog", "meta", "stream"],
+        "types": ["tv"],
+        "idPrefixes": ["stremiotv_"],
+        "catalogs": catalogs,
+        "behaviorHints": {
+            "epgProvider": True,
+            "p2p": False,
+        },
+    }
+
+
+def derive_public_base() -> str:
+    explicit = os.getenv("PUBLIC_BASE_URL", "").strip().rstrip("/")
+    if explicit:
+        return explicit
+    repo = os.getenv("GITHUB_REPOSITORY", "").strip()
+    if "/" in repo:
+        owner, name = repo.split("/", 1)
+        if name.lower() == f"{owner.lower()}.github.io":
+            return f"https://{owner}.github.io"
+        return f"https://{owner}.github.io/{name}"
+    return ""
+
+
+def write_landing_page(site: Path, config: dict[str, Any], status: dict[str, Any]) -> None:
+    addon_name = html.escape(config["addon"]["name"])
+    count = status["channels"]
+    matched = status["epg_matched_channels"]
+    page = f"""<!doctype html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"utf-8\">
+  <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">
+  <title>{addon_name}</title>
+  <style>
+    :root {{ color-scheme: dark; font-family: Inter, system-ui, sans-serif; }}
+    body {{ margin:0; min-height:100vh; display:grid; place-items:center; background:#111217; color:#f4f5f7; }}
+    main {{ width:min(720px,calc(100% - 32px)); background:#1a1c23; border:1px solid #2c303a; border-radius:20px; padding:28px; box-sizing:border-box; }}
+    h1 {{ margin:0 0 8px; font-size:2rem; }}
+    .muted {{ color:#aeb4c0; }}
+    .stats {{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:22px 0; }}
+    .stat {{ background:#22252e; padding:14px; border-radius:12px; }}
+    .stat strong {{ display:block; font-size:1.25rem; }}
+    button {{ width:100%; padding:14px 18px; border:0; border-radius:12px; font-weight:700; font-size:1rem; cursor:pointer; }}
+    code {{ word-break:break-all; color:#c9d5ff; }}
+    @media (max-width:600px) {{ .stats {{ grid-template-columns:1fr; }} }}
+  </style>
+</head>
+<body>
+<main>
+  <h1>📺 {addon_name}</h1>
+  <p class=\"muted\">A curated Philadelphia-area cable-style lineup with Stremio's native programme guide, favorites, categories, and backup streams.</p>
+  <div class=\"stats\">
+    <div class=\"stat\"><strong>{count}</strong><span class=\"muted\">channels</span></div>
+    <div class=\"stat\"><strong>{matched}</strong><span class=\"muted\">EPG matched</span></div>
+    <div class=\"stat\"><strong>{status['total_streams']}</strong><span class=\"muted\">stream URLs</span></div>
+  </div>
+  <button id=\"install\">Install in Stremio</button>
+  <p class=\"muted\">Manifest: <code id=\"manifest\"></code></p>
+  <p class="muted"><strong>{status['channels_needing_sources']}</strong> channels still need one or more links to reach the 2 HD + 1 SD target. Guide refreshes automatically from GitHub Actions.</p>
+</main>
+<script>
+  const base = location.href.replace(/\\/[^/]*$/, '/');
+  const manifest = new URL('manifest.json', base).href;
+  document.getElementById('manifest').textContent = manifest;
+  document.getElementById('install').onclick = () => {{
+    location.href = manifest.replace(/^https?:\\/\\//, 'stremio://');
+  }};
+</script>
+</body>
+</html>"""
+    (site / "index.html").write_text(page, encoding="utf-8")
+
+
+def write_icon(site: Path) -> None:
+    svg = """<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"512\" height=\"512\" viewBox=\"0 0 512 512\">
+<rect width=\"512\" height=\"512\" rx=\"112\" fill=\"#191b22\"/>
+<rect x=\"74\" y=\"108\" width=\"364\" height=\"258\" rx=\"42\" fill=\"none\" stroke=\"#f4f5f7\" stroke-width=\"28\"/>
+<path d=\"M210 176l120 61-120 61z\" fill=\"#f4f5f7\"/>
+<path d=\"M196 409h120\" stroke=\"#f4f5f7\" stroke-width=\"28\" stroke-linecap=\"round\"/>
+</svg>"""
+    (site / "icon.svg").write_text(svg, encoding="utf-8")
+
+
+def load_manual_streams(config: dict[str, Any], config_path: Path) -> list[dict[str, Any]]:
+    manual_name = config.get("manual_sources_file")
+    if not manual_name:
+        return []
+    path = config_path.parent / manual_name
+    if not path.exists():
+        return []
+    data = load_json(path)
+    rows = data.get("streams", []) if isinstance(data, dict) else []
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict) or not row.get("url"):
+            continue
+        item = dict(row)
+        item.setdefault("source", "User")
+        item.setdefault("family", "manual")
+        item.setdefault("priority", 1)
+        item.setdefault("philly", False)
+        item.setdefault("headers", {})
+        item.setdefault("group", "")
+        item.setdefault("logo", "")
+        item.setdefault("language", "")
+        item.setdefault("country", "US")
+        item.setdefault("tvg_id", "")
+        item.setdefault("name", item.get("tvg_id") or "Manual Channel")
+        item.setdefault("name_raw", item["name"])
+        if not item.get("quality"):
+            item["quality"] = extract_quality(item.get("name_raw", ""), item.get("tvg_id", ""))
+        result.append(item)
+    return result
+
+
+def build(config_path: Path, aliases_path: Path, output: Path, fixtures: Path | None = None) -> dict[str, Any]:
+    config = load_json(config_path)
+    aliases = load_json(aliases_path) if aliases_path.exists() else {"by_tvg_id": {}, "by_name": {}}
+    page_size = int(config.get("page_size", 100))
+    max_streams = int(config.get("max_streams_per_channel", 3))
+
+    if output.exists():
+        shutil.rmtree(output)
+    output.mkdir(parents=True, exist_ok=True)
+
+    temp_dir = Path(tempfile.mkdtemp(prefix="stremio-tv-"))
+    try:
+        entries: list[dict[str, Any]] = []
+        source_results: list[dict[str, Any]] = []
+        for idx, src in enumerate(config["sources"]["playlists"]):
+            required = bool(src.get("required", True))
+            result = {
+                "name": src.get("name", f"Source {idx + 1}"),
+                "family": src.get("family", ""),
+                "url": src.get("url", ""),
+                "required": required,
+                "status": "pending",
+                "streams": 0,
+            }
+            try:
+                if fixtures:
+                    fixture_name = src.get("fixture")
+                    if not fixture_name:
+                        if required:
+                            raise RuntimeError(f"No fixture declared for required source {src['name']}")
+                        result["status"] = "skipped-no-fixture"
+                        source_results.append(result)
+                        continue
+                    playlist_path = fixtures / fixture_name
+                    if not playlist_path.exists():
+                        if required:
+                            raise RuntimeError(f"Missing required fixture: {playlist_path}")
+                        result["status"] = "skipped-missing-fixture"
