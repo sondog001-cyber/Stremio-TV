@@ -41,19 +41,21 @@
         if (config.get("curation") or {}).get("enabled"):
             log(f"Curated playlist: kept {len(entries):,} streams and filtered {len(filtered_entries):,}")
 
+        entries, stream_health_results = probe_candidate_entries(
+            entries,
+            config,
+            enabled=not bool(fixtures),
+        )
+        healthy_allowlist_coverage = build_allowlist_coverage(entries, config)
+
         channels = merge_channels(entries, config.get("favorites", []), max_streams, config)
-        log(f"Merged into {len(channels):,} channels")
+        label_channel_streams(channels)
+        log(f"Merged passing streams into {len(channels):,} channels")
 
         build_stamp = iso_z(dt.datetime.now(UTC))
         for ch in channels:
             ch["build_version"] = config["addon"]["version"]
             ch["built_at"] = build_stamp
-
-        stream_health_results = probe_selected_streams(
-            channels,
-            config,
-            enabled=not bool(fixtures),
-        )
 
         if fixtures:
             epg_path = fixtures / "epg.xml.gz"
@@ -191,4 +193,5 @@
                 for status in ("ok", "failed", "not-tested")
             },
             "allowlist_ids_missing_entirely": sum(1 for r in allowlist_coverage if not r["found"]),
+            "allowlist_ids_without_passing_stream": sum(1 for r in healthy_allowlist_coverage if not r["found"]),
             "source_results": source_result
