@@ -255,45 +255,54 @@ def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) ->
         }
 
 
-def probe_selected_streams(
-    channels: list[dict[str, Any]],
+def probe_candidate_entries(
+    entries: list[dict[str, Any]],
     config: dict[str, Any],
     enabled: bool = True,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Probe the full curated candidate pool before selecting channel streams.
+
+    In production, only candidates that pass the builder health test are returned
+    when require_passed_only is enabled. This lets a lower-priority source win if
+    it actually works, regardless of source family.
+    """
     settings = config.get("stream_health") or {}
     enabled = enabled and bool(settings.get("enabled", True))
+    require_passed_only = bool(settings.get("require_passed_only", True))
     timeout = int(settings.get("timeout_seconds", 6))
     max_workers = int(settings.get("max_workers", 16))
+    verify_segment = bool(settings.get("verify_segment_for_all_candidates", True))
 
     rows: list[dict[str, Any]] = []
+
     if not enabled:
-        for channel in channels:
-            for index, stream in enumerate(channel.get("streams", [])):
-                stream["health"] = {"status": "not-tested", "detail": "Health checks disabled"}
-                stream["display_role"] = "Primary" if index == 0 else f"Backup {index}"
-        return rows
+        for entry in entries:
+            entry["health"] = {"status": "not-tested", "detail": "Health checks disabled"}
+            rows.append({
+                "name": entry.get("name"),
+                "tvg_id": entry.get("tvg_id"),
+                "source": entry.get("source"),
+                "family": entry.get("family"),
+                "quality": entry.get("quality") or "Unknown",
+                "url": entry.get("url"),
+                "health": entry.get("health"),
+            })
+        return entries, rows
 
-    jobs: dict[tuple[str, tuple[tuple[str, str], ...]], tuple[dict[str, Any], bool]] = {}
-    refs: dict[tuple[str, tuple[tuple[str, str], ...]], list[tuple[dict[str, Any], dict[str, Any]]]] = defaultdict(list)
+    jobs: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
+    refs: dict[tuple[str, tuple[tuple[str, str], ...]], list[dict[str, Any]]] = defaultdict(list)
 
-    for channel in channels:
-        priority_channel = bool(channel.get("philly") or channel.get("favorite"))
-        for stream in channel.get("streams", []):
-            headers_key = tuple(sorted((stream.get("headers") or {}).items()))
-            key = (stream.get("url") or "", headers_key)
-            jobs.setdefault(key, (stream, priority_channel))
-            refs[key].append((channel, stream))
+    for entry in entries:
+        headers_key = tuple(sorted((entry.get("headers") or {}).items()))
+        key = (entry.get("url") or "", headers_key)
+        jobs.setdefault(key, entry)
+        refs[key].append(entry)
 
     results: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_map = {
-            executor.submit(
-                _probe_stream,
-                stream,
-                timeout,
-                bool(priority_channel and settings.get("verify_segment_for_priority_channels", True)),
-            ): key
-            for key, (stream, priority_channel) in jobs.items()
+            executor.submit(_probe_stream, entry, timeout, verify_segment): key
+            for key, entry in jobs.items()
         }
         for future in concurrent.futures.as_completed(future_map):
             key = future_map[future]
@@ -302,39 +311,46 @@ def probe_selected_streams(
             except Exception as exc:
                 results[key] = {"status": "failed", "detail": str(exc)[:180]}
 
-    rank = {"ok": 0, "not-tested": 1, "failed": 2}
-    for key, linked in refs.items():
-        health = results.get(key, {"status": "not-tested", "detail": "No result"})
-        for channel, stream in linked:
-            stream["health"] = dict(health)
+    for key, linked_entries in refs.items():
+        health = results.get(key, {"status": "failed", "detail": "No probe result"})
+        for entry in linked_entries:
+            entry["health"] = dict(health)
 
-    for channel in channels:
-        channel["streams"] = sorted(
-            channel.get("streams", []),
-            key=lambda s: rank.get((s.get("health") or {}).get("status", "not-tested"), 1),
-        )
-        for index, stream in enumerate(channel.get("streams", [])):
-            stream["display_role"] = "Primary" if index == 0 else f"Backup {index}"
-            rows.append({
-                "channel_id": channel["id"],
-                "channel_name": channel["name"],
-                "tvg_id": channel.get("tvg_id"),
-                "role": stream["display_role"],
-                "source": stream.get("source"),
-                "family": stream.get("family"),
-                "quality": stream.get("quality") or "Unknown",
-                "url": stream.get("url"),
-                "health": stream.get("health"),
-            })
+    for entry in entries:
+        rows.append({
+            "name": entry.get("name"),
+            "tvg_id": entry.get("tvg_id"),
+            "source": entry.get("source"),
+            "family": entry.get("family"),
+            "quality": entry.get("quality") or "Unknown",
+            "url": entry.get("url"),
+            "health": entry.get("health"),
+        })
 
     counts = defaultdict(int)
     for row in rows:
         counts[(row.get("health") or {}).get("status", "not-tested")] += 1
     log(
-        "Stream health: "
+        "Candidate stream health: "
         + ", ".join(f"{status}={count}" for status, count in sorted(counts.items()))
     )
-    return rows
+
+    if not require_passed_only:
+        return entries, rows
+
+    healthy = [
+        entry
+        for entry in entries
+        if (entry.get("health") or {}).get("status") == "ok"
+    ]
+    log(f"Passed-only policy: keeping {len(healthy):,}/{len(entries):,} curated candidates")
+    return healthy, rows
+
+
+def label_channel_streams(channels: list[dict[str, Any]]) -> None:
+    for channel in channels:
+        for index, stream in enumerate(channel.get("streams", [])):
+            stream["display_role"] = "Primary" if index == 0 else f"Backup {index}"
 
 
 def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | None = None) -> dict[str, Any]:
