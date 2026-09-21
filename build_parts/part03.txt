@@ -50,6 +50,14 @@ def merge_channels(entries: Iterable[dict[str, Any]], favorites: list[str], max_
             exact_base = next((x for x in ids if x.lower() == base_key), None)
             if exact_base:
                 tvg_id = exact_base
+        metadata = {}
+        for metadata_id, metadata_row in (config.get("channel_metadata") or {}).items():
+            if canonical_tvg_id(metadata_id) == canonical_tvg_id(tvg_id):
+                metadata = metadata_row or {}
+                break
+        if metadata.get("name"):
+            name = metadata["name"]
+
         digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:14]
         channel = {
             "id": f"stremiotv_{digest}",
@@ -61,7 +69,9 @@ def merge_channels(entries: Iterable[dict[str, Any]], favorites: list[str], max_
             "philly": any(bool(s.get("philly")) for s in unique_streams),
             "streams": unique_streams,
         }
-        channel["category"] = classify_channel(channel["name"], channel["group"])
+        channel["category"] = metadata.get("category") or classify_channel(channel["name"], channel["group"])
+        if metadata.get("service_type"):
+            channel["service_type"] = metadata["service_type"]
         channel["favorite"] = is_favorite(channel, favorites)
         channels.append(channel)
 
