@@ -94,7 +94,7 @@
                 subset = [c for c in channels if c["philly"]]
             else:
                 subset = [c for c in channels if c["category"] == category]
-            write_paginated_catalog(output, cat["id"], subset, page_size)
+            write_paginated_catalog(output, cat["id"], subset, page_size, discover_only=True)
 
         # Meta and stream endpoints.
         now = dt.datetime.now(UTC)
