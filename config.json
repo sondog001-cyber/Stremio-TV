@@ -990,6 +990,19 @@
         "content_kind": "full-linear",
         "content_note": "Claimed WPHL-DT1 full-linear candidate; exposed only if both health probes pass.",
         "research_url": "https://tingfm.com/tv/101402"
+      },
+      {
+        "name": "NBC 10 Philadelphia News",
+        "tvg_id": "WCAU.us",
+        "url": "https://s8host2.localnow.api.cms.amdvids.com/v1/master/c189661feba961c19bc5fb60b57879ee9b84548a/config10/live/master.m3u8",
+        "source": "Local Now / NBCU authorized FAST",
+        "source_type": "authorized-fast",
+        "priority": 2,
+        "philly": true,
+        "group": "Local",
+        "content_kind": "news-fast",
+        "content_note": "NBC Philadelphia News via Local Now; not full WCAU-DT1 linear. Included only if both builder probes pass.",
+        "research_url": "https://localnow.com/"
       }
     ]
   }
