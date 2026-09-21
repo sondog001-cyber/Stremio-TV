@@ -3,6 +3,7 @@ s,
         }
         write_json(output / "status.json", status)
         write_json(output / "diagnostics" / "allowlist-coverage.json", allowlist_coverage)
+        write_json(output / "diagnostics" / "passing-allowlist-coverage.json", healthy_allowlist_coverage)
         write_json(output / "diagnostics" / "epg-matches.json", matches)
         write_json(output / "diagnostics" / "epg-unmatched.json", unmatched)
         write_json(output / "diagnostics" / "channels.json", channel_rows)
