@@ -14,8 +14,8 @@ def build_manifest(config: dict[str, Any]) -> dict[str, Any]:
         {
             "type": "tv",
             "id": "channels",
-            "name": "Stremio TV Guide",
-            "extra": [{"name": "date"}, {"name": "skip"}],
+            "name": "Stremio TV",
+            "extra": [{"name": "skip"}],
         }
     ]
     for cat in config.get("catalogs", []):
@@ -41,7 +41,6 @@ def build_manifest(config: dict[str, Any]) -> dict[str, Any]:
         "idPrefixes": ["stremiotv_"],
         "catalogs": catalogs,
         "behaviorHints": {
-            "epgProvider": True,
             "p2p": False,
         },
     }
@@ -87,7 +86,7 @@ def write_landing_page(site: Path, config: dict[str, Any], status: dict[str, Any
 <body>
 <main>
   <h1>📺 {addon_name}</h1>
-  <p class=\"muted\">A curated Philadelphia-area cable-style lineup with Stremio's native programme guide, favorites, categories, and backup streams.</p>
+  <p class=\"muted\">A curated Philadelphia-area cable-style lineup with Now/Next programme info, favorites, categories, and backup streams.</p>
   <div class=\"stats\">
     <div class=\"stat\"><strong>{count}</strong><span class=\"muted\">channels</span></div>
     <div class=\"stat\"><strong>{matched}</strong><span class=\"muted\">EPG matched</span></div>
@@ -95,7 +94,7 @@ def write_landing_page(site: Path, config: dict[str, Any], status: dict[str, Any
   </div>
   <button id=\"install\">Install in Stremio</button>
   <p class=\"muted\">Manifest: <code id=\"manifest\"></code></p>
-  <p class="muted"><strong>{status['channels_needing_sources']}</strong> channels still need one or more links to reach the 2 HD + 1 SD target. Guide refreshes automatically from GitHub Actions.</p>
+  <p class="muted"><strong>{status['channels_needing_sources']}</strong> channels still need one or more links to reach the 2 HD + 1 SD target. Now/Next programme info refreshes automatically from GitHub Actions.</p>
 </main>
 <script>
   const base = location.href.replace(/\\/[^/]*$/, '/');
