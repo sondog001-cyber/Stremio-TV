@@ -94,7 +94,6 @@
   "favorites": [
     "WPVI",
     "6ABC",
-    "WCAU",
     "NBC 10",
     "KYW",
     "CBS 3",
@@ -176,17 +175,7 @@
       "WTXF.us",
       "WHYY.us",
       "WPHL.us",
-      "WPSG.us",
-      "6ABC",
-      "ABC 6",
-      "NBC 10",
-      "CBS 3",
-      "FOX 29",
-      "WHYY",
-      "PHL17",
-      "WPHL",
-      "Philly 57",
-      "WPSG"
+      "WPSG.us"
     ],
     "national_allow": [
       "FoxNewsChannel.us",
@@ -287,7 +276,8 @@
       "MSNBC.us": "MSNOW.us",
       "AandE.us": "AE.us",
       "ACCN.us": "ACCNetwork.us",
-      "BloombergTelevision.us": "BloombergTV.us"
+      "BloombergTelevision.us": "BloombergTV.us",
+      "WTXF.us": "Fox.us@WTXFTV"
     },
     "approved_source_aliases": {
       "E.us": [
