@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with Now/Next EPG, official-public and fresh IPTV candidate discovery, and two-probe playback validation before a stream can appear.",
-    "version": "0.3.8"
+    "description": "Curated Philadelphia-area live TV with Now/Next EPG, expanded public FAST/source discovery, and two-probe playback validation before a stream can appear.",
+    "version": "0.3.9"
   },
   "sources": {
     "playlists": [
@@ -87,6 +87,182 @@
         "priority": 11,
         "required": false,
         "fixture": "insolence.m3u"
+      },
+      {
+        "name": "Samsung TV Plus US (BuddyChewChew)",
+        "family": "samsungtvplus",
+        "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/refs/heads/main/playlists/samsungtvplus_us.m3u",
+        "philly": false,
+        "priority": 12,
+        "required": false
+      },
+      {
+        "name": "Pluto TV US (BuddyChewChew)",
+        "family": "plutotv",
+        "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/refs/heads/main/playlists/plutotv_us.m3u",
+        "philly": false,
+        "priority": 12,
+        "required": false
+      },
+      {
+        "name": "Plex TV US (BuddyChewChew)",
+        "family": "plextv",
+        "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/refs/heads/main/playlists/plex_us.m3u",
+        "philly": false,
+        "priority": 12,
+        "required": false
+      },
+      {
+        "name": "Roku Channel (BuddyChewChew)",
+        "family": "roku",
+        "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/refs/heads/main/playlists/roku_all.m3u",
+        "philly": false,
+        "priority": 13,
+        "required": false
+      },
+      {
+        "name": "Tubi Live TV (BuddyChewChew)",
+        "family": "tubi",
+        "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/refs/heads/main/playlists/tubi_all.m3u",
+        "philly": false,
+        "priority": 13,
+        "required": false
+      },
+      {
+        "name": "LG Channels US (Apsattv)",
+        "family": "apsattv-lg",
+        "url": "https://www.apsattv.com/uslg.m3u",
+        "philly": false,
+        "priority": 14,
+        "required": false
+      },
+      {
+        "name": "Vizio WatchFree (Apsattv)",
+        "family": "apsattv-vizio",
+        "url": "https://www.apsattv.com/vizio.m3u",
+        "philly": false,
+        "priority": 14,
+        "required": false
+      },
+      {
+        "name": "Local Now (Apsattv)",
+        "family": "apsattv-localnow",
+        "url": "https://www.apsattv.com/localnow.m3u",
+        "philly": false,
+        "priority": 14,
+        "required": false
+      },
+      {
+        "name": "Xumo (Apsattv)",
+        "family": "apsattv-xumo",
+        "url": "https://www.apsattv.com/xumo.m3u",
+        "philly": false,
+        "priority": 14,
+        "required": false
+      },
+      {
+        "name": "DistroTV (Apsattv)",
+        "family": "apsattv-distro",
+        "url": "https://www.apsattv.com/distro.m3u",
+        "philly": false,
+        "priority": 14,
+        "required": false
+      },
+      {
+        "name": "VIDAA TV (Apsattv)",
+        "family": "apsattv-vidaa",
+        "url": "https://www.apsattv.com/vidaa.m3u",
+        "philly": false,
+        "priority": 15,
+        "required": false
+      },
+      {
+        "name": "TCL TV Plus (Apsattv)",
+        "family": "apsattv-tclplus",
+        "url": "https://www.apsattv.com/tclplus.m3u",
+        "philly": false,
+        "priority": 15,
+        "required": false
+      },
+      {
+        "name": "Tablo FAST (Apsattv)",
+        "family": "apsattv-tablo",
+        "url": "https://www.apsattv.com/tablo.m3u",
+        "philly": false,
+        "priority": 15,
+        "required": false
+      },
+      {
+        "name": "Fire TV FAST (Apsattv)",
+        "family": "apsattv-firetv",
+        "url": "https://www.apsattv.com/firetv.m3u",
+        "philly": false,
+        "priority": 15,
+        "required": false
+      },
+      {
+        "name": "Xiaomi FAST (Apsattv)",
+        "family": "apsattv-xiaomi",
+        "url": "https://www.apsattv.com/xiaomi.m3u",
+        "philly": false,
+        "priority": 16,
+        "required": false
+      },
+      {
+        "name": "Whale TV Plus US (Apsattv)",
+        "family": "apsattv-whaletv",
+        "url": "https://www.apsattv.com/whaletvplus_us.m3u",
+        "philly": false,
+        "priority": 16,
+        "required": false
+      },
+      {
+        "name": "Free Live Sports (Apsattv)",
+        "family": "apsattv-freelivesports",
+        "url": "https://www.apsattv.com/freelivesports.m3u",
+        "philly": false,
+        "priority": 16,
+        "required": false
+      },
+      {
+        "name": "Cineverse FAST (Apsattv)",
+        "family": "apsattv-cineverse",
+        "url": "https://www.apsattv.com/cineverse.m3u",
+        "philly": false,
+        "priority": 16,
+        "required": false
+      },
+      {
+        "name": "MetaX FAST (Apsattv)",
+        "family": "apsattv-metax",
+        "url": "https://www.apsattv.com/metax.m3u",
+        "philly": false,
+        "priority": 17,
+        "required": false
+      },
+      {
+        "name": "Galxy.TV FAST (Apsattv)",
+        "family": "apsattv-galxy",
+        "url": "https://www.apsattv.com/galxytv.m3u",
+        "philly": false,
+        "priority": 17,
+        "required": false
+      },
+      {
+        "name": "Orka TV FAST (Apsattv)",
+        "family": "apsattv-orka",
+        "url": "https://www.apsattv.com/orka.m3u",
+        "philly": false,
+        "priority": 17,
+        "required": false
+      },
+      {
+        "name": "RW1986 Free Legal FAST",
+        "family": "rw-fast",
+        "url": "https://github.com/RW1986/IPTV/raw/main/lineup.m3u8",
+        "philly": false,
+        "priority": 18,
+        "required": false
       }
     ],
     "epg": "https://vcicio.github.io/US-EPG/merged_epg.xml.gz"
@@ -272,7 +448,29 @@
       "localbtv-relay",
       "moveonjoy",
       "iptv-org-issue",
-      "research-seed"
+      "research-seed",
+      "samsungtvplus",
+      "plutotv",
+      "plextv",
+      "roku",
+      "tubi",
+      "apsattv-lg",
+      "apsattv-vizio",
+      "apsattv-localnow",
+      "apsattv-xumo",
+      "apsattv-distro",
+      "apsattv-vidaa",
+      "apsattv-tclplus",
+      "apsattv-tablo",
+      "apsattv-firetv",
+      "apsattv-xiaomi",
+      "apsattv-whaletv",
+      "apsattv-freelivesports",
+      "apsattv-cineverse",
+      "apsattv-metax",
+      "apsattv-galxy",
+      "apsattv-orka",
+      "rw-fast"
     ],
     "canonical_id_aliases": {
       "MSNBC.us": "MSNOW.us",
@@ -1003,6 +1201,20 @@
         "content_kind": "news-fast",
         "content_note": "NBC Philadelphia News via Local Now; not full WCAU-DT1 linear. Included only if both builder probes pass.",
         "research_url": "https://localnow.com/"
+      }
+    ],
+    "research_directories": [
+      {
+        "name": "TheTVApp channel directory",
+        "url": "https://thetvapp.tube/channels/",
+        "source_type": "unverified-directory",
+        "note": "Discovery lead only. Do not expose links unless a public HTTP(S) media URL is plainly available without login, cookies, DRM, or access-control bypass and then passes the normal two-probe checker."
+      },
+      {
+        "name": "TVAPP channel directory",
+        "url": "https://welcome.tvapp.co/channels",
+        "source_type": "subscription-directory",
+        "note": "Inventory/research lead only. Do not use authenticated subscriber streams or credentials; only independently public media URLs may become candidates."
       }
     ]
   }
