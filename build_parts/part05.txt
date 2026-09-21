@@ -24,7 +24,10 @@ def build_manifest(config: dict[str, Any]) -> dict[str, Any]:
                 "type": "tv",
                 "id": cat["id"],
                 "name": cat["name"],
-                "extra": [{"name": "skip"}],
+                "extra": [
+                    {"name": "genre", "isRequired": True, "options": ["All"]},
+                    {"name": "skip"},
+                ],
             }
         )
 
