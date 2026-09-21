@@ -1,0 +1,248 @@
+#!/usr/bin/env python3
+"""Build a fully static Stremio Live TV addon for GitHub Pages.
+
+The builder:
+- downloads public IPTV playlists
+- merges duplicate channels while preserving backup stream URLs
+- downloads XMLTV EPG data and matches it to playlist channels
+- generates Native EPG JSON endpoints expected by Stremio
+- generates normal category/favorites catalogs
+- writes a static GitHub Pages site under ./site
+
+Runtime dependencies: Python standard library only.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import difflib
+import gzip
+import hashlib
+import html
+import json
+import os
+import re
+import shutil
+import sys
+import tempfile
+import unicodedata
+import urllib.error
+import urllib.request
+import xml.etree.ElementTree as ET
+from collections import defaultdict
+from pathlib import Path
+from typing import Any, Iterable
+
+ROOT = Path(__file__).resolve().parent
+DEFAULT_CONFIG = ROOT / "config.json"
+DEFAULT_ALIASES = ROOT / "aliases.json"
+USER_AGENT = "StremioTV-Builder/0.3 (+GitHub Actions)"
+UTC = dt.timezone.utc
+
+ATTR_RE = re.compile(r'([A-Za-z0-9_-]+)="([^"]*)"')
+QUALITY_RE = re.compile(r"(?:\(|\[)?\b(2160p|1440p|1080p|720p|576p|540p|480p|360p|240p|144p|4K|UHD|FHD|HD|SD)\b(?:\)|\])?", re.I)
+NOISE_RE = re.compile(r"\s*(?:\(|\[)(?:Not 24/7|Geo[- ]?blocked|Offline|Backup)(?:\)|\])\s*", re.I)
+SPACE_RE = re.compile(r"\s+")
+
+CATEGORY_ORDER = [
+    "Favorites",
+    "Philadelphia Locals",
+    "Home & Lifestyle",
+    "Entertainment",
+    "News",
+    "Sports",
+    "Kids",
+    "Movies",
+    "Documentary",
+    "Music",
+    "Other",
+]
+
+
+def log(msg: str) -> None:
+    print(f"[stremio-tv] {msg}", flush=True)
+
+
+def load_json(path: Path) -> Any:
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def write_json(path: Path, obj: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(obj, f, ensure_ascii=False, separators=(",", ":"))
+
+
+def download(url: str, destination: Path, timeout: int = 90) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "*/*",
+            "Accept-Encoding": "identity",
+        },
+    )
+    log(f"Downloading {url}")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp, destination.open("wb") as out:
+            shutil.copyfileobj(resp, out)
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Failed to download {url}: {exc}") from exc
+
+
+def strip_accents(value: str) -> str:
+    return "".join(
+        c for c in unicodedata.normalize("NFKD", value) if not unicodedata.combining(c)
+    )
+
+
+def norm(value: str) -> str:
+    value = strip_accents(value).lower()
+    value = value.replace("&", " and ")
+    value = QUALITY_RE.sub(" ", value)
+    value = re.sub(r"\b(?:channel|network|tv|television)\b", " ", value)
+    return re.sub(r"[^a-z0-9]+", "", value)
+
+
+def norm_id(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", strip_accents(value).lower())
+
+
+def clean_display_name(value: str) -> str:
+    value = NOISE_RE.sub(" ", value)
+    value = QUALITY_RE.sub(" ", value)
+    value = SPACE_RE.sub(" ", value).strip(" -|•")
+    return value or "Unnamed Channel"
+
+
+def extract_quality(name: str, tvg_id: str = "") -> str | None:
+    """Return the quality declared by a playlist, without probing the video."""
+    # Free-TV/IPTV uses a circled S marker for some SD entries.
+    if "Ⓢ" in name:
+        return "SD"
+    m = QUALITY_RE.search(name)
+    if m:
+        return m.group(1).upper().replace("2160P", "4K")
+
+    # IPTV-org often stores a generic quality variant in the tvg-id suffix.
+    if "@" in tvg_id:
+        suffix = tvg_id.rsplit("@", 1)[1]
+        m = QUALITY_RE.search(suffix)
+        if m:
+            return m.group(1).upper().replace("2160P", "4K")
+    return None
+
+
+def quality_height(stream: dict[str, Any]) -> int:
+    quality = (stream.get("quality") or "").upper()
+    return {
+        "4K": 2160, "UHD": 2160, "2160P": 2160,
+        "1440P": 1440,
+        "1080P": 1080, "FHD": 1080,
+        "720P": 720, "HD": 720,
+        "576P": 576, "540P": 540, "480P": 480, "SD": 480,
+        "360P": 360, "240P": 240, "144P": 144,
+    }.get(quality, 0)
+
+
+def is_hd_stream(stream: dict[str, Any]) -> bool:
+    return quality_height(stream) >= 720
+
+
+def is_sd_stream(stream: dict[str, Any]) -> bool:
+    height = quality_height(stream)
+    return 0 < height < 720
+
+def parse_extinf(line: str) -> tuple[dict[str, str], str]:
+    body = line[len("#EXTINF:") :]
+    if "," in body:
+        info, name = body.split(",", 1)
+    else:
+        info, name = body, "Unnamed Channel"
+    attrs = {k.lower(): v for k, v in ATTR_RE.findall(info)}
+    return attrs, name.strip()
+
+
+def parse_m3u(text: str, source: dict[str, Any]) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
+    pending: dict[str, Any] | None = None
+    pending_headers: dict[str, str] = {}
+
+    source_name = source.get("name", "IPTV")
+    family = source.get("family", source_name)
+    priority = int(source.get("priority", 50))
+    is_philly = bool(source.get("philly"))
+
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith("#EXTINF:"):
+            attrs, name = parse_extinf(line)
+            tvg_id = attrs.get("tvg-id", "").strip()
+            declared_quality = extract_quality(name, tvg_id)
+            # Free-TV/IPTV documents that non-HD entries are marked with Ⓢ.
+            # If an entry from that project is unmarked, treat it as generic HD.
+            if declared_quality is None and family == "free-tv" and "Ⓢ" not in name:
+                declared_quality = "HD"
+            pending = {
+                "name_raw": name,
+                "name": clean_display_name(name),
+                "quality": declared_quality,
+                "tvg_id": tvg_id,
+                "logo": attrs.get("tvg-logo", "").strip(),
+                "group": attrs.get("group-title", "").strip(),
+                "language": attrs.get("tvg-language", "").strip(),
+                "country": attrs.get("tvg-country", "").strip(),
+                "source": source_name,
+                "family": family,
+                "priority": priority,
+                "philly": is_philly,
+            }
+            pending_headers = {}
+            continue
+        if pending is None:
+            continue
+        if line.startswith("#EXTVLCOPT:http-user-agent="):
+            pending_headers["User-Agent"] = line.split("=", 1)[1].strip()
+            continue
+        if line.startswith("#EXTVLCOPT:http-referrer=") or line.startswith("#EXTVLCOPT:http-referer="):
+            pending_headers["Referer"] = line.split("=", 1)[1].strip()
+            continue
+        if line.startswith("#EXTHTTP:"):
+            try:
+                obj = json.loads(line.split(":", 1)[1].strip())
+                headers = obj.get("http-user-agent") or obj.get("headers") or obj
+                if isinstance(headers, dict):
+                    for k, v in headers.items():
+                        if isinstance(v, str):
+                            pending_headers[str(k)] = v
+            except Exception:
+                pass
+            continue
+        if line.startswith("#"):
+            continue
+
+        if re.match(r"^(?:https?|rtmp|rtmps|ftp)://", line, re.I):
+            item = dict(pending)
+            item["url"] = line
+            item["headers"] = dict(pending_headers)
+            entries.append(item)
+        pending = None
+        pending_headers = {}
+
+    return entries
+
+
+_GENERIC_VARIANTS = {
+    "sd", "hd", "fhd", "uhd", "4k", "720p", "1080p", "1440p", "2160p",
+    "east", "west", "easthd", "westhd", "east4k", "west4k", "us",
+    "panregional", "national", "feed",
+}
+
+
+def canonical_tvg_id(value: str) -> str:
+    """Merge quality/time-zone variants while preserving affiliate IDs.

@@ -1,0 +1,200 @@
+"url") == pick.get("url"):
+                unique[i] = item
+                break
+
+    # remaining() above tracks identity, so use URL based helper after copies.
+    def remaining_url(predicate):
+        used = {s.get("url") for s in selected}
+        return [s for s in unique if s.get("url") not in used and predicate(s)]
+
+    for _ in range(target_sd):
+        candidates = remaining_url(is_sd_stream)
+        if not candidates:
+            break
+        pick = _choose_prefer_new_family(candidates, selected) if prefer_families else candidates[0]
+        item = dict(pick)
+        item["slot"] = "SD"
+        selected.append(item)
+
+    # Fill any empty slots with the best remaining stream, even if its quality is
+    # unknown or it duplicates an HD/SD class.  Never return more than max_streams.
+    for pick in remaining_url(lambda _s: True):
+        if len(selected) >= max_streams:
+            break
+        item = dict(pick)
+        item["slot"] = "Backup"
+        selected.append(item)
+
+    return selected[:max_streams]
+
+
+def merge_channels(entries: Iterable[dict[str, Any]], favorites: list[str], max_streams: int, config: dict[str, Any]) -> list[dict[str, Any]]:
+    buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for e in entries:
+        buckets[playlist_key(e)].append(e)
+
+    channels: list[dict[str, Any]] = []
+    for key, streams in buckets.items():
+        unique_streams = select_streams(streams, max_streams, config)
+        if not unique_streams:
+            continue
+
+        preferred = unique_streams[0]
+        names = [s.get("name", "") for s in unique_streams if s.get("name")]
+        name = min(names, key=lambda x: (len(x), x.lower())) if names else preferred.get("name", "Unnamed Channel")
+        # Prefer a non-variant base ID when available for cleaner EPG matching.
+        ids = [s.get("tvg_id", "") for s in unique_streams if s.get("tvg_id")]
+        tvg_id = preferred.get("tvg_id", "")
+        if ids:
+            base_key = key[3:] if key.startswith("id:") else ""
+            exact_base = next((x for x in ids if x.lower() == base_key), None)
+            if exact_base:
+                tvg_id = exact_base
+        digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:14]
+        channel = {
+            "id": f"stremiotv_{digest}",
+            "key": key,
+            "name": name,
+            "tvg_id": tvg_id,
+            "logo": next((s.get("logo") for s in unique_streams if s.get("logo")), ""),
+            "group": next((s.get("group") for s in unique_streams if s.get("group")), ""),
+            "philly": any(bool(s.get("philly")) for s in unique_streams),
+            "streams": unique_streams,
+        }
+        channel["category"] = classify_channel(channel["name"], channel["group"])
+        channel["favorite"] = is_favorite(channel, favorites)
+        channels.append(channel)
+
+    cat_index = {c: i for i, c in enumerate(CATEGORY_ORDER)}
+    channels.sort(
+        key=lambda c: (
+            0 if c["favorite"] else 1,
+            0 if c["philly"] else 1,
+            cat_index.get(c["category"], 99),
+            c["name"].lower(),
+        )
+    )
+    return channels
+
+def extract_text(elem: ET.Element, tag: str) -> str:
+    child = elem.find(tag)
+    return (child.text or "").strip() if child is not None else ""
+
+
+def parse_epg_channels(epg_path: Path) -> list[dict[str, Any]]:
+    channels: list[dict[str, Any]] = []
+    with gzip.open(epg_path, "rb") as f:
+        for event, elem in ET.iterparse(f, events=("end",)):
+            if elem.tag == "channel":
+                cid = elem.attrib.get("id", "").strip()
+                names = [
+                    (x.text or "").strip()
+                    for x in elem.findall("display-name")
+                    if (x.text or "").strip()
+                ]
+                icon_elem = elem.find("icon")
+                icon = icon_elem.attrib.get("src", "") if icon_elem is not None else ""
+                channels.append({"id": cid, "names": names, "icon": icon})
+                elem.clear()
+            elif elem.tag == "programme":
+                # Channel metadata appears before programmes in normal XMLTV feeds;
+                # stop as soon as the programme section begins to avoid a full first pass.
+                elem.clear()
+                break
+    return channels
+
+
+def callsign_tokens(value: str) -> set[str]:
+    # Useful for local channels such as WPVI / WCAU / KYW / WTXF.
+    tokens = set(re.findall(r"\b[A-Z][A-Z0-9]{2,5}\b", value.upper()))
+    blacklist = {"USA", "HD", "UHD", "FHD", "TV", "NEWS", "SPORTS", "LIVE", "EAST", "WEST"}
+    return {x for x in tokens if x not in blacklist}
+
+
+def make_epg_indexes(epg_channels: list[dict[str, Any]]) -> dict[str, Any]:
+    by_id_lower: dict[str, str] = {}
+    by_id_norm: dict[str, list[str]] = defaultdict(list)
+    by_name_norm: dict[str, list[str]] = defaultdict(list)
+    by_callsign: dict[str, list[str]] = defaultdict(list)
+    info: dict[str, dict[str, Any]] = {}
+
+    for ch in epg_channels:
+        cid = ch["id"]
+        info[cid] = ch
+        by_id_lower[cid.lower()] = cid
+        by_id_norm[norm_id(cid)].append(cid)
+        for n in ch["names"]:
+            if norm(n):
+                by_name_norm[norm(n)].append(cid)
+            for token in callsign_tokens(n):
+                by_callsign[token].append(cid)
+        for token in callsign_tokens(cid):
+            by_callsign[token].append(cid)
+
+    return {
+        "info": info,
+        "by_id_lower": by_id_lower,
+        "by_id_norm": by_id_norm,
+        "by_name_norm": by_name_norm,
+        "by_callsign": by_callsign,
+        "name_keys": list(by_name_norm.keys()),
+    }
+
+
+def unique_one(values: Iterable[str]) -> str | None:
+    values = list(dict.fromkeys(values))
+    return values[0] if len(values) == 1 else None
+
+
+def match_epg_channel(channel: dict[str, Any], indexes: dict[str, Any], aliases: dict[str, Any]) -> tuple[str | None, str, float]:
+    tvg_id = channel.get("tvg_id", "")
+    name = channel.get("name", "")
+
+    manual_id = aliases.get("by_tvg_id", {}).get(tvg_id)
+    if manual_id and manual_id in indexes["info"]:
+        return manual_id, "manual-tvg-id", 1.0
+    manual_name = aliases.get("by_name", {}).get(name)
+    if manual_name and manual_name in indexes["info"]:
+        return manual_name, "manual-name", 1.0
+
+    if tvg_id:
+        exact = indexes["by_id_lower"].get(tvg_id.lower())
+        if exact:
+            return exact, "exact-id", 1.0
+
+        nid = norm_id(tvg_id)
+        exact_norm = unique_one(indexes["by_id_norm"].get(nid, []))
+        if exact_norm:
+            return exact_norm, "normalized-id", 0.995
+
+        # Some playlist IDs carry a variant suffix after @.
+        base = tvg_id.split("@", 1)[0]
+        base_norm = norm_id(base)
+        base_match = unique_one(indexes["by_id_norm"].get(base_norm, []))
+        if base_match:
+            return base_match, "base-id", 0.985
+
+    nname = norm(name)
+    if nname:
+        exact_name = unique_one(indexes["by_name_norm"].get(nname, []))
+        if exact_name:
+            return exact_name, "exact-name", 0.98
+
+    # Local station call-sign match. Only accept a unique EPG channel.
+    local_tokens = callsign_tokens(f"{tvg_id} {name}")
+    for token in sorted(local_tokens, key=len, reverse=True):
+        match = unique_one(indexes["by_callsign"].get(token, []))
+        if match:
+            return match, f"callsign:{token}", 0.96
+
+    # Conservative fuzzy display-name fallback.
+    if nname and len(nname) >= 5:
+        close = difflib.get_close_matches(nname, indexes["name_keys"], n=2, cutoff=0.93)
+        if close:
+            best = close[0]
+            best_score = difflib.SequenceMatcher(None, nname, best).ratio()
+            runner_score = (
+                difflib.SequenceMatcher(None, nname, close[1]).ratio() if len(close) > 1 else 0.0
+            )
+            epg_id = unique_one(indexes["by_name_norm"].get(best, []))
+            if epg_id and (best_score - runner_score >= 0.02 or runner_score 

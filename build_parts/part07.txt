@@ -1,0 +1,37 @@
+s,
+            "sources": config["sources"],
+        }
+        write_json(output / "status.json", status)
+        write_json(output / "diagnostics" / "allowlist-coverage.json", allowlist_coverage)
+        write_json(output / "diagnostics" / "epg-matches.json", matches)
+        write_json(output / "diagnostics" / "epg-unmatched.json", unmatched)
+        write_json(output / "diagnostics" / "channels.json", channel_rows)
+        write_json(output / "diagnostics" / "needs-sources.json", needs_sources)
+        write_json(output / "diagnostics" / "source-results.json", source_results)
+        write_landing_page(output, config, status)
+        write_icon(output)
+        (output / ".nojekyll").write_text("", encoding="utf-8")
+
+        log(f"Build complete: {output}")
+        return status
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    parser.add_argument("--aliases", type=Path, default=DEFAULT_ALIASES)
+    parser.add_argument("--output", type=Path, default=ROOT / "site")
+    parser.add_argument("--fixtures", type=Path, default=None, help="Use local test fixtures instead of network sources")
+    args = parser.parse_args()
+    try:
+        status = build(args.config, args.aliases, args.output, args.fixtures)
+        print(json.dumps(status, indent=2))
+        return 0
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        raise
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,188 @@
+
+    Example: FoxNewsChannel.us@SD and @HD should be one channel, while
+    Fox.us@WTXFTV must remain distinct from other FOX affiliates.
+    """
+    value = (value or "").strip()
+    if "@" not in value:
+        return value.lower()
+    base, suffix = value.rsplit("@", 1)
+    suffix_norm = re.sub(r"[^a-z0-9]+", "", suffix.lower())
+    if suffix_norm in _GENERIC_VARIANTS:
+        return base.lower()
+    return value.lower()
+
+def playlist_key(entry: dict[str, Any]) -> str:
+    tvg_id = entry.get("tvg_id", "").strip()
+    if tvg_id:
+        return "id:" + canonical_tvg_id(tvg_id)
+    return "name:" + norm(entry.get("name", ""))
+
+
+def entry_matches_pattern(entry: dict[str, Any], pattern: str) -> bool:
+    """Conservative allow-list matching for a stream entry.
+
+    Patterns that look like tvg-ids (contain a dot, e.g. ``HGTV.us``) are
+    matched as channel IDs, not arbitrary substrings.  Human labels such as
+    ``FOX 29`` are matched against display metadata.
+    """
+    pattern = (pattern or "").strip()
+    if not pattern:
+        return False
+
+    if "." in pattern:
+        entry_id = (entry.get("tvg_id") or "").strip()
+        if not entry_id:
+            return False
+        return canonical_tvg_id(entry_id) == canonical_tvg_id(pattern)
+
+    target = " ".join(
+        [
+            entry.get("tvg_id", ""),
+            entry.get("name", ""),
+            entry.get("name_raw", ""),
+            entry.get("group", ""),
+        ]
+    )
+    p = norm(pattern)
+    return bool(p) and p in norm(target)
+
+def build_allowlist_coverage(entries: list[dict[str, Any]], config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Report whether each exact tvg-id allow-list entry exists in any source.
+
+    Human-label aliases are intentionally excluded because they are often duplicate
+    spellings for the same channel. This report lets us find channels with zero
+    candidate URLs, which needs-sources.json cannot see because it only covers
+    channels that were actually built.
+    """
+    curation = config.get("curation") or {}
+    patterns: list[tuple[str, str]] = []
+    for kind, key in (("Philadelphia", "philly_allow"), ("National", "national_allow")):
+        for pattern in curation.get(key, []):
+            if "." in (pattern or ""):
+                patterns.append((kind, pattern))
+
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for kind, pattern in patterns:
+        marker = (kind, canonical_tvg_id(pattern))
+        if marker in seen:
+            continue
+        seen.add(marker)
+        matches = [e for e in entries if entry_matches_pattern(e, pattern)]
+        rows.append({
+            "group": kind,
+            "pattern": pattern,
+            "found": bool(matches),
+            "candidate_count": len({e.get("url") for e in matches if e.get("url")}),
+            "sources": sorted({e.get("source") for e in matches if e.get("source")}),
+            "qualities": sorted({e.get("quality") or "Unknown" for e in matches}),
+        })
+    return rows
+
+
+def curate_entries(entries: list[dict[str, Any]], config: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Apply the Philadelphia expanded-basic style allow-list.
+
+    Every source is checked against the Philadelphia allow-list first.  This is
+    important because a backup WPVI/WTXF stream may appear in a national/raw
+    source rather than the dedicated Philadelphia playlist.
+    """
+    curation = config.get("curation") or {}
+    if not curation.get("enabled"):
+        return entries, []
+
+    philly_allow = curation.get("philly_allow", [])
+    national_allow = curation.get("national_allow", [])
+    kept: list[dict[str, Any]] = []
+    dropped: list[dict[str, Any]] = []
+    for entry in entries:
+        if any(entry_matches_pattern(entry, pat) for pat in philly_allow):
+            entry = dict(entry)
+            entry["philly"] = True
+            kept.append(entry)
+        elif any(entry_matches_pattern(entry, pat) for pat in national_allow):
+            kept.append(entry)
+        else:
+            dropped.append(entry)
+    return kept, dropped
+
+def classify_channel(name: str, group: str) -> str:
+    hay = f"{name} {group}".lower()
+
+    mappings: list[tuple[str, tuple[str, ...]]] = [
+        ("Home & Lifestyle", ("hgtv", "magnolia", "food", "cooking", "diy", "home", "lifestyle", "travel channel", "tlc")),
+        ("News", ("news", "weather", "cnn", "msnbc", "cnbc", "fox business", "bloomberg", "c-span", "cspan")),
+        ("Sports", ("sport", "espn", "nfl", "nba", "nhl", "mlb", "golf", "tennis", "racing", "fubo sports", "stadium")),
+        ("Kids", ("kids", "children", "nickelodeon", "nick jr", "cartoon", "disney junior", "pbs kids")),
+        ("Movies", ("movie", "cinema", "film", "movies", "hallmark", "paramount movie")),
+        ("Documentary", ("documentary", "discovery", "history", "science", "smithsonian", "nat geo", "national geographic", "nature")),
+        ("Music", ("music", "mtv", "vevo", "radio", "concert")),
+        ("Entertainment", ("entertainment", "comedy", "reality", "drama", "general", "series", "family", "classic tv")),
+    ]
+    for category, words in mappings:
+        if any(word in hay for word in words):
+            return category
+    return "Other"
+
+
+def is_favorite(channel: dict[str, Any], favorite_patterns: list[str]) -> bool:
+    hay = norm(channel.get("name", "")) + norm_id(channel.get("tvg_id", ""))
+    return any(norm(pat) and norm(pat) in hay for pat in favorite_patterns)
+
+
+def stream_priority(stream: dict[str, Any]) -> tuple[int, int, int, int, str]:
+    """Lower tuple is better; source priority wins before declared quality."""
+    url = stream.get("url", "")
+    source_rank = int(stream.get("priority", 50))
+    philly_rank = 0 if stream.get("philly") else 1
+    https_rank = 0 if url.lower().startswith("https://") else 1
+    # Negative height means higher declared resolution sorts first.
+    return (source_rank, philly_rank, -quality_height(stream), https_rank, url)
+
+
+def _choose_prefer_new_family(candidates: list[dict[str, Any]], selected: list[dict[str, Any]]) -> dict[str, Any] | None:
+    used_families = {s.get("family") for s in selected if s.get("family")}
+    for candidate in candidates:
+        if candidate.get("family") not in used_families:
+            return candidate
+    return candidates[0] if candidates else None
+
+
+def select_streams(streams: list[dict[str, Any]], max_streams: int, config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Pick at most 3 links, targeting two HD and one SD fallback.
+
+    Selection is based on the quality label declared by the upstream playlist;
+    it does not decode/probe every HLS rendition during the static build.
+    """
+    unique: list[dict[str, Any]] = []
+    seen_urls: set[str] = set()
+    for s in sorted(streams, key=stream_priority):
+        url = s.get("url", "")
+        if not url or url in seen_urls:
+            continue
+        seen_urls.add(url)
+        unique.append(s)
+
+    target = config.get("stream_selection") or {}
+    target_hd = min(int(target.get("target_hd", 2)), max_streams)
+    target_sd = min(int(target.get("target_sd", 1)), max(0, max_streams - target_hd))
+    prefer_families = bool(target.get("prefer_distinct_families", True))
+
+    selected: list[dict[str, Any]] = []
+
+    def remaining(predicate):
+        chosen = {id(x) for x in selected}
+        return [s for s in unique if id(s) not in chosen and predicate(s)]
+
+    for hd_index in range(target_hd):
+        candidates = remaining(is_hd_stream)
+        if not candidates:
+            break
+        pick = _choose_prefer_new_family(candidates, selected) if (prefer_families and hd_index > 0) else candidates[0]
+        item = dict(pick)
+        item["slot"] = f"HD {hd_index + 1}"
+        selected.append(item)
+        # Replace the original object in unique with the copied object identity
+        # tracking by URL rather than id for subsequent passes.
+        for i, u in enumerate(unique):
+            if u.get(
