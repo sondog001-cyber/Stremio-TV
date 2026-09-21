@@ -22,14 +22,19 @@ The goal is intentionally **not** to dump every channel from a giant IPTV list i
 
 ## Source stack
 
-Stremio TV v0.3 reads these in priority order:
+Stremio TV reads these in priority order:
 
 1. **IPTV-org US public** — primary national source
 2. **IPTV-org Philadelphia public** — primary local source
 3. **IPTV-org US raw/internal stream list** — preserves alternate URLs that the normal public playlist filters down
 4. **Free-TV/IPTV** — quality-over-quantity backup list that favors mainstream free channels and HD where possible
 5. **FreeCastHub** — small official/public-only backup list
-6. **User manual sources** — optional public URLs you add to `manual_sources.json`
+6. **Philadelphia OTA Relay Mirror (unverified)** — experimental full-linear local affiliate candidates used only for the curated Philadelphia stations
+7. **MoveOnJoy Local Affiliates (unverified)** — secondary full-linear affiliate fallback
+8. **TVPass / InsolenceTVGo (unverified)** — lower-priority national cable backups approved for testing
+9. **User manual sources** — optional public URLs you add to `manual_sources.json`
+
+For Philadelphia locals, the builder prefers full-linear station feeds when available. **WHYY uses an official PBS-hosted live feed.** The OTA-relay and MoveOnJoy sources are explicitly unverified and remain lower priority than vetted/public sources. They are included for testing closer-to-broadcast linear coverage rather than treated as authoritative or guaranteed-stable sources.
 
 EPG:
 
@@ -210,3 +215,26 @@ python -m unittest discover -s tests -v
 - It is **not** used as a runtime playback source in Stremio TV.
 - Stremio TV continues to prefer public/authorized machine-readable sources such as IPTV-org and other free public playlists.
 - If a curated channel is missing, add an authorized public M3U8/M3U source to `manual_sources.json` rather than scraping or embedding third-party premium streams.
+
+
+### Philadelphia linear-feed policy
+
+The preferred order for local stations is:
+
+1. official full-linear station feed when one is available
+2. existing vetted/public source
+3. experimental OTA-style relay candidate
+4. MoveOnJoy affiliate fallback
+5. official 24/7 local-news stream only when a true linear feed is unavailable
+
+Current intent:
+
+- **WPVI / 6ABC** — test OTA-style linear + MoveOnJoy candidates
+- **WCAU / NBC10** — test OTA-style linear + MoveOnJoy candidates
+- **KYW / CBS3** — test OTA-style linear + MoveOnJoy candidates
+- **WHYY / PBS 12** — official PBS-hosted WHYY live feed
+- **WPHL / PHL17** — test OTA-style linear candidate
+- **WPSG / Philly 57** — no credential-free linear candidate approved yet
+- **NBC Sports Philadelphia Plus** — no free linear candidate approved yet
+
+No private usernames, passwords, subscription tokens, or credentials from third-party playlists are committed to this public repository.
