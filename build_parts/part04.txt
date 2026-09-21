@@ -728,6 +728,8 @@ def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | Non
     if channel.get("philly"):
         info_bits.append("Philadelphia local")
     info_bits.append(channel.get("category", "Live TV"))
+    if channel.get("service_type"):
+        info_bits.append(channel["service_type"])
     info_bits.append(
         f"{len(channel.get('streams', []))} stream source"
         + ("s" if len(channel.get("streams", [])) != 1 else "")
