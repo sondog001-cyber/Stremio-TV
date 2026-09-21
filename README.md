@@ -48,17 +48,24 @@ FMHY currently recommends several live-TV web aggregators. Those can be useful w
 
 Pluto, Samsung TV Plus and Plex-style playlists were also reviewed. They are useful free FAST-TV sources, but they mostly add separate FAST channels rather than the Philadelphia/basic-cable networks this project is trying to reproduce, so they are not enabled by default.
 
+## Passed-only playback policy
+
+Before a stream can appear in Stremio, the builder probes the full curated candidate pool. HLS candidates must return a valid playlist and a readable media segment; direct media URLs must be reachable. Only candidates that pass this automated check are eligible for selection, regardless of source family or whether that source is marked unverified.
+
+A failed or untested candidate stays in diagnostics but is not exposed to Stremio.
+
 ## Stream selection: 2 HD + 1 SD
 
 For each curated channel the builder:
 
 1. de-duplicates exact URLs
 2. gives IPTV-org the highest source priority
-3. tries to pick **HD 1**
-4. tries to pick **HD 2**, preferring a different source family where possible
-5. tries to pick one **SD** fallback
-6. if one of those classes is unavailable, fills the remaining slot with the best unused stream
-7. never exposes more than **3 stream choices** for a channel
+3. considers only candidates that passed the automated playback check
+4. tries to pick **HD 1**
+5. tries to pick **HD 2**, preferring a different source family where possible
+6. tries to pick one **SD** fallback
+7. if one of those classes is unavailable, fills the remaining slot with the best unused stream
+8. never exposes more than **3 stream choices** for a channel
 
 The HD/SD classification is based on the **quality declared by the source playlist**. The static builder does not decode every HLS rendition, so a source label is not a promise about the actual encoder output.
 
