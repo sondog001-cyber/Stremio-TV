@@ -223,14 +223,26 @@ def is_favorite(channel: dict[str, Any], favorite_patterns: list[str]) -> bool:
     return any(norm(pat) and norm(pat) in hay for pat in favorite_patterns)
 
 
-def stream_priority(stream: dict[str, Any]) -> tuple[int, int, int, int, str]:
-    """Lower tuple is better; source priority wins before declared quality."""
+def stream_priority(stream: dict[str, Any]) -> tuple[int, int, int, int, int, str]:
+    """Lower tuple is better.
+
+    For local-TV replacement candidates, content identity is more important than
+    source reputation: a passing full-linear feed should beat a news-only FAST
+    channel. Unknown existing sources remain between those two classes.
+    """
     url = stream.get("url", "")
+    content_kind = (stream.get("content_kind") or "unknown").lower()
+    content_rank = {
+        "full-linear": 0,
+        "unknown": 1,
+        "news-fast": 2,
+        "event": 3,
+    }.get(content_kind, 1)
     source_rank = int(stream.get("priority", 50))
     philly_rank = 0 if stream.get("philly") else 1
     https_rank = 0 if url.lower().startswith("https://") else 1
     # Negative height means higher declared resolution sorts first.
-    return (source_rank, philly_rank, -quality_height(stream), https_rank, url)
+    return (content_rank, source_rank, philly_rank, -quality_height(stream), https_rank, url)
 
 
 def _choose_prefer_new_family(candidates: list[dict[str, Any]], selected: list[dict[str, Any]]) -> dict[str, Any] | None:
