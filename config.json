@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV package with Now/Next programme info and only stream candidates that pass the automated builder playback check.",
-    "version": "0.3.7"
+    "description": "Curated Philadelphia-area live TV with Now/Next EPG, official-public and fresh IPTV candidate discovery, and two-probe playback validation before a stream can appear.",
+    "version": "0.3.8"
   },
   "sources": {
     "playlists": [
@@ -270,7 +270,8 @@
       "tvpass",
       "insolence",
       "localbtv-relay",
-      "moveonjoy"
+      "moveonjoy",
+      "iptv-org-issue"
     ],
     "canonical_id_aliases": {
       "MSNBC.us": "MSNOW.us",
@@ -447,6 +448,489 @@
     "require_passed_only": true,
     "timeout_seconds": 6,
     "max_workers": 16,
-    "verify_segment_for_all_candidates": true
+    "verify_segment_for_all_candidates": true,
+    "double_probe": true,
+    "second_probe_delay_seconds": 60
+  },
+  "discovery": {
+    "enabled": true,
+    "official_pages": [
+      {
+        "name": "6ABC Philadelphia 24/7",
+        "tvg_id": "WPVI.us",
+        "page_url": "https://6abc.com/watch/live/",
+        "source": "6ABC Official Public Stream",
+        "priority": -20,
+        "philly": true,
+        "group": "Local",
+        "max_candidates": 4,
+        "content_note": "Official free 6ABC streaming channel; may be news/FAST rather than full WPVI-DT1 linear."
+      },
+      {
+        "name": "NBC10 Philadelphia News",
+        "tvg_id": "WCAU.us",
+        "page_url": "https://www.nbcphiladelphia.com/watch/",
+        "source": "NBC10 Official Public Stream",
+        "priority": -20,
+        "philly": true,
+        "group": "Local",
+        "max_candidates": 4,
+        "content_note": "Official free NBC10 streaming channel; may differ from full WCAU-DT1 linear."
+      },
+      {
+        "name": "CBS News Philadelphia",
+        "tvg_id": "KYW.us",
+        "page_url": "https://www.cbsnews.com/philadelphia/live/",
+        "source": "CBS News Philadelphia Official",
+        "priority": -20,
+        "philly": true,
+        "group": "Local",
+        "max_candidates": 4,
+        "content_note": "Official free CBS News Philadelphia stream; not necessarily full KYW/CBS3 linear."
+      },
+      {
+        "name": "WHYY",
+        "tvg_id": "WHYY.us",
+        "page_url": "https://video.whyy.org/livestream/",
+        "source": "WHYY / PBS Official Page",
+        "priority": -20,
+        "philly": true,
+        "group": "Local",
+        "max_candidates": 4,
+        "content_note": "Official WHYY livestream; PBS service-area geo rules may prevent GitHub-runner validation."
+      },
+      {
+        "name": "PHL17+",
+        "tvg_id": "WPHL.us",
+        "page_url": "https://phl17.com/",
+        "source": "PHL17 Official Public Page",
+        "priority": -15,
+        "philly": true,
+        "group": "Local",
+        "max_candidates": 4,
+        "content_note": "Official PHL17 web/CTV lead; candidate accepted only if a public HLS is plainly exposed and passes both probes."
+      }
+    ],
+    "iptv_org_issues": {
+      "enabled": true,
+      "per_page": 100,
+      "max_urls_per_issue": 3,
+      "timeout_seconds": 20,
+      "priority": 6,
+      "targets": [
+        {
+          "tvg_id": "WPVI.us",
+          "name": "6ABC / WPVI",
+          "aliases": [
+            "WPVI",
+            "6ABC",
+            "ABC 6"
+          ],
+          "philly": true,
+          "group": "Local"
+        },
+        {
+          "tvg_id": "WCAU.us",
+          "name": "NBC10 / WCAU",
+          "aliases": [
+            "WCAU",
+            "NBC10",
+            "NBC 10"
+          ],
+          "philly": true,
+          "group": "Local"
+        },
+        {
+          "tvg_id": "KYW.us",
+          "name": "CBS3 / KYW",
+          "aliases": [
+            "KYW",
+            "CBS3",
+            "CBS 3"
+          ],
+          "philly": true,
+          "group": "Local"
+        },
+        {
+          "tvg_id": "WHYY.us",
+          "name": "WHYY / PBS 12",
+          "aliases": [
+            "WHYY",
+            "PBS 12",
+            "PBS Philadelphia"
+          ],
+          "philly": true,
+          "group": "Local"
+        },
+        {
+          "tvg_id": "WPHL.us",
+          "name": "PHL17 / WPHL",
+          "aliases": [
+            "WPHL",
+            "PHL17"
+          ],
+          "philly": true,
+          "group": "Local"
+        },
+        {
+          "tvg_id": "WPSG.us",
+          "name": "Philly 57 / WPSG",
+          "aliases": [
+            "WPSG",
+            "Philly 57"
+          ],
+          "philly": true,
+          "group": "Local"
+        },
+        {
+          "tvg_id": "CNN.us",
+          "name": "CNN",
+          "aliases": [
+            "CNN"
+          ],
+          "philly": false,
+          "group": "News"
+        },
+        {
+          "tvg_id": "NewsNation.us",
+          "name": "NewsNation",
+          "aliases": [
+            "NewsNation"
+          ],
+          "philly": false,
+          "group": "News"
+        },
+        {
+          "tvg_id": "WeatherChannel.us",
+          "name": "The Weather Channel",
+          "aliases": [
+            "Weather Channel",
+            "TWC"
+          ],
+          "philly": false,
+          "group": "News"
+        },
+        {
+          "tvg_id": "ESPN.us",
+          "name": "ESPN",
+          "aliases": [
+            "ESPN"
+          ],
+          "philly": false,
+          "group": "Sports"
+        },
+        {
+          "tvg_id": "ESPN2.us",
+          "name": "ESPN2",
+          "aliases": [
+            "ESPN2"
+          ],
+          "philly": false,
+          "group": "Sports"
+        },
+        {
+          "tvg_id": "FoxSports2.us",
+          "name": "Fox Sports 2",
+          "aliases": [
+            "FS2",
+            "Fox Sports 2"
+          ],
+          "philly": false,
+          "group": "Sports"
+        },
+        {
+          "tvg_id": "NFLNetwork.us",
+          "name": "NFL Network",
+          "aliases": [
+            "NFL Network"
+          ],
+          "philly": false,
+          "group": "Sports"
+        },
+        {
+          "tvg_id": "MLBNetwork.us",
+          "name": "MLB Network",
+          "aliases": [
+            "MLB Network"
+          ],
+          "philly": false,
+          "group": "Sports"
+        },
+        {
+          "tvg_id": "GolfChannel.us",
+          "name": "Golf Channel",
+          "aliases": [
+            "Golf Channel"
+          ],
+          "philly": false,
+          "group": "Sports"
+        },
+        {
+          "tvg_id": "CBSSportsNetwork.us",
+          "name": "CBS Sports Network",
+          "aliases": [
+            "CBS Sports Network",
+            "CBSSN"
+          ],
+          "philly": false,
+          "group": "Sports"
+        },
+        {
+          "tvg_id": "NBCSportsPhiladelphia.us",
+          "name": "NBC Sports Philadelphia",
+          "aliases": [
+            "NBC Sports Philadelphia",
+            "NBCSP"
+          ],
+          "philly": true,
+          "group": "Sports"
+        },
+        {
+          "tvg_id": "NBCSportsPhiladelphiaPlus.us",
+          "name": "NBC Sports Philadelphia Plus",
+          "aliases": [
+            "NBC Sports Philadelphia Plus",
+            "NBCSP+"
+          ],
+          "philly": true,
+          "group": "Sports"
+        },
+        {
+          "tvg_id": "FXX.us",
+          "name": "FXX",
+          "aliases": [
+            "FXX"
+          ],
+          "philly": false,
+          "group": "Entertainment"
+        },
+        {
+          "tvg_id": "ComedyCentral.us",
+          "name": "Comedy Central",
+          "aliases": [
+            "Comedy Central"
+          ],
+          "philly": false,
+          "group": "Entertainment"
+        },
+        {
+          "tvg_id": "TVLand.us",
+          "name": "TV Land",
+          "aliases": [
+            "TV Land"
+          ],
+          "philly": false,
+          "group": "Entertainment"
+        },
+        {
+          "tvg_id": "BET.us",
+          "name": "BET",
+          "aliases": [
+            "BET"
+          ],
+          "philly": false,
+          "group": "Entertainment"
+        },
+        {
+          "tvg_id": "OWN.us",
+          "name": "OWN",
+          "aliases": [
+            "OWN",
+            "Oprah Winfrey Network"
+          ],
+          "philly": false,
+          "group": "Entertainment"
+        },
+        {
+          "tvg_id": "WEtv.us",
+          "name": "WE tv",
+          "aliases": [
+            "WE tv",
+            "WeTV"
+          ],
+          "philly": false,
+          "group": "Entertainment"
+        },
+        {
+          "tvg_id": "SundanceTV.us",
+          "name": "SundanceTV",
+          "aliases": [
+            "SundanceTV",
+            "Sundance TV"
+          ],
+          "philly": false,
+          "group": "Entertainment"
+        },
+        {
+          "tvg_id": "Pop.us",
+          "name": "Pop",
+          "aliases": [
+            "Pop TV",
+            "Pop"
+          ],
+          "philly": false,
+          "group": "Entertainment"
+        },
+        {
+          "tvg_id": "HGTV.us",
+          "name": "HGTV",
+          "aliases": [
+            "HGTV"
+          ],
+          "philly": false,
+          "group": "Home & Lifestyle"
+        },
+        {
+          "tvg_id": "MagnoliaNetwork.us",
+          "name": "Magnolia Network",
+          "aliases": [
+            "Magnolia Network"
+          ],
+          "philly": false,
+          "group": "Home & Lifestyle"
+        },
+        {
+          "tvg_id": "FoodNetwork.us",
+          "name": "Food Network",
+          "aliases": [
+            "Food Network"
+          ],
+          "philly": false,
+          "group": "Home & Lifestyle"
+        },
+        {
+          "tvg_id": "TLC.us",
+          "name": "TLC",
+          "aliases": [
+            "TLC"
+          ],
+          "philly": false,
+          "group": "Home & Lifestyle"
+        },
+        {
+          "tvg_id": "TravelChannel.us",
+          "name": "Travel Channel",
+          "aliases": [
+            "Travel Channel"
+          ],
+          "philly": false,
+          "group": "Home & Lifestyle"
+        },
+        {
+          "tvg_id": "CookingChannel.us",
+          "name": "Cooking Channel",
+          "aliases": [
+            "Cooking Channel"
+          ],
+          "philly": false,
+          "group": "Home & Lifestyle"
+        },
+        {
+          "tvg_id": "HallmarkMystery.us",
+          "name": "Hallmark Mystery",
+          "aliases": [
+            "Hallmark Mystery"
+          ],
+          "philly": false,
+          "group": "Movies"
+        },
+        {
+          "tvg_id": "LMN.us",
+          "name": "LMN",
+          "aliases": [
+            "LMN",
+            "Lifetime Movie Network",
+            "Lifetime Movies Network"
+          ],
+          "philly": false,
+          "group": "Movies"
+        },
+        {
+          "tvg_id": "DiscoveryChannel.us",
+          "name": "Discovery Channel",
+          "aliases": [
+            "Discovery Channel",
+            "Discovery"
+          ],
+          "philly": false,
+          "group": "Documentary"
+        },
+        {
+          "tvg_id": "NationalGeographicWild.us",
+          "name": "Nat Geo Wild",
+          "aliases": [
+            "Nat Geo Wild",
+            "National Geographic Wild"
+          ],
+          "philly": false,
+          "group": "Documentary"
+        },
+        {
+          "tvg_id": "AnimalPlanet.us",
+          "name": "Animal Planet",
+          "aliases": [
+            "Animal Planet"
+          ],
+          "philly": false,
+          "group": "Documentary"
+        },
+        {
+          "tvg_id": "ScienceChannel.us",
+          "name": "Science Channel",
+          "aliases": [
+            "Science Channel"
+          ],
+          "philly": false,
+          "group": "Documentary"
+        },
+        {
+          "tvg_id": "InvestigationDiscovery.us",
+          "name": "Investigation Discovery",
+          "aliases": [
+            "Investigation Discovery",
+            "ID"
+          ],
+          "philly": false,
+          "group": "Documentary"
+        },
+        {
+          "tvg_id": "SmithsonianChannel.us",
+          "name": "Smithsonian Channel",
+          "aliases": [
+            "Smithsonian Channel"
+          ],
+          "philly": false,
+          "group": "Documentary"
+        },
+        {
+          "tvg_id": "Boomerang.us",
+          "name": "Boomerang",
+          "aliases": [
+            "Boomerang"
+          ],
+          "philly": false,
+          "group": "Kids"
+        },
+        {
+          "tvg_id": "FXMovieChannel.us",
+          "name": "FX Movie Channel",
+          "aliases": [
+            "FX Movie Channel",
+            "FXM"
+          ],
+          "philly": false,
+          "group": "Movies"
+        },
+        {
+          "tvg_id": "HallmarkFamily.us",
+          "name": "Hallmark Family",
+          "aliases": [
+            "Hallmark Family"
+          ],
+          "philly": false,
+          "group": "Movies"
+        }
+      ]
+    }
   }
 }
