@@ -35,6 +35,7 @@
             "streams": len(manual_streams),
         })
 
+        entries = canonicalize_approved_sources(entries, config)
         allowlist_coverage = build_allowlist_coverage(entries, config)
         entries, filtered_entries = curate_entries(entries, config)
         if (config.get("curation") or {}).get("enabled"):
