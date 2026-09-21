@@ -1,0 +1,172 @@
+                        source_results.append(result)
+                        log(f"Skipping optional fixture {fixture_name} for {src['name']}")
+                        continue
+                else:
+                    playlist_path = temp_dir / f"playlist-{idx}.m3u"
+                    download(src["url"], playlist_path)
+
+                text = playlist_path.read_text(encoding="utf-8", errors="replace")
+                parsed = parse_m3u(text, src)
+                result["streams"] = len(parsed)
+                result["status"] = "ok"
+                log(f"Parsed {len(parsed):,} streams from {src['name']}")
+                entries.extend(parsed)
+            except Exception as exc:
+                result["status"] = "failed"
+                result["error"] = str(exc)
+                if required:
+                    source_results.append(result)
+                    raise
+                log(f"WARNING: optional source {src['name']} failed: {exc}")
+            finally:
+                if result not in source_results:
+                    source_results.append(result)
+
+        manual_streams = load_manual_streams(config, config_path)
+        if manual_streams:
+            log(f"Loaded {len(manual_streams):,} user-provided manual streams")
+            entries.extend(manual_streams)
+        source_results.append({
+            "name": "User manual sources",
+            "family": "manual",
+            "url": None,
+            "required": False,
+            "status": "ok",
+            "streams": len(manual_streams),
+        })
+
+        allowlist_coverage = build_allowlist_coverage(entries, config)
+        entries, filtered_entries = curate_entries(entries, config)
+        if (config.get("curation") or {}).get("enabled"):
+            log(f"Curated playlist: kept {len(entries):,} streams and filtered {len(filtered_entries):,}")
+
+        channels = merge_channels(entries, config.get("favorites", []), max_streams, config)
+        log(f"Merged into {len(channels):,} channels")
+
+        if fixtures:
+            epg_path = fixtures / "epg.xml.gz"
+        else:
+            epg_path = temp_dir / "epg.xml.gz"
+            download(config["sources"]["epg"], epg_path, timeout=180)
+
+        epg_channels = parse_epg_channels(epg_path)
+        log(f"Loaded {len(epg_channels):,} EPG channel definitions")
+        indexes = make_epg_indexes(epg_channels)
+
+        matches: list[dict[str, Any]] = []
+        unmatched: list[dict[str, Any]] = []
+        epg_to_channels: dict[str, list[str]] = defaultdict(list)
+        channel_epg: dict[str, str] = {}
+        for ch in channels:
+            epg_id, method, score = match_epg_channel(ch, indexes, aliases)
+            row = {
+                "channel_id": ch["id"],
+                "name": ch["name"],
+                "tvg_id": ch["tvg_id"],
+                "epg_id": epg_id,
+                "method": method,
+                "score": round(score, 4),
+            }
+            if epg_id:
+                matches.append(row)
+                epg_to_channels[epg_id].append(ch["id"])
+                channel_epg[ch["id"]] = epg_id
+                if not ch.get("logo"):
+                    icon = indexes["info"].get(epg_id, {}).get("icon", "")
+                    if icon:
+                        ch["logo"] = icon
+            else:
+                unmatched.append(row)
+
+        log(f"EPG matched {len(matches):,}/{len(channels):,} channels")
+        schedules, dates = build_program_index(epg_path, epg_to_channels)
+
+        # Main EPG catalog + normal channel list.
+        write_paginated_catalog(output, "channels", channels, page_size)
+        write_epg_pages(output, channels, schedules, dates, page_size)
+
+        # Favorites/category catalogs.
+        for cat in config.get("catalogs", []):
+            category = cat["category"]
+            if category == "Favorites":
+                subset = [c for c in channels if c["favorite"]]
+            elif category == "Philadelphia Locals":
+                subset = [c for c in channels if c["philly"]]
+            else:
+                subset = [c for c in channels if c["category"] == category]
+            write_paginated_catalog(output, cat["id"], subset, page_size)
+
+        # Meta and stream endpoints.
+        now = dt.datetime.now(UTC)
+        horizon = now + dt.timedelta(hours=int(config.get("meta_schedule_hours", 30)))
+        for ch in channels:
+            nearby: list[dict[str, Any]] = []
+            for day_programmes in schedules.get(ch["id"], {}).values():
+                for p in day_programmes:
+                    p_start = dt.datetime.fromisoformat(p["startTime"].replace("Z", "+00:00"))
+                    p_end = dt.datetime.fromisoformat(p["endTime"].replace("Z", "+00:00"))
+                    if p_end >= now - dt.timedelta(hours=2) and p_start <= horizon:
+                        nearby.append(p)
+            dedup = {p["id"]: p for p in nearby}
+            nearby = sorted(dedup.values(), key=lambda p: p["startTime"])
+            write_json(output / "meta" / "tv" / f"{ch['id']}.json", {"meta": channel_meta(ch, nearby)})
+            streams = [stream_object(s, i + 1) for i, s in enumerate(ch["streams"])]
+            write_json(output / "stream" / "tv" / f"{ch['id']}.json", {"streams": streams})
+
+        manifest = build_manifest(config)
+        public_base = derive_public_base()
+        if public_base:
+            manifest["logo"] = f"{public_base}/icon.svg"
+        write_json(output / "manifest.json", manifest)
+
+        target = config.get("stream_selection") or {}
+        target_hd = int(target.get("target_hd", 2))
+        target_sd = int(target.get("target_sd", 1))
+        channel_rows: list[dict[str, Any]] = []
+        needs_sources: list[dict[str, Any]] = []
+        for c in channels:
+            hd_count = sum(1 for s in c["streams"] if is_hd_stream(s))
+            sd_count = sum(1 for s in c["streams"] if is_sd_stream(s))
+            row = {
+                "id": c["id"],
+                "name": c["name"],
+                "tvg_id": c["tvg_id"],
+                "category": c["category"],
+                "favorite": c["favorite"],
+                "philly": c["philly"],
+                "stream_count": len(c["streams"]),
+                "hd_count": hd_count,
+                "sd_count": sd_count,
+                "sources": [s.get("source") for s in c["streams"]],
+                "families": sorted({s.get("family") for s in c["streams"] if s.get("family")}),
+                "qualities": [s.get("quality") or "Unknown" for s in c["streams"]],
+                "epg_id": channel_epg.get(c["id"]),
+            }
+            channel_rows.append(row)
+            missing_hd = max(0, target_hd - hd_count)
+            missing_sd = max(0, target_sd - sd_count)
+            if missing_hd or missing_sd:
+                needs_sources.append({
+                    **row,
+                    "missing_hd": missing_hd,
+                    "missing_sd": missing_sd,
+                })
+
+        total_streams = sum(len(c["streams"]) for c in channels)
+        status = {
+            "built_at": iso_z(dt.datetime.now(UTC)),
+            "channels": len(channels),
+            "total_streams": total_streams,
+            "filtered_stream_entries": len(filtered_entries),
+            "curation_enabled": bool((config.get("curation") or {}).get("enabled")),
+            "philly_channels": sum(1 for c in channels if c["philly"]),
+            "favorite_channels": sum(1 for c in channels if c["favorite"]),
+            "epg_channels_available": len(epg_channels),
+            "epg_matched_channels": len(matches),
+            "epg_unmatched_channels": len(unmatched),
+            "epg_dates": sorted(dates),
+            "public_base_url": public_base,
+            "stream_target": {"hd": target_hd, "sd": target_sd, "max": max_streams},
+            "channels_needing_sources": len(needs_sources),
+            "allowlist_ids_missing_entirely": sum(1 for r in allowlist_coverage if not r["found"]),
+            "source_results": source_result
