@@ -14,7 +14,7 @@ on:
       - "research-sources.json"
       - ".github/workflows/build-and-deploy.yml"
   schedule:
-    - cron: "23 */6 * * *"
+    - cron: "*/15 * * * *"
 
 permissions:
   contents: read
