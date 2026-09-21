@@ -2,7 +2,7 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with Now/Next EPG, expanded public FAST/source discovery, and two-probe playback validation before a stream can appear.",
+    "description": "Curated Philadelphia-area live TV with Now/Next EPG, expanded public FAST playlist discovery, targeted fresh-candidate discovery, and two-probe playback validation before a stream can appear.",
     "version": "0.3.9"
   },
   "sources": {
@@ -263,6 +263,78 @@
         "philly": false,
         "priority": 18,
         "required": false
+      },
+      {
+        "name": "Apsattv Roku Channel",
+        "family": "apsattv-fast",
+        "url": "https://www.apsattv.com/rok.m3u",
+        "philly": false,
+        "priority": 12,
+        "required": false,
+        "fixture": "apsattv-roku.m3u"
+      },
+      {
+        "name": "Apsattv Samsung TV Plus US",
+        "family": "apsattv-fast",
+        "url": "https://www.apsattv.com/ssungusa.m3u",
+        "philly": false,
+        "priority": 12,
+        "required": false,
+        "fixture": "apsattv-samsung-us.m3u"
+      },
+      {
+        "name": "Apsattv Whale TV+",
+        "family": "apsattv-fast",
+        "url": "https://www.apsattv.com/whaletvplus_all.m3u",
+        "philly": false,
+        "priority": 12,
+        "required": false,
+        "fixture": "apsattv-whaletv.m3u"
+      },
+      {
+        "name": "Buddy FAST Pluto TV US",
+        "family": "buddy-fast",
+        "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/main/playlists/plutotv_us.m3u",
+        "philly": false,
+        "priority": 13,
+        "required": false,
+        "fixture": "buddy-pluto-us.m3u"
+      },
+      {
+        "name": "Buddy FAST Roku",
+        "family": "buddy-fast",
+        "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/main/playlists/roku_all.m3u",
+        "philly": false,
+        "priority": 13,
+        "required": false,
+        "fixture": "buddy-roku.m3u"
+      },
+      {
+        "name": "Buddy FAST Tubi",
+        "family": "buddy-fast",
+        "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/main/playlists/tubi_all.m3u",
+        "philly": false,
+        "priority": 13,
+        "required": false,
+        "fixture": "buddy-tubi.m3u"
+      },
+      {
+        "name": "Buddy FAST Plex",
+        "family": "buddy-fast",
+        "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/main/playlists/plex_all.m3u",
+        "philly": false,
+        "priority": 13,
+        "required": false,
+        "fixture": "buddy-plex.m3u"
+      },
+      {
+        "name": "Buddy FAST Samsung TV Plus US",
+        "family": "buddy-fast",
+        "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/main/playlists/samsungtvplus_us.m3u",
+        "philly": false,
+        "priority": 13,
+        "required": false,
+        "fixture": "buddy-samsung-us.m3u"
       }
     ],
     "epg": "https://vcicio.github.io/US-EPG/merged_epg.xml.gz"
@@ -470,7 +542,9 @@
       "apsattv-metax",
       "apsattv-galxy",
       "apsattv-orka",
-      "rw-fast"
+      "rw-fast",
+      "apsattv-fast",
+      "buddy-fast"
     ],
     "canonical_id_aliases": {
       "MSNBC.us": "MSNOW.us",
@@ -1215,6 +1289,20 @@
         "url": "https://welcome.tvapp.co/channels",
         "source_type": "subscription-directory",
         "note": "Inventory/research lead only. Do not use authenticated subscriber streams or credentials; only independently public media URLs may become candidates."
+      }
+    ],
+    "research_indexes": [
+      {
+        "name": "TheTVApp channel directory",
+        "url": "https://thetvapp.tube/channels/",
+        "type": "web-directory",
+        "note": "Research-only directory; not treated as a stream source unless a stable public machine-readable candidate is discovered."
+      },
+      {
+        "name": "TVAPP channel directory",
+        "url": "https://welcome.tvapp.co/channels",
+        "type": "web-directory",
+        "note": "Research-only directory; not treated as a stream source unless a stable public machine-readable candidate is discovered."
       }
     ]
   }
