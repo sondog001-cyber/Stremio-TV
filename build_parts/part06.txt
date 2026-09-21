@@ -35,6 +35,11 @@
             "streams": len(manual_streams),
         })
 
+        discovered_entries, discovery_results = discover_dynamic_streams(config)
+        if discovered_entries:
+            log(f"Adding {len(discovered_entries):,} dynamically discovered candidates")
+            entries.extend(discovered_entries)
+
         entries = canonicalize_approved_sources(entries, config)
         allowlist_coverage = build_allowlist_coverage(entries, config)
         entries, filtered_entries = curate_entries(entries, config)
@@ -194,4 +199,6 @@
             },
             "allowlist_ids_missing_entirely": sum(1 for r in allowlist_coverage if not r["found"]),
             "allowlist_ids_without_passing_stream": sum(1 for r in healthy_allowlist_coverage if not r["found"]),
+            "dynamic_discovery_candidates": len(discovered_entries),
+            "dynamic_discovery_events": len(discovery_results),
             "source_results": source_result
