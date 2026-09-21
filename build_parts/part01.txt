@@ -15,6 +15,7 @@ Runtime dependencies: Python standard library only.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import datetime as dt
 import difflib
 import gzip
@@ -26,11 +27,12 @@ import re
 import shutil
 import sys
 import tempfile
+import time
 import unicodedata
 import urllib.error
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-from zoneinfo import ZoneInfo
 from zoneinfo import ZoneInfo
 from collections import defaultdict
 from pathlib import Path
@@ -41,7 +43,6 @@ DEFAULT_CONFIG = ROOT / "config.json"
 DEFAULT_ALIASES = ROOT / "aliases.json"
 USER_AGENT = "StremioTV-Builder/0.3 (+GitHub Actions)"
 UTC = dt.timezone.utc
-PHILLY_TZ = ZoneInfo("America/New_York")
 PHILLY_TZ = ZoneInfo("America/New_York")
 
 ATTR_RE = re.compile(r'([A-Za-z0-9_-]+)="([^"]*)"')
