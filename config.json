@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with strict exact-channel identity matching, expanded public discovery, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.10"
+    "description": "Curated Philadelphia-area live TV with strict exact-channel identity matching, expanded premium-network candidate coverage, Now/Next EPG, and two-probe playback validation.",
+    "version": "0.3.11"
   },
   "sources": {
     "playlists": [
@@ -512,7 +512,27 @@
       "HallmarkFamily.us",
       "AE.us",
       "BloombergTV.us",
-      "ACCNetwork.us"
+      "ACCNetwork.us",
+      "Showtime.us",
+      "StarzCinema.us",
+      "StarzComedy.us",
+      "StarzKidsFamily.us",
+      "StarzEdge.us",
+      "StarzEncoreSpanish.us",
+      "CinemaxHits.us",
+      "CinemaxClassics.us",
+      "HBOHits.us",
+      "HBOMovies.us",
+      "MTV2.us",
+      "TeenNick.us",
+      "VICETV.us",
+      "OutdoorChannel.us",
+      "Reelz.us",
+      "MLBStrikeZone.us",
+      "RFDTV.us",
+      "NewsmaxTV.us",
+      "OneAmericaNewsNetwork.us",
+      "HallmarkMoviesMore.us"
     ],
     "approved_unverified_families": [
       "tvpass",
@@ -1605,6 +1625,106 @@
       "name": "Hallmark Family",
       "category": "Movies",
       "service_type": "Premium linear network"
+    },
+    "Showtime.us": {
+      "name": "Showtime",
+      "category": "Movies",
+      "service_type": "Premium movie network"
+    },
+    "StarzCinema.us": {
+      "name": "Starz Cinema",
+      "category": "Movies",
+      "service_type": "Premium movie network"
+    },
+    "StarzComedy.us": {
+      "name": "Starz Comedy",
+      "category": "Movies",
+      "service_type": "Premium movie network"
+    },
+    "StarzKidsFamily.us": {
+      "name": "Starz Kids & Family",
+      "category": "Movies",
+      "service_type": "Premium movie network"
+    },
+    "StarzEdge.us": {
+      "name": "Starz Edge",
+      "category": "Movies",
+      "service_type": "Premium movie network"
+    },
+    "StarzEncoreSpanish.us": {
+      "name": "Starz Encore Spanish",
+      "category": "Movies",
+      "service_type": "Premium movie network"
+    },
+    "CinemaxHits.us": {
+      "name": "Cinemax Hits",
+      "category": "Movies",
+      "service_type": "Premium movie network"
+    },
+    "CinemaxClassics.us": {
+      "name": "Cinemax Classics",
+      "category": "Movies",
+      "service_type": "Premium movie network"
+    },
+    "HBOHits.us": {
+      "name": "HBO Hits",
+      "category": "Movies",
+      "service_type": "Premium movie network"
+    },
+    "HBOMovies.us": {
+      "name": "HBO Movies",
+      "category": "Movies",
+      "service_type": "Premium movie network"
+    },
+    "MTV2.us": {
+      "name": "MTV2",
+      "category": "Music",
+      "service_type": "Premium linear network"
+    },
+    "TeenNick.us": {
+      "name": "TeenNick",
+      "category": "Kids",
+      "service_type": "Premium linear network"
+    },
+    "VICETV.us": {
+      "name": "VICE TV",
+      "category": "Entertainment",
+      "service_type": "Premium linear network"
+    },
+    "OutdoorChannel.us": {
+      "name": "Outdoor Channel",
+      "category": "Sports",
+      "service_type": "Premium linear network"
+    },
+    "Reelz.us": {
+      "name": "Reelz",
+      "category": "Entertainment",
+      "service_type": "Premium linear network"
+    },
+    "MLBStrikeZone.us": {
+      "name": "MLB Strike Zone",
+      "category": "Sports",
+      "service_type": "Premium sports network"
+    },
+    "RFDTV.us": {
+      "name": "RFD-TV",
+      "category": "Entertainment",
+      "service_type": "Premium linear network"
+    },
+    "NewsmaxTV.us": {
+      "name": "Newsmax TV",
+      "category": "News",
+      "service_type": "Premium linear network"
+    },
+    "OneAmericaNewsNetwork.us": {
+      "name": "One America News Network",
+      "category": "News",
+      "service_type": "Premium linear network"
+    },
+    "HallmarkMoviesMore.us": {
+      "name": "Hallmark Movies & More",
+      "category": "Movies",
+      "service_type": "Premium movie network"
     }
   }
 }
