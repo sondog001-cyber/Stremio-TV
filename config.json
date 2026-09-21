@@ -271,7 +271,8 @@
       "insolence",
       "localbtv-relay",
       "moveonjoy",
-      "iptv-org-issue"
+      "iptv-org-issue",
+      "research-seed"
     ],
     "canonical_id_aliases": {
       "MSNBC.us": "MSNOW.us",
@@ -464,7 +465,8 @@
         "philly": true,
         "group": "Local",
         "max_candidates": 4,
-        "content_note": "Official free 6ABC streaming channel; may be news/FAST rather than full WPVI-DT1 linear."
+        "content_note": "Official free 6ABC streaming channel; may be news/FAST rather than full WPVI-DT1 linear.",
+        "content_kind": "news-fast"
       },
       {
         "name": "NBC10 Philadelphia News",
@@ -475,7 +477,8 @@
         "philly": true,
         "group": "Local",
         "max_candidates": 4,
-        "content_note": "Official free NBC10 streaming channel; may differ from full WCAU-DT1 linear."
+        "content_note": "Official free NBC10 streaming channel; may differ from full WCAU-DT1 linear.",
+        "content_kind": "news-fast"
       },
       {
         "name": "CBS News Philadelphia",
@@ -486,7 +489,8 @@
         "philly": true,
         "group": "Local",
         "max_candidates": 4,
-        "content_note": "Official free CBS News Philadelphia stream; not necessarily full KYW/CBS3 linear."
+        "content_note": "Official free CBS News Philadelphia stream; not necessarily full KYW/CBS3 linear.",
+        "content_kind": "news-fast"
       },
       {
         "name": "WHYY",
@@ -497,7 +501,8 @@
         "philly": true,
         "group": "Local",
         "max_candidates": 4,
-        "content_note": "Official WHYY livestream; PBS service-area geo rules may prevent GitHub-runner validation."
+        "content_note": "Official WHYY livestream; PBS service-area geo rules may prevent GitHub-runner validation.",
+        "content_kind": "full-linear"
       },
       {
         "name": "PHL17+",
@@ -508,7 +513,8 @@
         "philly": true,
         "group": "Local",
         "max_candidates": 4,
-        "content_note": "Official PHL17 web/CTV lead; candidate accepted only if a public HLS is plainly exposed and passes both probes."
+        "content_note": "Official PHL17 web/CTV lead; candidate accepted only if a public HLS is plainly exposed and passes both probes.",
+        "content_kind": "unknown"
       }
     ],
     "iptv_org_issues": {
@@ -931,6 +937,60 @@
           "group": "Movies"
         }
       ]
-    }
+    },
+    "seed_candidates": [
+      {
+        "name": "NBC Philadelphia News",
+        "tvg_id": "WCAU.us",
+        "url": "https://nbcu-nbcphiladelphianews-firetv.amagi.tv/playlist.m3u8",
+        "source": "NBCU / Fire TV authorized FAST",
+        "source_type": "authorized-fast",
+        "priority": 2,
+        "philly": true,
+        "group": "Local",
+        "content_kind": "news-fast",
+        "content_note": "NBC Philadelphia News FAST channel, not full WCAU-DT1 linear.",
+        "research_url": "https://www.nbcphiladelphia.com/watch/"
+      },
+      {
+        "name": "CBS News Philadelphia",
+        "tvg_id": "KYW.us",
+        "url": "https://cbsn-phi.cbsnstream.cbsnews.com/out/v1/5c9ad3e215984b0e9ad845b335216b72/master.m3u8",
+        "source": "CBS News Philadelphia Official CDN",
+        "source_type": "official-cdn",
+        "priority": 1,
+        "philly": true,
+        "group": "Local",
+        "content_kind": "news-fast",
+        "content_note": "CBS News Philadelphia 24/7, not full KYW/CBS3 linear.",
+        "research_url": "https://www.cbsnews.com/philadelphia/live/"
+      },
+      {
+        "name": "CBS 3 Philadelphia / KYW",
+        "tvg_id": "KYW.us",
+        "url": "https://stream.cammonitorplus.net/1814/index.m3u8",
+        "source": "Public research lead (unverified)",
+        "source_type": "public-third-party",
+        "priority": 8,
+        "philly": true,
+        "group": "Local",
+        "content_kind": "full-linear",
+        "content_note": "Claimed KYW/CBS3 full-linear candidate; exposed only if both health probes pass.",
+        "research_url": "https://tingfm.com/tv/101452"
+      },
+      {
+        "name": "PHL17 / WPHL",
+        "tvg_id": "WPHL.us",
+        "url": "https://restream-live.realiptv.to/live/33741215/82527298/433308.m3u8",
+        "source": "Public research lead (unverified)",
+        "source_type": "public-third-party",
+        "priority": 8,
+        "philly": true,
+        "group": "Local",
+        "content_kind": "full-linear",
+        "content_note": "Claimed WPHL-DT1 full-linear candidate; exposed only if both health probes pass.",
+        "research_url": "https://tingfm.com/tv/101402"
+      }
+    ]
   }
 }
