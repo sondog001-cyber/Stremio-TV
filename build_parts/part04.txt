@@ -138,6 +138,8 @@ def _short_source_name(stream: dict[str, Any]) -> str:
         "moveonjoy": "MoveOnJoy",
         "tvpass": "TVPass",
         "insolence": "InsolenceTV",
+        "iptv-org-issue": "IPTV-org New",
+        "official-page": "Official",
         "manual": "Manual",
     }
     if family in mapping:
@@ -145,6 +147,235 @@ def _short_source_name(stream: dict[str, Any]) -> str:
     source = stream.get("source") or "IPTV"
     source = re.sub(r"\s*\(Unverified\)\s*$", "", source, flags=re.I)
     return source
+
+
+
+def _fetch_public_text(url: str, timeout: int = 12, byte_limit: int = 2_000_000) -> tuple[str, str]:
+    """Fetch a public page/API response without credentials or session cookies."""
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "text/html,application/json,text/plain,*/*",
+            "Accept-Encoding": "identity",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        final_url = resp.geturl()
+        body = resp.read(byte_limit)
+    return body.decode("utf-8", errors="ignore"), final_url
+
+
+def _extract_public_hls_urls(text: str, base_url: str = "") -> list[str]:
+    """Extract plainly published HLS URLs from public text/JSON.
+
+    This intentionally does not copy cookies, bearer tokens, DRM data, or attempt
+    to manufacture signed URLs. Query strings that are already present in public
+    page source are preserved and still have to pass the health checker.
+    """
+    normalized = html.unescape(text or "")
+    normalized = normalized.replace("\\u002F", "/").replace("\\/", "/")
+    normalized = normalized.replace("\\u0026", "&")
+
+    found: list[str] = []
+    absolute = re.findall(
+        r'https?://[^\\s\\"\'<>]+?\\.m3u8(?:\\?[^\\s\\"\'<>]*)?',
+        normalized,
+        flags=re.I,
+    )
+    for url in absolute:
+        found.append(url.rstrip("),.;"))
+
+    if base_url:
+        relative = re.findall(
+            r'(?:(?:src|url|file|stream|hls)[\"\'=: ]+)(/[^\\s\\"\'<>]+?\\.m3u8(?:\\?[^\\s\\"\'<>]*)?)',
+            normalized,
+            flags=re.I,
+        )
+        for path in relative:
+            found.append(urllib.parse.urljoin(base_url, path.rstrip("),.;")))
+
+    return list(dict.fromkeys(found))
+
+
+def discover_official_page_streams(config: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    discovered: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+    settings = (config.get("discovery") or {}).get("official_pages") or []
+
+    for item in settings:
+        page_url = item.get("page_url")
+        tvg_id = item.get("tvg_id")
+        if not page_url or not tvg_id:
+            continue
+
+        row: dict[str, Any] = {
+            "kind": "official-page",
+            "name": item.get("name") or tvg_id,
+            "tvg_id": tvg_id,
+            "page_url": page_url,
+            "status": "pending",
+            "candidates": [],
+        }
+        try:
+            page_text, final_url = _fetch_public_text(
+                page_url,
+                timeout=int(item.get("timeout_seconds", 12)),
+            )
+            urls = _extract_public_hls_urls(page_text, final_url)
+
+            # Guard against unrelated clip/ad manifests on a station page. If the
+            # page publishes several HLS URLs, keep only URLs whose nearby source
+            # context looks like a live/linear stream.
+            accepted: list[str] = []
+            normalized = html.unescape(page_text).replace("\\u002F", "/").replace("\\/", "/")
+            for url in urls:
+                idx = normalized.find(url)
+                context = normalized[max(0, idx - 500): idx + len(url) + 500].lower() if idx >= 0 else ""
+                if len(urls) == 1 or any(word in context for word in ("live", "livestream", "linear", "streaming")):
+                    accepted.append(url)
+
+            for url in accepted[: int(item.get("max_candidates", 4))]:
+                discovered.append({
+                    "name_raw": item.get("name") or tvg_id,
+                    "name": item.get("name") or tvg_id,
+                    "quality": item.get("quality"),
+                    "tvg_id": tvg_id,
+                    "logo": item.get("logo", ""),
+                    "group": item.get("group", "Local"),
+                    "language": "English",
+                    "country": "US",
+                    "source": item.get("source") or f"Official page: {urllib.parse.urlsplit(page_url).netloc}",
+                    "family": "official-page",
+                    "priority": int(item.get("priority", -10)),
+                    "philly": bool(item.get("philly", True)),
+                    "url": url,
+                    "headers": {},
+                    "source_type": "official-public-page",
+                    "content_note": item.get("content_note", ""),
+                })
+            row["candidates"] = accepted[: int(item.get("max_candidates", 4))]
+            row["status"] = "found" if row["candidates"] else "no-public-hls-in-page-source"
+        except Exception as exc:
+            row["status"] = "failed"
+            row["error"] = str(exc)[:240]
+        rows.append(row)
+
+    return discovered, rows
+
+
+def discover_iptv_org_passed_issues(config: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Discover recent public IPTV-org additions already labeled check:passed.
+
+    IPTV-org's label is only a discovery pre-filter; every URL still goes through
+    our own double HLS/media-segment probe before it can reach Stremio.
+    """
+    settings = (config.get("discovery") or {}).get("iptv_org_issues") or {}
+    if not settings.get("enabled", True):
+        return [], []
+
+    targets = settings.get("targets") or []
+    if not targets:
+        return [], []
+
+    query = 'repo:iptv-org/iptv is:issue is:open label:"streams:add" label:"check:passed"'
+    params = urllib.parse.urlencode({
+        "q": query,
+        "sort": "updated",
+        "order": "desc",
+        "per_page": int(settings.get("per_page", 100)),
+    })
+    api_url = "https://api.github.com/search/issues?" + params
+    rows: list[dict[str, Any]] = []
+    discovered: list[dict[str, Any]] = []
+
+    try:
+        payload_text, _ = _fetch_public_text(api_url, timeout=int(settings.get("timeout_seconds", 20)))
+        payload = json.loads(payload_text)
+        issues = payload.get("items") or []
+    except Exception as exc:
+        return [], [{
+            "kind": "iptv-org-issues",
+            "status": "failed",
+            "error": str(exc)[:240],
+            "api_url": api_url,
+        }]
+
+    for issue in issues:
+        title = issue.get("title") or ""
+        body = issue.get("body") or ""
+        combined = f"{title}\n{body}"
+        combined_norm = norm(combined)
+
+        matched_target: dict[str, Any] | None = None
+        for target in targets:
+            terms = [target.get("tvg_id", "")] + list(target.get("aliases") or [])
+            if any(term and (norm_id(term) in norm_id(combined) or norm(term) in combined_norm) for term in terms):
+                matched_target = target
+                break
+        if not matched_target:
+            continue
+
+        urls = _extract_public_hls_urls(combined)
+        urls = [u for u in urls if ".m3u8" in u.lower()]
+        if not urls:
+            continue
+
+        issue_number = issue.get("number")
+        issue_url = issue.get("html_url")
+        for url in urls[: int(settings.get("max_urls_per_issue", 3))]:
+            discovered.append({
+                "name_raw": matched_target.get("name") or matched_target["tvg_id"],
+                "name": matched_target.get("name") or matched_target["tvg_id"],
+                "quality": None,
+                "tvg_id": matched_target["tvg_id"],
+                "logo": "",
+                "group": matched_target.get("group", ""),
+                "language": "English",
+                "country": "US",
+                "source": f"IPTV-org check:passed issue #{issue_number}",
+                "family": "iptv-org-issue",
+                "priority": int(settings.get("priority", 6)),
+                "philly": bool(matched_target.get("philly", False)),
+                "url": url,
+                "headers": {},
+                "source_type": "public-third-party",
+                "discovery_issue": issue_url,
+            })
+        rows.append({
+            "kind": "iptv-org-issue",
+            "status": "candidate-found",
+            "issue": issue_number,
+            "issue_url": issue_url,
+            "tvg_id": matched_target["tvg_id"],
+            "name": matched_target.get("name"),
+            "urls": urls[: int(settings.get("max_urls_per_issue", 3))],
+        })
+
+    return discovered, rows
+
+
+def discover_dynamic_streams(config: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    if not (config.get("discovery") or {}).get("enabled", True):
+        return [], []
+
+    official_entries, official_rows = discover_official_page_streams(config)
+    issue_entries, issue_rows = discover_iptv_org_passed_issues(config)
+
+    combined: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for entry in official_entries + issue_entries:
+        marker = (canonical_tvg_id(entry.get("tvg_id", "")), entry.get("url", ""))
+        if marker in seen:
+            continue
+        seen.add(marker)
+        combined.append(entry)
+
+    log(
+        f"Dynamic discovery: {len(official_entries)} official-page + "
+        f"{len(issue_entries)} IPTV-org issue candidates"
+    )
+    return combined, official_rows + issue_rows
 
 
 def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) -> dict[str, Any]:
