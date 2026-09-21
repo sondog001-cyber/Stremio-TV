@@ -98,8 +98,28 @@ def write_landing_page(site: Path, config: dict[str, Any], status: dict[str, Any
   const base = location.href.replace(/\\/[^/]*$/, '/');
   const manifest = new URL('manifest.json', base).href;
   document.getElementById('manifest').textContent = manifest;
+  const nativeUrl = manifest.replace(/^https?:\\/\\//, 'stremio://');
+  const webUrl = 'https://web.stremio.com/#/addons?addon=' + encodeURIComponent(manifest);
+
   document.getElementById('install').onclick = () => {{
-    location.href = manifest.replace(/^https?:\\/\\//, 'stremio://');
+    let handedOff = false;
+
+    const markHandedOff = () => {{
+      handedOff = true;
+    }};
+
+    window.addEventListener('blur', markHandedOff, {{ once: true }});
+    document.addEventListener('visibilitychange', () => {{
+      if (document.hidden) markHandedOff();
+    }}, {{ once: true }});
+
+    setTimeout(() => {{
+      if (!handedOff && !document.hidden) {{
+        location.href = webUrl;
+      }}
+    }}, 1800);
+
+    location.href = nativeUrl;
   }};
 </script>
 </body>
