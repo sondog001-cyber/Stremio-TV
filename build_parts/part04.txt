@@ -123,26 +123,62 @@ def channel_preview(channel: dict[str, Any]) -> dict[str, Any]:
     return meta
 
 
-def channel_meta(channel: dict[str, Any], videos: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-    videos = videos or []
-    description_bits = []
+def _display_time(value: str) -> str:
+    parsed = dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return parsed.strftime("%I:%M %p").lstrip("0")
+
+
+def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    programmes = sorted(programmes or [], key=lambda p: p.get("startTime", ""))
+    now = dt.datetime.now(UTC)
+
+    current: dict[str, Any] | None = None
+    upcoming: dict[str, Any] | None = None
+    for programme in programmes:
+        try:
+            p_start = dt.datetime.fromisoformat(programme["startTime"].replace("Z", "+00:00"))
+            p_end = dt.datetime.fromisoformat(programme["endTime"].replace("Z", "+00:00"))
+        except (KeyError, ValueError):
+            continue
+        if p_start <= now < p_end:
+            current = programme
+            continue
+        if p_start >= now and upcoming is None:
+            upcoming = programme
+
+    description_lines: list[str] = []
+    if current:
+        description_lines.append(
+            f"NOW: {current.get('title', 'Untitled')} • "
+            f"{_display_time(current['startTime'])}–{_display_time(current['endTime'])} UTC"
+        )
+    if upcoming:
+        label = "NEXT" if current else "UP NEXT"
+        description_lines.append(
+            f"{label}: {upcoming.get('title', 'Untitled')} • "
+            f"{_display_time(upcoming['startTime'])}–{_display_time(upcoming['endTime'])} UTC"
+        )
+
+    info_bits = []
     if channel.get("philly"):
-        description_bits.append("Philadelphia local")
-    description_bits.append(channel.get("category", "Live TV"))
-    description_bits.append(f"{len(channel.get('streams', []))} stream source" + ("s" if len(channel.get("streams", [])) != 1 else ""))
+        info_bits.append("Philadelphia local")
+    info_bits.append(channel.get("category", "Live TV"))
+    info_bits.append(
+        f"{len(channel.get('streams', []))} stream source"
+        + ("s" if len(channel.get("streams", [])) != 1 else "")
+    )
+    if description_lines:
+        description_lines.append("")
+    description_lines.append(" • ".join(info_bits))
 
     meta: dict[str, Any] = {
         "id": channel["id"],
         "type": "tv",
         "name": channel["name"],
-        "description": " • ".join(description_bits),
+        "description": "\n".join(description_lines),
         "genres": [channel.get("category", "Live TV")],
         "posterShape": "square",
-        "behaviorHints": {
-            "isLive": True,
-            "hasScheduledVideos": bool(videos),
-        },
-        "videos": videos,
+        "behaviorHints": {"isLive": True},
     }
     if channel.get("logo"):
         meta["poster"] = channel["logo"]
