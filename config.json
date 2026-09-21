@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with Now/Next EPG, expanded public FAST playlist discovery, targeted fresh-candidate discovery, and two-probe playback validation before a stream can appear.",
-    "version": "0.3.9"
+    "description": "Curated Philadelphia-area live TV with strict exact-channel identity matching, expanded public discovery, Now/Next EPG, and two-probe playback validation.",
+    "version": "0.3.10"
   },
   "sources": {
     "playlists": [
@@ -652,11 +652,9 @@
         "Hallmark Channel"
       ],
       "MLBNetwork.us": [
-        "MLB",
         "MLB Network"
       ],
       "NFLNetwork.us": [
-        "NFL",
         "NFL Network"
       ],
       "NHLNetwork.us": [
@@ -707,6 +705,97 @@
         "FOX29",
         "WTXF"
       ]
+    },
+    "identity_rules": {
+      "NFLNetwork.us": {
+        "accept": [
+          "NFL Network",
+          "NFLN"
+        ],
+        "reject": [
+          "NFL Channel",
+          "NFL"
+        ]
+      },
+      "MLBNetwork.us": {
+        "accept": [
+          "MLB Network"
+        ],
+        "reject": [
+          "MLB Channel",
+          "MLB"
+        ]
+      },
+      "GolfChannel.us": {
+        "accept": [
+          "Golf Channel",
+          "NBC Golf Channel",
+          "NBC Golf"
+        ],
+        "reject": [
+          "Golf Network"
+        ]
+      },
+      "TravelChannel.us": {
+        "accept": [
+          "Travel Channel"
+        ],
+        "reject": [
+          "Travel",
+          "4K Travel"
+        ]
+      },
+      "WPVI.us": {
+        "accept": [
+          "WPVI",
+          "WPVI-DT1",
+          "WPVI TV",
+          "WPVI ABC",
+          "ABC 6",
+          "6ABC"
+        ],
+        "reject": [
+          "6ABC Philadelphia 24/7",
+          "6ABC 24/7"
+        ]
+      },
+      "WCAU.us": {
+        "accept": [
+          "WCAU",
+          "WCAU-DT1",
+          "WCAU NBC",
+          "NBC 10",
+          "NBC10"
+        ],
+        "reject": [
+          "NBC Philadelphia News",
+          "NBC10 Philadelphia News",
+          "NBC 10 Philadelphia News"
+        ]
+      },
+      "KYW.us": {
+        "accept": [
+          "KYW",
+          "KYW-DT1",
+          "KYW CBS",
+          "CBS 3",
+          "CBS3",
+          "CBS 3 Philadelphia / KYW"
+        ],
+        "reject": [
+          "CBS News Philadelphia"
+        ]
+      },
+      "WPHL.us": {
+        "accept": [
+          "WPHL",
+          "WPHL-DT1",
+          "PHL17"
+        ],
+        "reject": [
+          "PHL17+"
+        ]
+      }
     }
   },
   "stream_selection": {
@@ -1305,5 +1394,217 @@
         "note": "Research-only directory; not treated as a stream source unless a stable public machine-readable candidate is discovered."
       }
     ]
+  },
+  "channel_metadata": {
+    "WPVI.us": {
+      "name": "6ABC / WPVI",
+      "category": "Other",
+      "service_type": "Local broadcast"
+    },
+    "WCAU.us": {
+      "name": "NBC10 / WCAU",
+      "category": "Other",
+      "service_type": "Local broadcast"
+    },
+    "KYW.us": {
+      "name": "CBS3 / KYW",
+      "category": "Other",
+      "service_type": "Local broadcast"
+    },
+    "WHYY.us": {
+      "name": "WHYY / PBS 12",
+      "category": "Other",
+      "service_type": "Local broadcast"
+    },
+    "WPHL.us": {
+      "name": "PHL17 / WPHL",
+      "category": "Other",
+      "service_type": "Local broadcast"
+    },
+    "WPSG.us": {
+      "name": "Philly 57 / WPSG",
+      "category": "Other",
+      "service_type": "Local broadcast"
+    },
+    "NewsNation.us": {
+      "name": "NewsNation",
+      "category": "News",
+      "service_type": "Premium linear network"
+    },
+    "WeatherChannel.us": {
+      "name": "The Weather Channel",
+      "category": "News",
+      "service_type": "Premium linear network"
+    },
+    "ESPN.us": {
+      "name": "ESPN",
+      "category": "Sports",
+      "service_type": "Premium linear network"
+    },
+    "ESPN2.us": {
+      "name": "ESPN2",
+      "category": "Sports",
+      "service_type": "Premium linear network"
+    },
+    "FoxSports2.us": {
+      "name": "Fox Sports 2",
+      "category": "Sports",
+      "service_type": "Premium linear network"
+    },
+    "NFLNetwork.us": {
+      "name": "NFL Network",
+      "category": "Sports",
+      "service_type": "Premium linear network"
+    },
+    "MLBNetwork.us": {
+      "name": "MLB Network",
+      "category": "Sports",
+      "service_type": "Premium linear network"
+    },
+    "GolfChannel.us": {
+      "name": "Golf Channel",
+      "category": "Sports",
+      "service_type": "Premium linear network"
+    },
+    "CBSSportsNetwork.us": {
+      "name": "CBS Sports Network",
+      "category": "Sports",
+      "service_type": "Premium linear network"
+    },
+    "NBCSportsPhiladelphia.us": {
+      "name": "NBC Sports Philadelphia",
+      "category": "Sports",
+      "service_type": "Premium regional sports network"
+    },
+    "NBCSportsPhiladelphiaPlus.us": {
+      "name": "NBC Sports Philadelphia Plus",
+      "category": "Sports",
+      "service_type": "Premium regional sports network"
+    },
+    "FXX.us": {
+      "name": "FXX",
+      "category": "Entertainment",
+      "service_type": "Premium linear network"
+    },
+    "ComedyCentral.us": {
+      "name": "Comedy Central",
+      "category": "Entertainment",
+      "service_type": "Premium linear network"
+    },
+    "TVLand.us": {
+      "name": "TV Land",
+      "category": "Entertainment",
+      "service_type": "Premium linear network"
+    },
+    "BET.us": {
+      "name": "BET",
+      "category": "Entertainment",
+      "service_type": "Premium linear network"
+    },
+    "OWN.us": {
+      "name": "OWN",
+      "category": "Entertainment",
+      "service_type": "Premium linear network"
+    },
+    "WEtv.us": {
+      "name": "WE tv",
+      "category": "Entertainment",
+      "service_type": "Premium linear network"
+    },
+    "SundanceTV.us": {
+      "name": "SundanceTV",
+      "category": "Entertainment",
+      "service_type": "Premium linear network"
+    },
+    "Pop.us": {
+      "name": "Pop",
+      "category": "Entertainment",
+      "service_type": "Premium linear network"
+    },
+    "HGTV.us": {
+      "name": "HGTV",
+      "category": "Home & Lifestyle",
+      "service_type": "Premium linear network"
+    },
+    "MagnoliaNetwork.us": {
+      "name": "Magnolia Network",
+      "category": "Home & Lifestyle",
+      "service_type": "Premium linear network"
+    },
+    "FoodNetwork.us": {
+      "name": "Food Network",
+      "category": "Home & Lifestyle",
+      "service_type": "Premium linear network"
+    },
+    "TLC.us": {
+      "name": "TLC",
+      "category": "Home & Lifestyle",
+      "service_type": "Premium linear network"
+    },
+    "TravelChannel.us": {
+      "name": "Travel Channel",
+      "category": "Home & Lifestyle",
+      "service_type": "Premium linear network"
+    },
+    "CookingChannel.us": {
+      "name": "Cooking Channel",
+      "category": "Home & Lifestyle",
+      "service_type": "Premium linear network"
+    },
+    "HallmarkMystery.us": {
+      "name": "Hallmark Mystery",
+      "category": "Movies",
+      "service_type": "Premium linear network"
+    },
+    "LMN.us": {
+      "name": "LMN",
+      "category": "Movies",
+      "service_type": "Premium linear network"
+    },
+    "DiscoveryChannel.us": {
+      "name": "Discovery Channel",
+      "category": "Documentary",
+      "service_type": "Premium linear network"
+    },
+    "NationalGeographicWild.us": {
+      "name": "Nat Geo Wild",
+      "category": "Documentary",
+      "service_type": "Premium linear network"
+    },
+    "AnimalPlanet.us": {
+      "name": "Animal Planet",
+      "category": "Documentary",
+      "service_type": "Premium linear network"
+    },
+    "ScienceChannel.us": {
+      "name": "Science Channel",
+      "category": "Documentary",
+      "service_type": "Premium linear network"
+    },
+    "InvestigationDiscovery.us": {
+      "name": "Investigation Discovery",
+      "category": "Documentary",
+      "service_type": "Premium linear network"
+    },
+    "SmithsonianChannel.us": {
+      "name": "Smithsonian Channel",
+      "category": "Documentary",
+      "service_type": "Premium linear network"
+    },
+    "Boomerang.us": {
+      "name": "Boomerang",
+      "category": "Kids",
+      "service_type": "Premium linear network"
+    },
+    "FXMovieChannel.us": {
+      "name": "FX Movie Channel",
+      "category": "Movies",
+      "service_type": "Premium linear network"
+    },
+    "HallmarkFamily.us": {
+      "name": "Hallmark Family",
+      "category": "Movies",
+      "service_type": "Premium linear network"
+    }
   }
 }
