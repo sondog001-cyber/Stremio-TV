@@ -1,0 +1,104 @@
+{
+  "addon": {
+    "id": "com.stremiotv.philly",
+    "name": "Stremio TV",
+    "description": "Curated Philadelphia-area live TV package with major national cable networks, Philadelphia locals, native Stremio EPG, and up to three ranked backup streams per channel.",
+    "version": "0.3.0"
+  },
+  "sources": {
+    "playlists": [
+      {
+        "name": "IPTV-org US",
+        "family": "iptv-org",
+        "url": "https://iptv-org.github.io/iptv/countries/us.m3u",
+        "philly": false,
+        "priority": 0,
+        "required": true,
+        "fixture": "us.m3u"
+      },
+      {
+        "name": "IPTV-org Philadelphia",
+        "family": "iptv-org",
+        "url": "https://iptv-org.github.io/iptv/cities/usphl.m3u",
+        "philly": true,
+        "priority": 0,
+        "required": true,
+        "fixture": "philly.m3u"
+      },
+      {
+        "name": "IPTV-org US Raw",
+        "family": "iptv-org",
+        "url": "https://raw.githubusercontent.com/iptv-org/iptv/refs/heads/master/streams/us.m3u",
+        "philly": false,
+        "priority": 1,
+        "required": false,
+        "fixture": "us-raw.m3u"
+      },
+      {
+        "name": "Free-TV/IPTV",
+        "family": "free-tv",
+        "url": "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8",
+        "philly": false,
+        "priority": 2,
+        "required": false,
+        "fixture": "free-tv.m3u"
+      },
+      {
+        "name": "FreeCastHub",
+        "family": "freecasthub",
+        "url": "https://raw.githubusercontent.com/freecasthub/public-iptv/main/playlist.m3u",
+        "philly": false,
+        "priority": 3,
+        "required": false,
+        "fixture": "freecasthub.m3u"
+      }
+    ],
+    "epg": "https://vcicio.github.io/US-EPG/merged_epg.xml.gz"
+  },
+  "favorites": [
+    "WPVI", "6ABC", "WCAU", "NBC 10", "KYW", "CBS 3", "WTXF", "FOX 29",
+    "WPHL", "WHYY", "Fox News Channel", "CNN", "MS NOW", "ESPN", "ESPN2",
+    "Fox Sports 1", "NBC Sports Philadelphia", "HGTV", "Magnolia Network", "TNT", "TBS"
+  ],
+  "catalogs": [
+    {"id":"favorites","name":"★ Favorites","category":"Favorites"},
+    {"id":"philly","name":"Philadelphia Locals","category":"Philadelphia Locals"},
+    {"id":"sports","name":"Sports","category":"Sports"},
+    {"id":"news","name":"National News","category":"News"},
+    {"id":"entertainment","name":"Entertainment","category":"Entertainment"},
+    {"id":"home","name":"Home & Lifestyle","category":"Home & Lifestyle"},
+    {"id":"documentary","name":"Discovery & Knowledge","category":"Documentary"},
+    {"id":"kids","name":"Kids & Family","category":"Kids"},
+    {"id":"movies","name":"Movies","category":"Movies"}
+  ],
+  "page_size": 100,
+  "max_streams_per_channel": 3,
+  "meta_schedule_hours": 30,
+  "curation": {
+    "enabled": true,
+    "description": "Expanded-basic style Philadelphia package. Only explicitly approved Philadelphia locals and major national cable networks are kept.",
+    "philly_allow": [
+      "Telemundo.us@WCAU","Fox.us@WTXFTV","WPVI.us","WCAU.us","KYW.us","WTXF.us","WHYY.us","WPHL.us","WPSG.us",
+      "6ABC","ABC 6","NBC 10","CBS 3","FOX 29","WHYY","PHL17","WPHL","Philly 57","WPSG"
+    ],
+    "national_allow": [
+      "FoxNewsChannel.us","CNN.us","MSNOW.us","MSNBC.us","CNBC.us","FoxBusinessNetwork.us","BloombergTelevision.us","NewsNation.us","WeatherChannel.us",
+      "ESPN.us","ESPN2.us","ESPNU.us","ESPNews.us","FoxSports1.us","FoxSports2.us","NFLNetwork.us","NBATV.us","MLBNetwork.us","NHLNetwork.us",
+      "GolfChannel.us","TennisChannel.us","CBSSportsNetwork.us","NBCSportsPhiladelphia.us","NBCSportsPhiladelphiaPlus.us","BigTenNetwork.us","SECNetwork.us",
+      "ACCN.us","USANetwork.us","TNT.us","TBS.us","AMC.us","FX.us","FXX.us","AandE.us","Bravo.us","E.us","Syfy.us","ParamountNetwork.us",
+      "ComedyCentral.us","TVLand.us","Freeform.us","truTV.us","BET.us","MTV.us","VH1.us","CMT.us","GameShowNetwork.us","OWN.us","Oxygen.us","WEtv.us",
+      "BBCAmerica.us","IFC.us","SundanceTV.us","Pop.us","HGTV.us","MagnoliaNetwork.us","FoodNetwork.us","TLC.us","TravelChannel.us","CookingChannel.us",
+      "HallmarkChannel.us","HallmarkMystery.us","Lifetime.us","LMN.us","DiscoveryChannel.us","History.us","NationalGeographic.us","NationalGeographicWild.us",
+      "AnimalPlanet.us","ScienceChannel.us","InvestigationDiscovery.us","SmithsonianChannel.us","DisneyChannel.us","DisneyJunior.us","DisneyXD.us",
+      "Nickelodeon.us","NickJr.us","Nicktoons.us","CartoonNetwork.us","Boomerang.us","PBSKids.us","TurnerClassicMovies.us","FXMovieChannel.us",
+      "HallmarkFamily.us","AE.us","BloombergTV.us","ACCNetwork.us"
+    ]
+  },
+  "stream_selection": {
+    "target_hd": 2,
+    "target_sd": 1,
+    "prefer_distinct_families": true,
+    "primary_family": "iptv-org"
+  },
+  "manual_sources_file": "manual_sources.json"
+}
