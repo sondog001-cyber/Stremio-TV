@@ -58,7 +58,9 @@ def _logical_channel_key(value: str) -> str:
     value = value.replace("&", " and ")
     value = QUALITY_RE.sub(" ", value)
     value = re.sub(r"\b(?:east|west|eastern|western|feed|adaptive)\b", " ", value, flags=re.I)
-    value = re.sub(r"\b(?:channel|network|television)\b", " ", value, flags=re.I)
+    # Preserve meaningful service-type words such as "Channel" and "Network".
+    # Dropping them caused false identities such as NFL Channel -> NFL Network.
+    value = re.sub(r"\b(?:television)\b", " ", value, flags=re.I)
     tokens = re.findall(r"[A-Za-z0-9]+", value.lower())
     while len(tokens) > 1 and tokens[-1] in {"us", "usa"}:
         tokens.pop()
@@ -137,6 +139,90 @@ def canonicalize_approved_sources(entries: list[dict[str, Any]], config: dict[st
         else:
             out.append(entry)
     return out
+
+
+def enforce_exact_identity(
+    entries: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Reject known lookalikes before probing or allowlist coverage."""
+    rules = (config.get("curation") or {}).get("identity_rules") or {}
+    if not rules:
+        return entries, []
+
+    rules_by_id = {
+        canonical_tvg_id(tvg_id): (tvg_id, rule)
+        for tvg_id, rule in rules.items()
+    }
+    kept: list[dict[str, Any]] = []
+    rejected: list[dict[str, Any]] = []
+
+    for entry in entries:
+        target_id = (entry.get("tvg_id") or "").strip()
+        rule_tuple = rules_by_id.get(canonical_tvg_id(target_id))
+        if not rule_tuple:
+            kept.append(entry)
+            continue
+
+        _rule_id, rule = rule_tuple
+        accept_keys = {
+            _logical_channel_key(x)
+            for x in (rule.get("accept") or [])
+            if _logical_channel_key(x)
+        }
+        reject_keys = {
+            _logical_channel_key(x)
+            for x in (rule.get("reject") or [])
+            if _logical_channel_key(x)
+        }
+
+        source_id = (entry.get("source_tvg_id") or "").strip()
+        identity_values = [
+            entry.get("name", ""),
+            entry.get("name_raw", ""),
+            source_id,
+        ]
+        identity_keys = {
+            _logical_channel_key(x)
+            for x in identity_values
+            if _logical_channel_key(x)
+        }
+
+        reject_hit = sorted(identity_keys & reject_keys)
+        if reject_hit:
+            rejected.append({
+                "target_tvg_id": target_id,
+                "name": entry.get("name"),
+                "name_raw": entry.get("name_raw"),
+                "source_tvg_id": source_id,
+                "source": entry.get("source"),
+                "family": entry.get("family"),
+                "url": entry.get("url"),
+                "reason": "explicit-lookalike-reject",
+                "matched_identity_keys": reject_hit,
+            })
+            continue
+
+        remapped = bool(source_id) and canonical_tvg_id(source_id) != canonical_tvg_id(target_id)
+        if remapped and accept_keys and not (identity_keys & accept_keys):
+            rejected.append({
+                "target_tvg_id": target_id,
+                "name": entry.get("name"),
+                "name_raw": entry.get("name_raw"),
+                "source_tvg_id": source_id,
+                "source": entry.get("source"),
+                "family": entry.get("family"),
+                "url": entry.get("url"),
+                "reason": "remapped-entry-did-not-match-exact-identity",
+                "accepted_aliases": rule.get("accept") or [],
+            })
+            continue
+
+        kept.append(entry)
+
+    if rejected:
+        log(f"Exact identity gate: rejected {len(rejected):,} lookalike/remapped candidates")
+    return kept, rejected
 
 
 def build_allowlist_coverage(entries: list[dict[str, Any]], config: dict[str, Any]) -> list[dict[str, Any]]:
