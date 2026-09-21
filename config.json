@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV package with major national cable networks, Philadelphia locals, native Stremio EPG, and up to three ranked backup streams per channel.",
-    "version": "0.3.3"
+    "version": "0.3.4"
   },
   "sources": {
     "playlists": [
@@ -51,6 +51,24 @@
         "priority": 3,
         "required": false,
         "fixture": "freecasthub.m3u"
+      },
+      {
+        "name": "Philadelphia OTA Relay Mirror (Unverified)",
+        "family": "localbtv-relay",
+        "url": "https://raw.githubusercontent.com/kilirushi/iptv/master/us_localbtv.m3u",
+        "philly": false,
+        "priority": 4,
+        "required": false,
+        "fixture": "localbtv-relay.m3u"
+      },
+      {
+        "name": "MoveOnJoy Local Affiliates (Unverified)",
+        "family": "moveonjoy",
+        "url": "https://raw.githubusercontent.com/judy-gotv/iptv/main/Moveonjoy.m3u",
+        "philly": false,
+        "priority": 5,
+        "required": false,
+        "fixture": "moveonjoy.m3u"
       },
       {
         "name": "TVPass (Unverified)",
@@ -261,7 +279,9 @@
     ],
     "approved_unverified_families": [
       "tvpass",
-      "insolence"
+      "insolence",
+      "localbtv-relay",
+      "moveonjoy"
     ],
     "canonical_id_aliases": {
       "MSNBC.us": "MSNOW.us",
@@ -378,6 +398,50 @@
       "NHLNetwork.us": [
         "NHL",
         "NHL Network"
+      ],
+      "WPVI.us": [
+        "WPVI-DT1",
+        "WPVI TV",
+        "WPVI ABC",
+        "ABC 6",
+        "6ABC",
+        "WPVI"
+      ],
+      "WCAU.us": [
+        "WCAU-DT1",
+        "WCAU NBC",
+        "NBC 10",
+        "NBC10",
+        "WCAU"
+      ],
+      "KYW.us": [
+        "KYW-DT1",
+        "KYW CBS",
+        "CBS 3",
+        "CBS3",
+        "KYW"
+      ],
+      "WHYY.us": [
+        "WHYY-DT1",
+        "PBS Philadelphia",
+        "WHYY"
+      ],
+      "WPHL.us": [
+        "WPHL-DT1",
+        "PHL17",
+        "WPHL"
+      ],
+      "WPSG.us": [
+        "WPSG-DT1",
+        "Philly 57",
+        "WPSG"
+      ],
+      "WTXF.us": [
+        "WTXF-DT1",
+        "WTXF FOX",
+        "FOX 29",
+        "FOX29",
+        "WTXF"
       ]
     }
   },
