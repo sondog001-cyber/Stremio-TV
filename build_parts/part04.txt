@@ -124,7 +124,7 @@ def channel_preview(channel: dict[str, Any]) -> dict[str, Any]:
 
 
 def _display_time(value: str) -> str:
-    parsed = dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    parsed = dt.datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(PHILLY_TZ)
     return parsed.strftime("%I:%M %p").lstrip("0")
 
 
@@ -150,7 +150,7 @@ def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | Non
     if current:
         description_lines.append(
             f"NOW: {current.get('title', 'Untitled')} • "
-            f"{_display_time(current['startTime'])}–{_display_time(current['endTime'])} UTC"
+            f"{_display_time(current['startTime'])}–{_display_time(current['endTime'])}"
         )
     if upcoming:
         label = "NEXT" if current else "UP NEXT"
