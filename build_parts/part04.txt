@@ -1,0 +1,217 @@
+== 0.0):
+                return epg_id, "fuzzy-name", best_score
+
+    return None, "unmatched", 0.0
+
+
+def parse_xmltv_time(value: str) -> dt.datetime | None:
+    value = (value or "").strip()
+    if not value:
+        return None
+    # XMLTV often uses: YYYYMMDDHHMMSS ±HHMM
+    formats = ["%Y%m%d%H%M%S %z", "%Y%m%d%H%M %z", "%Y%m%d%H%M%S", "%Y%m%d%H%M"]
+    for fmt in formats:
+        try:
+            parsed = dt.datetime.strptime(value, fmt)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=UTC)
+            return parsed.astimezone(UTC)
+        except ValueError:
+            continue
+    return None
+
+
+def iso_z(value: dt.datetime) -> str:
+    return value.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def date_range_for_program(start: dt.datetime, end: dt.datetime) -> list[str]:
+    if end <= start:
+        return []
+    cursor = start.date()
+    last = (end - dt.timedelta(microseconds=1)).date()
+    result: list[str] = []
+    while cursor <= last:
+        result.append(cursor.isoformat())
+        cursor += dt.timedelta(days=1)
+    return result
+
+
+def build_program_index(
+    epg_path: Path,
+    epg_to_channels: dict[str, list[str]],
+) -> tuple[dict[str, dict[str, list[dict[str, Any]]]], set[str]]:
+    schedules: dict[str, dict[str, list[dict[str, Any]]]] = defaultdict(lambda: defaultdict(list))
+    all_dates: set[str] = set()
+    matched_programmes = 0
+
+    with gzip.open(epg_path, "rb") as f:
+        for event, elem in ET.iterparse(f, events=("end",)):
+            if elem.tag != "programme":
+                if elem.tag == "channel":
+                    elem.clear()
+                continue
+
+            epg_id = elem.attrib.get("channel", "")
+            channel_ids = epg_to_channels.get(epg_id)
+            if not channel_ids:
+                elem.clear()
+                continue
+
+            start = parse_xmltv_time(elem.attrib.get("start", ""))
+            end = parse_xmltv_time(elem.attrib.get("stop", ""))
+            if not start or not end or end <= start:
+                elem.clear()
+                continue
+
+            title = extract_text(elem, "title") or "Untitled"
+            desc = extract_text(elem, "desc")
+            categories = [
+                (x.text or "").strip()
+                for x in elem.findall("category")
+                if (x.text or "").strip()
+            ]
+            icon_elem = elem.find("icon")
+            thumbnail = icon_elem.attrib.get("src", "") if icon_elem is not None else ""
+            date_text = extract_text(elem, "date")
+            runtime_min = max(1, round((end - start).total_seconds() / 60))
+            start_iso = iso_z(start)
+            end_iso = iso_z(end)
+
+            for channel_id in channel_ids:
+                programme: dict[str, Any] = {
+                    "id": f"{channel_id}:epg:{start_iso}",
+                    "title": title,
+                    "released": start_iso,
+                    "startTime": start_iso,
+                    "endTime": end_iso,
+                    "runtime": f"{runtime_min} min",
+                }
+                if desc:
+                    programme["overview"] = desc
+                if thumbnail:
+                    programme["thumbnail"] = thumbnail
+                if categories:
+                    programme["genres"] = categories[:8]
+                if date_text[:4].isdigit():
+                    programme["releaseInfo"] = date_text[:4]
+
+                for day in date_range_for_program(start, end):
+                    schedules[channel_id][day].append(programme)
+                    all_dates.add(day)
+            matched_programmes += 1
+            elem.clear()
+
+    for channel_days in schedules.values():
+        for day, programmes in channel_days.items():
+            programmes.sort(key=lambda p: p["startTime"])
+
+    log(f"Matched {matched_programmes:,} XMLTV programmes to playlist channels")
+    return schedules, all_dates
+
+
+def channel_preview(channel: dict[str, Any]) -> dict[str, Any]:
+    meta: dict[str, Any] = {
+        "id": channel["id"],
+        "type": "tv",
+        "name": channel["name"],
+        "posterShape": "square",
+        "behaviorHints": {"isLive": True},
+    }
+    if channel.get("logo"):
+        meta["poster"] = channel["logo"]
+    return meta
+
+
+def channel_meta(channel: dict[str, Any], videos: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    videos = videos or []
+    description_bits = []
+    if channel.get("philly"):
+        description_bits.append("Philadelphia local")
+    description_bits.append(channel.get("category", "Live TV"))
+    description_bits.append(f"{len(channel.get('streams', []))} stream source" + ("s" if len(channel.get("streams", [])) != 1 else ""))
+
+    meta: dict[str, Any] = {
+        "id": channel["id"],
+        "type": "tv",
+        "name": channel["name"],
+        "description": " • ".join(description_bits),
+        "genres": [channel.get("category", "Live TV")],
+        "posterShape": "square",
+        "behaviorHints": {
+            "isLive": True,
+            "hasScheduledVideos": bool(videos),
+        },
+        "videos": videos,
+    }
+    if channel.get("logo"):
+        meta["poster"] = channel["logo"]
+        meta["background"] = channel["logo"]
+    return meta
+
+
+def stream_object(stream: dict[str, Any], index: int) -> dict[str, Any]:
+    quality = stream.get("quality") or "Live"
+    source = stream.get("source") or "IPTV"
+    slot = stream.get("slot") or f"Source {index}"
+    url = stream["url"]
+    description_parts = [source]
+    if stream.get("philly"):
+        description_parts.append("Philadelphia")
+    if quality and quality != "Live":
+        description_parts.append(quality)
+
+    obj: dict[str, Any] = {
+        "name": f"{slot} • {source}",
+        "description": " • ".join(description_parts),
+        "url": url,
+    }
+    headers = stream.get("headers") or {}
+    not_web_ready = (not url.lower().startswith("https://")) or bool(headers)
+    if not_web_ready:
+        obj["behaviorHints"] = {"notWebReady": True}
+        if headers:
+            obj["behaviorHints"]["proxyHeaders"] = {"request": headers}
+    return obj
+
+def write_paginated_catalog(base_dir: Path, catalog_id: str, channels: list[dict[str, Any]], page_size: int) -> None:
+    catalog_dir = base_dir / "catalog" / "tv" / catalog_id
+    catalog_dir.mkdir(parents=True, exist_ok=True)
+    previews = [channel_preview(c) for c in channels]
+
+    write_json(base_dir / "catalog" / "tv" / f"{catalog_id}.json", {"metas": previews[:page_size]})
+    write_json(catalog_dir / "skip=0.json", {"metas": previews[:page_size]})
+
+    skip = page_size
+    while skip < len(previews):
+        write_json(catalog_dir / f"skip={skip}.json", {"metas": previews[skip : skip + page_size]})
+        skip += page_size
+    # Stremio continues until it receives an empty page.
+    final_skip = ((len(previews) + page_size - 1) // page_size) * page_size
+    if final_skip == 0:
+        final_skip = page_size
+    write_json(catalog_dir / f"skip={final_skip}.json", {"metas": []})
+
+
+def write_epg_pages(
+    base_dir: Path,
+    channels: list[dict[str, Any]],
+    schedules: dict[str, dict[str, list[dict[str, Any]]]],
+    dates: Iterable[str],
+    page_size: int,
+) -> None:
+    catalog_dir = base_dir / "catalog" / "tv" / "channels"
+    catalog_dir.mkdir(parents=True, exist_ok=True)
+
+    for day in sorted(dates):
+        detailed = [channel_meta(c, schedules.get(c["id"], {}).get(day, [])) for c in channels]
+        first = detailed[:page_size]
+        write_json(catalog_dir / f"date={day}.json", {"metasDetailed": first})
+        write_json(catalog_dir / f"date={day}&skip=0.json", {"metasDetailed": first})
+        write_json(catalog_dir / f"skip=0&date={day}.json", {"metasDetailed": first})
+
+        skip = page_size
+        while skip < len(detailed):
+            page = detailed[skip : skip + page_size]
+            write_json(catalog_dir / f"date={day}&skip={skip}.json", {"metasDetailed": page})
+            writ
