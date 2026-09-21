@@ -6,7 +6,7 @@ The goal is intentionally **not** to dump every channel from a giant IPTV list i
 
 ## What v0.3 does
 
-- Stremio **Native EPG / Live TV guide**
+- Live-channel pages with **Now / Next EPG information in the description**
 - Curated whitelist; random FAST, shopping, religious, community and out-of-market local stations are filtered out
 - Philadelphia local affiliates only
 - Major national cable networks when a usable public stream is present upstream
@@ -14,9 +14,9 @@ The goal is intentionally **not** to dump every channel from a giant IPTV list i
 - IPTV-org remains the primary source; other source families are backups
 - Duplicate channel variants such as `@HD`, `@SD`, `@East` and `@West` are merged without collapsing local affiliates into one channel
 - Backup streams can come from a national/raw list even when the primary channel is a Philadelphia local
-- Automatic EPG matching
+- Automatic EPG matching for Now / Next programme descriptions
 - Favorites and category catalogs
-- Automatic rebuild every 6 hours
+- Automatic rebuild every 15 minutes so the static Now / Next snapshot stays reasonably fresh
 - GitHub Pages hosting: no paid server
 - A `needs-sources.json` report after each build tells us exactly which curated channels still need HD/SD backups
 
@@ -156,7 +156,7 @@ The landing page also includes an **Install in Stremio** button.
 
 ## After deployment
 
-Normally you do nothing. GitHub Actions rebuilds every six hours. The addon URL does not change, so ordinary source/EPG refreshes do **not** require reinstalling it.
+Normally you do nothing. GitHub Actions rebuilds every 15 minutes. The addon URL does not change, so ordinary source/EPG refreshes do **not** require reinstalling it.
 
 ## Favorites / catalogs
 
@@ -172,7 +172,7 @@ Initial catalogs:
 - Kids & Family
 - Movies
 
-The native TV-guide catalog contains the entire curated package.
+The main live-TV catalog contains the entire curated package. Programme rows are no longer exposed as selectable episodes; EPG data is used to enrich each channel description with Now / Next information.
 
 ## Diagnostics
 
