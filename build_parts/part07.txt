@@ -9,6 +9,7 @@ s,
         write_json(output / "diagnostics" / "channels.json", channel_rows)
         write_json(output / "diagnostics" / "needs-sources.json", needs_sources)
         write_json(output / "diagnostics" / "stream-health.json", stream_health_results)
+        write_json(output / "diagnostics" / "dynamic-discovery.json", discovery_results)
         write_json(output / "diagnostics" / "source-results.json", source_results)
         write_landing_page(output, config, status)
         write_icon(output)
