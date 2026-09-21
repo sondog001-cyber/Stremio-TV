@@ -140,6 +140,7 @@ def _short_source_name(stream: dict[str, Any]) -> str:
         "insolence": "InsolenceTV",
         "iptv-org-issue": "IPTV-org New",
         "official-page": "Official",
+        "research-seed": "Research Lead",
         "manual": "Manual",
     }
     if family in mapping:
@@ -252,6 +253,7 @@ def discover_official_page_streams(config: dict[str, Any]) -> tuple[list[dict[st
                     "url": url,
                     "headers": {},
                     "source_type": "official-public-page",
+                    "content_kind": item.get("content_kind", "unknown"),
                     "content_note": item.get("content_note", ""),
                 })
             row["candidates"] = accepted[: int(item.get("max_candidates", 4))]
@@ -278,7 +280,7 @@ def discover_iptv_org_passed_issues(config: dict[str, Any]) -> tuple[list[dict[s
     if not targets:
         return [], []
 
-    query = 'repo:iptv-org/iptv is:issue is:open label:"streams:add" label:"check:passed"'
+    query = 'repo:iptv-org/iptv is:issue is:open label:"check:passed"'
     params = urllib.parse.urlencode({
         "q": query,
         "sort": "updated",
@@ -340,6 +342,7 @@ def discover_iptv_org_passed_issues(config: dict[str, Any]) -> tuple[list[dict[s
                 "url": url,
                 "headers": {},
                 "source_type": "public-third-party",
+                "content_kind": matched_target.get("content_kind", "unknown"),
                 "discovery_issue": issue_url,
             })
         rows.append({
@@ -355,16 +358,72 @@ def discover_iptv_org_passed_issues(config: dict[str, Any]) -> tuple[list[dict[s
     return discovered, rows
 
 
+def discover_seed_candidates(config: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Load public research leads from config.
+
+    These are not trusted merely because they are listed here. They are only
+    candidates and must pass the same two-probe playlist/media-segment health
+    test as every other source before they can appear in Stremio.
+    """
+    items = (config.get("discovery") or {}).get("seed_candidates") or []
+    discovered: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+
+    for item in items:
+        url = (item.get("url") or "").strip()
+        tvg_id = (item.get("tvg_id") or "").strip()
+        if not url or not tvg_id or not re.match(r"^https?://", url, re.I):
+            continue
+        if ".m3u8" not in url.lower():
+            continue
+
+        entry = {
+            "name_raw": item.get("name") or tvg_id,
+            "name": item.get("name") or tvg_id,
+            "quality": item.get("quality"),
+            "tvg_id": tvg_id,
+            "logo": item.get("logo", ""),
+            "group": item.get("group", ""),
+            "language": "English",
+            "country": "US",
+            "source": item.get("source") or "Research lead",
+            "family": "research-seed",
+            "priority": int(item.get("priority", 8)),
+            "philly": bool(item.get("philly", False)),
+            "url": url,
+            "headers": dict(item.get("headers") or {}),
+            "source_type": item.get("source_type", "public-third-party"),
+            "content_kind": item.get("content_kind", "unknown"),
+            "content_note": item.get("content_note", ""),
+            "research_url": item.get("research_url"),
+        }
+        discovered.append(entry)
+        rows.append({
+            "kind": "seed-candidate",
+            "status": "queued-for-health-check",
+            "name": entry["name"],
+            "tvg_id": tvg_id,
+            "source": entry["source"],
+            "source_type": entry["source_type"],
+            "content_kind": entry["content_kind"],
+            "url": url,
+            "research_url": entry.get("research_url"),
+        })
+
+    return discovered, rows
+
+
 def discover_dynamic_streams(config: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if not (config.get("discovery") or {}).get("enabled", True):
         return [], []
 
     official_entries, official_rows = discover_official_page_streams(config)
     issue_entries, issue_rows = discover_iptv_org_passed_issues(config)
+    seed_entries, seed_rows = discover_seed_candidates(config)
 
     combined: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
-    for entry in official_entries + issue_entries:
+    for entry in official_entries + issue_entries + seed_entries:
         marker = (canonical_tvg_id(entry.get("tvg_id", "")), entry.get("url", ""))
         if marker in seen:
             continue
@@ -373,9 +432,9 @@ def discover_dynamic_streams(config: dict[str, Any]) -> tuple[list[dict[str, Any
 
     log(
         f"Dynamic discovery: {len(official_entries)} official-page + "
-        f"{len(issue_entries)} IPTV-org issue candidates"
+        f"{len(issue_entries)} IPTV-org issue + {len(seed_entries)} seed candidates"
     )
-    return combined, official_rows + issue_rows
+    return combined, official_rows + issue_rows + seed_rows
 
 
 def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) -> dict[str, Any]:
