@@ -174,24 +174,47 @@ def stream_object(stream: dict[str, Any], index: int) -> dict[str, Any]:
             obj["behaviorHints"]["proxyHeaders"] = {"request": headers}
     return obj
 
-def write_paginated_catalog(base_dir: Path, catalog_id: str, channels: list[dict[str, Any]], page_size: int) -> None:
+def write_paginated_catalog(
+    base_dir: Path,
+    catalog_id: str,
+    channels: list[dict[str, Any]],
+    page_size: int,
+    discover_only: bool = False,
+) -> None:
     catalog_dir = base_dir / "catalog" / "tv" / catalog_id
     catalog_dir.mkdir(parents=True, exist_ok=True)
     previews = [channel_preview(c) for c in channels]
 
-    write_json(base_dir / "catalog" / "tv" / f"{catalog_id}.json", {"metas": previews[:page_size]})
-    write_json(catalog_dir / "skip=0.json", {"metas": previews[:page_size]})
+    first = {"metas": previews[:page_size]}
+    # Keep the plain endpoint for debugging/compatibility. For discover-only
+    # catalogs the manifest requires genre=All, so Stremio's Board/Home will
+    # not request this endpoint.
+    write_json(base_dir / "catalog" / "tv" / f"{catalog_id}.json", first)
+    write_json(catalog_dir / "skip=0.json", first)
+
+    if discover_only:
+        write_json(catalog_dir / "genre=All.json", first)
+        write_json(catalog_dir / "genre=All&skip=0.json", first)
+        write_json(catalog_dir / "skip=0&genre=All.json", first)
 
     skip = page_size
     while skip < len(previews):
-        write_json(catalog_dir / f"skip={skip}.json", {"metas": previews[skip : skip + page_size]})
+        page = {"metas": previews[skip : skip + page_size]}
+        write_json(catalog_dir / f"skip={skip}.json", page)
+        if discover_only:
+            write_json(catalog_dir / f"genre=All&skip={skip}.json", page)
+            write_json(catalog_dir / f"skip={skip}&genre=All.json", page)
         skip += page_size
+
     # Stremio continues until it receives an empty page.
     final_skip = ((len(previews) + page_size - 1) // page_size) * page_size
     if final_skip == 0:
         final_skip = page_size
-    write_json(catalog_dir / f"skip={final_skip}.json", {"metas": []})
-
+    empty = {"metas": []}
+    write_json(catalog_dir / f"skip={final_skip}.json", empty)
+    if discover_only:
+        write_json(catalog_dir / f"genre=All&skip={final_skip}.json", empty)
+        write_json(catalog_dir / f"skip={final_skip}&genre=All.json", empty)
 
 def write_epg_pages(
     base_dir: Path,
