@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV package with major national cable networks, Philadelphia locals, Now/Next programme info, health-ranked backup streams, and up to three stream choices per channel.",
-    "version": "0.3.6"
+    "description": "Curated Philadelphia-area live TV package with Now/Next programme info and only stream candidates that pass the automated builder playback check.",
+    "version": "0.3.7"
   },
   "sources": {
     "playlists": [
@@ -444,8 +444,9 @@
   "manual_sources_file": "manual_sources.json",
   "stream_health": {
     "enabled": true,
+    "require_passed_only": true,
     "timeout_seconds": 6,
     "max_workers": 16,
-    "verify_segment_for_priority_channels": true
+    "verify_segment_for_all_candidates": true
   }
 }
