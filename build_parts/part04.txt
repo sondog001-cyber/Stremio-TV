@@ -232,7 +232,8 @@ def _target_ids_for_source_hunt(
     unrelated upstream channel into the health checker.
     """
     targets: dict[str, str] = {}
-    for row in build_allowlist_coverage(existing_entries, config):
+    coverage_entries = canonicalize_approved_sources(existing_entries, config)
+    for row in build_allowlist_coverage(coverage_entries, config):
         if not row.get("found"):
             pattern = str(row.get("pattern") or "")
             if pattern:

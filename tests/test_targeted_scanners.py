@@ -92,6 +92,24 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertEqual(family_row["records_scanned"], 2)
         self.assertEqual(family_row["candidates_found"], 1)
 
+    def test_target_set_canonicalizes_existing_approved_aliases(self):
+        config = minimal_config()
+        existing = [
+            {
+                "name": "FXX",
+                "name_raw": "FXX",
+                "tvg_id": "",
+                "url": "https://existing.test/fxx.m3u8",
+                "source": "Existing alias source",
+                "family": "shovo",
+                "quality": "HD",
+            }
+        ]
+        with mock.patch.object(build, "_load_previous_channel_state", return_value={}):
+            targets = build._target_ids_for_source_hunt(config, existing)
+
+        self.assertEqual(targets, ["CNN.us"])
+
     def test_iptv_org_removals_are_diagnostics_not_candidates(self):
         config = minimal_config()
         issues = [
