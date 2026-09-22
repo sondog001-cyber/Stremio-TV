@@ -28,12 +28,12 @@ Stremio TV reads these in priority order:
 2. **IPTV-org Philadelphia public** — primary local source
 3. **IPTV-org US raw/internal stream list** — preserves alternate URLs that the normal public playlist filters down
 4. **Free-TV/IPTV** — quality-over-quantity backup list that favors mainstream free channels and HD where possible
-5. **Philadelphia OTA Relay Mirror (unverified)** — experimental full-linear local affiliate candidates used only for the curated Philadelphia stations
-6. **Targeted source-family scanners** — aria-tv US, Shovo US, world_ip_tv US, MoveOnJoy/TVPass forks, FreeCastHub and InsolenceTVGo are searched only for exact IDs that have no candidate now or were missing in the prior build
-7. **Fresh IPTV-org add/remove issues** — recent `check:passed` issues are filtered to the same remaining exact IDs; removal issues are diagnostic signals and never become stream candidates
+5. **Philadelphia-local source hunt** — WPVI, WCAU, KYW, WHYY, WPHL and WPSG are searched separately across station pages, the experimental OTA relay and local MoveOnJoy affiliate entries
+6. **National targeted source-family scanners** — aria-tv US, Shovo US, world_ip_tv US, MoveOnJoy/TVPass forks, FreeCastHub and InsolenceTVGo are searched only for exact national IDs that have no candidate now or were missing in the prior build
+7. **Fresh IPTV-org add/remove issues** — recent `check:passed` issues are filtered independently to the remaining local and national exact IDs; removal issues are diagnostic signals and never become stream candidates
 8. **User manual sources** — optional public URLs you add to `manual_sources.json`
 
-For Philadelphia locals, the builder prefers full-linear station feeds when available. **WHYY uses an official PBS-hosted live feed.** The OTA-relay and MoveOnJoy sources are explicitly unverified and remain lower priority than vetted/public sources. They are included for testing closer-to-broadcast linear coverage rather than treated as authoritative or guaranteed-stable sources.
+For Philadelphia locals, the builder prefers full-linear station feeds when available. **WHYY uses an official PBS-hosted live feed.** The local hunt is isolated from premium/national cable discovery and produces `site/diagnostics/philly-local-scans.json`. The OTA-relay and MoveOnJoy sources are explicitly unverified and remain lower priority than vetted/public sources. They are included for testing closer-to-broadcast linear coverage rather than treated as authoritative or guaranteed-stable sources.
 
 EPG:
 

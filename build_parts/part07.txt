@@ -17,6 +17,10 @@
             output / "diagnostics" / "targeted-source-scans.json",
             [row for row in discovery_results if str(row.get("kind", "")).startswith("targeted-source")],
         )
+        write_json(
+            output / "diagnostics" / "philly-local-scans.json",
+            [row for row in discovery_results if row.get("scope") == "philly-local"],
+        )
         write_json(output / "diagnostics" / "source-results.json", source_results)
         write_landing_page(output, config, status)
         write_icon(output)

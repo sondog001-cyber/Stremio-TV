@@ -41,6 +41,7 @@ def minimal_config():
 class TargetedScannerTests(unittest.TestCase):
     def setUp(self):
         build._PREVIOUS_CHANNEL_STATE_CACHE = None
+        build._PUBLIC_TEXT_CACHE.clear()
 
     def test_aria_parser_skips_upstream_not_working_rows(self):
         text = "\n".join(
@@ -109,6 +110,59 @@ class TargetedScannerTests(unittest.TestCase):
             targets = build._target_ids_for_source_hunt(config, existing)
 
         self.assertEqual(targets, ["CNN.us"])
+
+    def test_local_and_national_target_sets_are_disjoint(self):
+        config = minimal_config()
+        config["curation"]["philly_allow"] = ["WPVI.us", "WPSG.us"]
+        config["discovery"]["philly_local_sources"] = {
+            "target_ids": ["WPVI.us", "WPSG.us"],
+        }
+        with mock.patch.object(build, "_load_previous_channel_state", return_value={}):
+            national = build._target_ids_for_source_hunt(config, [], scope="national")
+            philly = build._target_ids_for_source_hunt(config, [], scope="philly")
+
+        self.assertEqual(national, ["CNN.us", "FXX.us"])
+        self.assertEqual(philly, ["WPVI.us", "WPSG.us"])
+        self.assertFalse(set(national) & set(philly))
+
+    def test_philly_scanner_retains_only_exact_local_ids(self):
+        config = minimal_config()
+        config["curation"]["philly_allow"] = ["WPVI.us"]
+        config["discovery"]["philly_local_sources"] = {
+            "enabled": True,
+            "target_ids": ["WPVI.us"],
+            "official_pages": [],
+            "playlists": [
+                {
+                    "name": "Local test",
+                    "family": "localbtv-relay",
+                    "format": "m3u",
+                    "url": "https://example.test/locals.m3u",
+                    "philly": True,
+                }
+            ],
+        }
+        playlist = "\n".join(
+            [
+                "#EXTM3U",
+                '#EXTINF:-1 tvg-id="WPVI.us",6ABC WPVI',
+                "https://local.test/wpvi.m3u8",
+                '#EXTINF:-1 tvg-id="ESPN.us",ESPN',
+                "https://national.test/espn.m3u8",
+            ]
+        )
+        with mock.patch.object(build, "_load_previous_channel_state", return_value={}), mock.patch.object(
+            build,
+            "_fetch_public_text",
+            return_value=(playlist, "https://example.test/locals.m3u"),
+        ):
+            entries, rows, targets = build.discover_philly_local_sources(config, [])
+
+        self.assertEqual(targets, ["WPVI.us"])
+        self.assertEqual([entry["tvg_id"] for entry in entries], ["WPVI.us"])
+        self.assertTrue(entries[0]["philly"])
+        self.assertTrue(entries[0]["philly_local_scan"])
+        self.assertTrue(all(row.get("scope") == "philly-local" for row in rows))
 
     def test_iptv_org_removals_are_diagnostics_not_candidates(self):
         config = minimal_config()

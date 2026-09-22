@@ -237,4 +237,10 @@
                 "targets": len(next((row.get("target_ids") or [] for row in discovery_results if row.get("kind") == "targeted-source-summary"), [])),
                 "candidates": sum(int(row.get("candidates_found", 0)) for row in discovery_results if row.get("kind") == "targeted-source-family"),
             },
+            "philly_local_scans": {
+                "playlists": sum(1 for row in discovery_results if row.get("kind") == "philly-local-playlist"),
+                "official_pages": sum(1 for row in discovery_results if row.get("kind") == "philly-official-page"),
+                "targets": len(next((row.get("target_ids") or [] for row in discovery_results if row.get("kind") == "philly-local-summary"), [])),
+                "candidates": int(next((row.get("candidates_found", 0) for row in discovery_results if row.get("kind") == "philly-local-summary"), 0)),
+            },
             "source_results": source_results,

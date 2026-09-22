@@ -154,8 +154,14 @@ def _short_source_name(stream: dict[str, Any]) -> str:
 
 
 
+_PUBLIC_TEXT_CACHE: dict[tuple[str, int], tuple[str, str]] = {}
+
+
 def _fetch_public_text(url: str, timeout: int = 12, byte_limit: int = 2_000_000) -> tuple[str, str]:
     """Fetch a public page/API response without credentials or session cookies."""
+    cache_key = (url, byte_limit)
+    if cache_key in _PUBLIC_TEXT_CACHE:
+        return _PUBLIC_TEXT_CACHE[cache_key]
     req = urllib.request.Request(
         url,
         headers={
@@ -167,7 +173,9 @@ def _fetch_public_text(url: str, timeout: int = 12, byte_limit: int = 2_000_000)
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         final_url = resp.geturl()
         body = resp.read(byte_limit)
-    return body.decode("utf-8", errors="ignore"), final_url
+    result = (body.decode("utf-8", errors="ignore"), final_url)
+    _PUBLIC_TEXT_CACHE[cache_key] = result
+    return result
 
 
 def _extract_public_hls_urls(text: str, base_url: str = "") -> list[str]:
@@ -202,13 +210,24 @@ def _extract_public_hls_urls(text: str, base_url: str = "") -> list[str]:
     return list(dict.fromkeys(found))
 
 
-def _exact_allowlist_ids(config: dict[str, Any]) -> list[str]:
-    """Return the deduplicated exact IDs that define the curated lineup."""
+def _exact_allowlist_ids(config: dict[str, Any], scope: str = "all") -> list[str]:
+    """Return deduplicated exact IDs for all, Philly, or national scope."""
     curation = config.get("curation") or {}
+    local_settings = (config.get("discovery") or {}).get("philly_local_sources") or {}
     ids: list[str] = []
     seen: set[str] = set()
-    for key in ("philly_allow", "national_allow"):
-        for pattern in curation.get(key, []):
+    keys = {
+        "all": ("philly_allow", "national_allow"),
+        "philly": ("philly_allow",),
+        "national": ("national_allow",),
+    }.get(scope)
+    if keys is None:
+        raise ValueError(f"Unknown allowlist scope: {scope}")
+    for key in keys:
+        patterns = curation.get(key, [])
+        if scope == "philly" and key == "philly_allow" and local_settings.get("target_ids"):
+            patterns = local_settings["target_ids"]
+        for pattern in patterns:
             if "." not in (pattern or ""):
                 continue
             target = _desired_id(pattern, curation)
@@ -223,6 +242,7 @@ def _exact_allowlist_ids(config: dict[str, Any]) -> list[str]:
 def _target_ids_for_source_hunt(
     config: dict[str, Any],
     existing_entries: list[dict[str, Any]],
+    scope: str = "all",
 ) -> list[str]:
     """Target only current candidate gaps plus channels missing last build.
 
@@ -231,12 +251,16 @@ def _target_ids_for_source_hunt(
     The union means a recovered URL is actively hunted without feeding every
     unrelated upstream channel into the health checker.
     """
+    in_scope = {
+        canonical_tvg_id(item): item
+        for item in _exact_allowlist_ids(config, scope=scope)
+    }
     targets: dict[str, str] = {}
     coverage_entries = canonicalize_approved_sources(existing_entries, config)
     for row in build_allowlist_coverage(coverage_entries, config):
         if not row.get("found"):
             pattern = str(row.get("pattern") or "")
-            if pattern:
+            if pattern and canonical_tvg_id(pattern) in in_scope:
                 targets[canonical_tvg_id(pattern)] = pattern
 
     previous = _load_previous_channel_state(config)
@@ -244,10 +268,10 @@ def _target_ids_for_source_hunt(
         if not isinstance(record, dict) or record.get("present"):
             continue
         pattern = str(record.get("pattern") or "")
-        if pattern:
+        if pattern and canonical_tvg_id(pattern) in in_scope:
             targets[canonical_tvg_id(pattern)] = pattern
 
-    allow_order = _exact_allowlist_ids(config)
+    allow_order = _exact_allowlist_ids(config, scope=scope)
     return [item for item in allow_order if canonical_tvg_id(item) in targets]
 
 
@@ -316,11 +340,12 @@ def discover_targeted_source_families(
     if not settings.get("enabled", True):
         return [], [], []
 
-    target_ids = _target_ids_for_source_hunt(config, existing_entries)
+    target_ids = _target_ids_for_source_hunt(config, existing_entries, scope="national")
     sources = settings.get("sources") or []
     if not target_ids or not sources:
         return [], [{
             "kind": "targeted-source-summary",
+            "scope": "national",
             "status": "nothing-to-scan",
             "target_ids": target_ids,
             "source_count": len(sources),
@@ -338,6 +363,7 @@ def discover_targeted_source_families(
         fmt = str(source.get("format") or "m3u").lower()
         row: dict[str, Any] = {
             "kind": "targeted-source-family",
+            "scope": "national",
             "name": source.get("name"),
             "family": source.get("family"),
             "url": url,
@@ -391,6 +417,7 @@ def discover_targeted_source_families(
 
     rows.insert(0, {
         "kind": "targeted-source-summary",
+        "scope": "national",
         "status": "complete",
         "target_ids": target_ids,
         "source_count": len(sources),
@@ -403,19 +430,125 @@ def discover_targeted_source_families(
     return discovered, rows, target_ids
 
 
-def discover_official_page_streams(config: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def discover_philly_local_sources(
+    config: dict[str, Any],
+    existing_entries: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str]]:
+    """Hunt Philadelphia station sources independently of national cable."""
+    settings = (config.get("discovery") or {}).get("philly_local_sources") or {}
+    if not settings.get("enabled", True):
+        return [], [], []
+
+    target_ids = _target_ids_for_source_hunt(config, existing_entries, scope="philly")
+    sources = settings.get("playlists") or []
     discovered: list[dict[str, Any]] = []
     rows: list[dict[str, Any]] = []
-    settings = (config.get("discovery") or {}).get("official_pages") or []
+    seen: set[tuple[str, str]] = set()
+    timeout = int(settings.get("timeout_seconds", 20))
+    byte_limit = int(settings.get("byte_limit", 8_000_000))
+    default_cap = max(1, int(settings.get("max_candidates_per_target", 6)))
+
+    for source in sources:
+        url = str(source.get("url") or "").strip()
+        row: dict[str, Any] = {
+            "kind": "philly-local-playlist",
+            "scope": "philly-local",
+            "name": source.get("name"),
+            "family": source.get("family"),
+            "url": url,
+            "target_count": len(target_ids),
+            "target_ids": target_ids,
+            "status": "pending",
+            "records_scanned": 0,
+            "candidates_found": 0,
+            "matched_ids": [],
+        }
+        if not target_ids:
+            row["status"] = "nothing-to-scan"
+            rows.append(row)
+            continue
+        try:
+            text, final_url = _fetch_public_text(
+                url,
+                timeout=int(source.get("timeout_seconds", timeout)),
+                byte_limit=int(source.get("byte_limit", byte_limit)),
+            )
+            parsed = parse_m3u(text, dict(source))
+            matched = _filter_entries_to_exact_targets(parsed, target_ids, config)
+            accepted: list[dict[str, Any]] = []
+            per_target: dict[str, int] = defaultdict(int)
+            source_cap = max(1, int(source.get("max_candidates_per_target", default_cap)))
+            for entry in matched:
+                target_marker = canonical_tvg_id(entry.get("tvg_id", ""))
+                if per_target[target_marker] >= source_cap:
+                    continue
+                marker = (target_marker, entry.get("url", ""))
+                if marker in seen:
+                    continue
+                seen.add(marker)
+                per_target[target_marker] += 1
+                entry["philly"] = True
+                entry["philly_local_scan"] = True
+                discovered.append(entry)
+                accepted.append(entry)
+            row["status"] = "ok"
+            row["final_url"] = final_url
+            row["records_scanned"] = len(parsed)
+            row["matches_before_cap"] = len(matched)
+            row["candidates_found"] = len(accepted)
+            row["matched_ids"] = sorted({entry.get("tvg_id") for entry in accepted if entry.get("tvg_id")})
+        except Exception as exc:
+            row["status"] = "failed"
+            row["error"] = str(exc)[:240]
+        rows.append(row)
+
+    official_entries, official_rows = discover_official_page_streams(
+        config,
+        items=settings.get("official_pages") or [],
+        target_ids=target_ids,
+        row_kind="philly-official-page",
+    )
+    discovered.extend(official_entries)
+    rows.extend(official_rows)
+    rows.insert(0, {
+        "kind": "philly-local-summary",
+        "scope": "philly-local",
+        "status": "complete" if target_ids else "nothing-to-scan",
+        "target_ids": target_ids,
+        "source_count": len(sources),
+        "official_page_count": len(settings.get("official_pages") or []),
+        "candidates_found": len(discovered),
+    })
+    log(
+        f"Philadelphia local scan: {len(target_ids)} exact IDs across "
+        f"{len(sources)} playlists and {len(settings.get('official_pages') or [])} official pages; "
+        f"{len(discovered)} candidates retained"
+    )
+    return discovered, rows, target_ids
+
+
+def discover_official_page_streams(
+    config: dict[str, Any],
+    items: list[dict[str, Any]] | None = None,
+    target_ids: list[str] | None = None,
+    row_kind: str = "official-page",
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    discovered: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+    settings = items if items is not None else (config.get("discovery") or {}).get("official_pages") or []
+    wanted = {canonical_tvg_id(item) for item in target_ids} if target_ids is not None else None
 
     for item in settings:
         page_url = item.get("page_url")
         tvg_id = item.get("tvg_id")
         if not page_url or not tvg_id:
             continue
+        if wanted is not None and canonical_tvg_id(tvg_id) not in wanted:
+            continue
 
         row: dict[str, Any] = {
-            "kind": "official-page",
+            "kind": row_kind,
+            "scope": "philly-local" if row_kind.startswith("philly-") else "shared",
             "name": item.get("name") or tvg_id,
             "tvg_id": tvg_id,
             "page_url": page_url,
@@ -473,6 +606,7 @@ def discover_official_page_streams(config: dict[str, Any]) -> tuple[list[dict[st
 def discover_iptv_org_passed_issues(
     config: dict[str, Any],
     target_ids: list[str] | None = None,
+    scope: str = "shared",
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Inspect fresh IPTV-org add/remove issues for remaining exact IDs.
 
@@ -512,6 +646,7 @@ def discover_iptv_org_passed_issues(
     except Exception as exc:
         return [], [{
             "kind": "iptv-org-issues",
+            "scope": scope,
             "status": "failed",
             "error": str(exc)[:240],
             "api_url": api_url,
@@ -548,6 +683,7 @@ def discover_iptv_org_passed_issues(
         if change_kind == "remove":
             rows.append({
                 "kind": "iptv-org-issue",
+                "scope": scope,
                 "status": "removal-signal",
                 "change": "remove",
                 "issue": issue_number,
@@ -584,6 +720,7 @@ def discover_iptv_org_passed_issues(
             })
         rows.append({
             "kind": "iptv-org-issue",
+            "scope": scope,
             "status": "candidate-found",
             "change": "add",
             "issue": issue_number,
@@ -599,6 +736,7 @@ def discover_iptv_org_passed_issues(
 def discover_seed_candidates(
     config: dict[str, Any],
     target_ids: list[str] | None = None,
+    scope: str = "shared",
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Load public research leads from config.
 
@@ -644,6 +782,7 @@ def discover_seed_candidates(
         discovered.append(entry)
         rows.append({
             "kind": "seed-candidate",
+            "scope": scope,
             "status": "queued-for-health-check",
             "name": entry["name"],
             "tvg_id": tvg_id,
@@ -664,17 +803,34 @@ def discover_dynamic_streams(
     if not (config.get("discovery") or {}).get("enabled", True):
         return [], []
 
-    targeted_entries, targeted_rows, target_ids = discover_targeted_source_families(
+    targeted_entries, targeted_rows, national_target_ids = discover_targeted_source_families(
         config,
         existing_entries,
     )
-    official_entries, official_rows = discover_official_page_streams(config)
-    issue_entries, issue_rows = discover_iptv_org_passed_issues(config, target_ids)
-    seed_entries, seed_rows = discover_seed_candidates(config, target_ids)
+    local_entries, local_rows, philly_target_ids = discover_philly_local_sources(
+        config,
+        existing_entries,
+    )
+    national_issue_entries, national_issue_rows = discover_iptv_org_passed_issues(
+        config, national_target_ids, scope="national",
+    )
+    local_issue_entries, local_issue_rows = discover_iptv_org_passed_issues(
+        config, philly_target_ids, scope="philly-local",
+    )
+    national_seed_entries, national_seed_rows = discover_seed_candidates(
+        config, national_target_ids, scope="national",
+    )
+    local_seed_entries, local_seed_rows = discover_seed_candidates(
+        config, philly_target_ids, scope="philly-local",
+    )
 
     combined: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
-    for entry in targeted_entries + official_entries + issue_entries + seed_entries:
+    all_entries = (
+        targeted_entries + local_entries + national_issue_entries + local_issue_entries
+        + national_seed_entries + local_seed_entries
+    )
+    for entry in all_entries:
         marker = (canonical_tvg_id(entry.get("tvg_id", "")), entry.get("url", ""))
         if marker in seen:
             continue
@@ -683,10 +839,14 @@ def discover_dynamic_streams(
 
     log(
         f"Dynamic discovery: {len(targeted_entries)} targeted-family + "
-        f"{len(official_entries)} official-page + {len(issue_entries)} IPTV-org issue + "
-        f"{len(seed_entries)} seed candidates"
+        f"{len(local_entries)} Philadelphia-local + "
+        f"{len(national_issue_entries) + len(local_issue_entries)} IPTV-org issue + "
+        f"{len(national_seed_entries) + len(local_seed_entries)} seed candidates"
     )
-    return combined, targeted_rows + official_rows + issue_rows + seed_rows
+    return combined, (
+        targeted_rows + local_rows + national_issue_rows + local_issue_rows
+        + national_seed_rows + local_seed_rows
+    )
 
 
 def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) -> dict[str, Any]:
