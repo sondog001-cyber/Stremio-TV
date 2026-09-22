@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with exact-channel identity matching, cross-build 5-run stream stability scoring, expanded public/premium candidate scanning, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.15"
+    "version": "0.3.16"
   },
   "sources": {
     "playlists": [
@@ -116,14 +116,6 @@
         "name": "Roku Channel (BuddyChewChew)",
         "family": "roku",
         "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/refs/heads/main/playlists/roku_all.m3u",
-        "philly": false,
-        "priority": 13,
-        "required": false
-      },
-      {
-        "name": "Tubi Live TV (BuddyChewChew)",
-        "family": "tubi",
-        "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/refs/heads/main/playlists/tubi_all.m3u",
         "philly": false,
         "priority": 13,
         "required": false
@@ -308,15 +300,6 @@
         "priority": 13,
         "required": false,
         "fixture": "buddy-roku.m3u"
-      },
-      {
-        "name": "Buddy FAST Tubi",
-        "family": "buddy-fast",
-        "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/main/playlists/tubi_all.m3u",
-        "philly": false,
-        "priority": 13,
-        "required": false,
-        "fixture": "buddy-tubi.m3u"
       },
       {
         "name": "Buddy FAST Plex",
@@ -572,7 +555,6 @@
       "plutotv",
       "plextv",
       "roku",
-      "tubi",
       "apsattv-lg",
       "apsattv-vizio",
       "apsattv-localnow",
