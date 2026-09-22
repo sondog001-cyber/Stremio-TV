@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with exact-channel identity matching, cross-build 5-run stream stability scoring, expanded public/premium candidate scanning, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.18"
+    "version": "0.3.19"
   },
   "sources": {
     "playlists": [
@@ -888,7 +888,8 @@
           "philly": true,
           "group": "Local",
           "max_candidates": 4,
-          "content_note": "Official Philly 57 page; candidate accepted only if a public HLS is plainly exposed and passes both probes.",
+          "candidate_mode": "research-only",
+          "content_note": "Official Philly 57 page retained as a research lead. Its currently exposed HLS manifests are CBS News Philadelphia, not verified WPSG linear, so they are never emitted as WPSG candidates.",
           "content_kind": "unknown"
         }
       ]

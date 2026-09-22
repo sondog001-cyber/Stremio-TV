@@ -33,7 +33,7 @@ Stremio TV reads these in priority order:
 7. **Fresh IPTV-org add/remove issues** — recent `check:passed` issues are filtered independently to the remaining local and national exact IDs; removal issues are diagnostic signals and never become stream candidates
 8. **User manual sources** — optional public URLs you add to `manual_sources.json`
 
-For Philadelphia locals, the builder prefers full-linear station feeds when available. **WHYY uses an official PBS-hosted live feed.** The local hunt is isolated from premium/national cable discovery and produces `site/diagnostics/philly-local-scans.json`. The OTA-relay and MoveOnJoy sources are explicitly unverified and remain lower priority than vetted/public sources. They are included for testing closer-to-broadcast linear coverage rather than treated as authoritative or guaranteed-stable sources.
+For Philadelphia locals, the builder prefers full-linear station feeds when available. **WHYY uses an official PBS-hosted live feed.** The local hunt is isolated from premium/national cable discovery and produces `site/diagnostics/philly-local-scans.json`. The WPSG station page is diagnostics-only because its embedded player currently exposes CBS News Philadelphia rather than a verified Philly 57 linear feed. The OTA-relay and MoveOnJoy sources are explicitly unverified and remain lower priority than vetted/public sources. They are included for testing closer-to-broadcast linear coverage rather than treated as authoritative or guaranteed-stable sources.
 
 EPG:
 

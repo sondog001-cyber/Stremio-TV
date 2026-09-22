@@ -164,6 +164,32 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertTrue(entries[0]["philly_local_scan"])
         self.assertTrue(all(row.get("scope") == "philly-local" for row in rows))
 
+    def test_research_only_official_page_never_emits_candidate(self):
+        config = minimal_config()
+        page = '<script>const live = "https://example.test/cbs-news-live.m3u8";</script>'
+        item = {
+            "name": "Philly 57 / WPSG",
+            "tvg_id": "WPSG.us",
+            "page_url": "https://example.test/philly-57/",
+            "candidate_mode": "research-only",
+        }
+        with mock.patch.object(
+            build,
+            "_fetch_public_text",
+            return_value=(page, item["page_url"]),
+        ):
+            entries, rows = build.discover_official_page_streams(
+                config,
+                items=[item],
+                target_ids=["WPSG.us"],
+                row_kind="philly-official-page",
+            )
+
+        self.assertEqual(entries, [])
+        self.assertEqual(rows[0]["candidates_emitted"], 0)
+        self.assertEqual(rows[0]["status"], "research-only-public-hls-found")
+        self.assertEqual(rows[0]["candidates"], ["https://example.test/cbs-news-live.m3u8"])
+
     def test_iptv_org_removals_are_diagnostics_not_candidates(self):
         config = minimal_config()
         issues = [
