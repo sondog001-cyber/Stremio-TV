@@ -972,6 +972,34 @@ def _github_raw_file_url(item: dict[str, Any]) -> str:
     return f"https://raw.githubusercontent.com/{owner}/{repository}/{revision}/{path}"
 
 
+def _is_clean_github_media_url(url: str) -> bool:
+    """Reject account-shaped provider links copied into public playlists.
+
+    A public GitHub file is not evidence that embedded provider credentials are
+    intended for public reuse. Keep ordinary public HLS/CDN URLs, but discard
+    URL userinfo, email-shaped path segments, explicit user/password query
+    parameters, and the common Xtream ``/live/user/pass/id`` layout.
+    """
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return False
+    if parsed.username is not None or parsed.password is not None:
+        return False
+
+    segments = [urllib.parse.unquote(part) for part in parsed.path.split("/") if part]
+    if any(re.search(r"^[^/@\s]+@[^/@\s]+\.[^/@\s]+$", part) for part in segments):
+        return False
+    if len(segments) >= 4 and segments[0].lower() in {"live", "movie", "series"}:
+        return False
+    if len(segments) >= 4 and [part.lower() for part in segments[:2]] == ["api", "stream"]:
+        return False
+
+    sensitive_keys = {"user", "username", "pass", "password", "pwd"}
+    if any(key.lower() in sensitive_keys for key, _ in urllib.parse.parse_qsl(parsed.query)):
+        return False
+    return True
+
+
 def discover_github_candidates(
     config: dict[str, Any],
     target_ids: list[str],
@@ -1057,6 +1085,7 @@ def discover_github_candidates(
                         "freshness": freshness,
                         "records_scanned": 0,
                         "candidates_found": 0,
+                        "credential_urls_rejected": 0,
                     }
                     if freshness["score"] < min_score:
                         file_row["status"] = "below-freshness-threshold"
@@ -1077,6 +1106,9 @@ def discover_github_candidates(
                     file_row["records_scanned"] = len(parsed)
                     accepted = 0
                     for entry in matched[: int(settings.get("max_candidates_per_file", 3))]:
+                        if not _is_clean_github_media_url(str(entry.get("url") or "")):
+                            file_row["credential_urls_rejected"] += 1
+                            continue
                         marker = (canonical_tvg_id(target_id), str(entry.get("url") or ""))
                         if marker in seen_candidates:
                             continue

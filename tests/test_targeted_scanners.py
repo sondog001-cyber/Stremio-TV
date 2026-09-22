@@ -325,6 +325,47 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertGreater(fresh["score"], stale["score"])
         self.assertEqual(stale["label"], "stale")
 
+    def test_github_search_rejects_embedded_provider_credentials(self):
+        config = minimal_config()
+        config["discovery"]["github_candidate_search"] = {
+            "enabled": True,
+            "max_targets_per_build": 1,
+            "max_queries_per_build": 1,
+            "min_freshness_score": 55,
+            "max_candidates_per_file": 5,
+        }
+        search_payload = {
+            "items": [{
+                "path": "channels.m3u",
+                "html_url": "https://github.com/example/tv/blob/abc123/channels.m3u",
+                "repository": {
+                    "full_name": "example/tv",
+                    "pushed_at": "2026-09-20T00:00:00Z",
+                },
+            }]
+        }
+        playlist = "\n".join([
+            "#EXTM3U",
+            '#EXTINF:-1 tvg-id="FXX.us",FXX public',
+            "https://cdn.example.test/fxx/master.m3u8",
+            '#EXTINF:-1 tvg-id="FXX.us",FXX credential path',
+            "http://provider.example:8080/live/account-name/secret-value/1234.ts",
+            '#EXTINF:-1 tvg-id="FXX.us",FXX email path',
+            "https://provider.example/api/stream/person@example.com/1234/fxx.m3u8",
+        ])
+
+        def fetch(url, **kwargs):
+            if "api.github.com/search/code" in url:
+                return json.dumps(search_payload), url
+            return playlist, url
+
+        with mock.patch.object(build, "_fetch_public_text", side_effect=fetch):
+            entries, rows = build.discover_github_candidates(config, ["FXX.us"])
+
+        self.assertEqual([entry["url"] for entry in entries], ["https://cdn.example.test/fxx/master.m3u8"])
+        file_row = next(row for row in rows if row["kind"] == "github-candidate-search")["files"][0]
+        self.assertEqual(file_row["credential_urls_rejected"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()
