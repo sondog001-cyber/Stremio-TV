@@ -325,6 +325,126 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertGreater(fresh["score"], stale["score"])
         self.assertEqual(stale["label"], "stale")
 
+    def test_github_search_gives_every_target_exact_id_first(self):
+        config = minimal_config()
+        config["discovery"]["github_candidate_search"] = {
+            "enabled": True,
+            "max_targets_per_build": 2,
+            "max_queries_per_build": 3,
+            "min_query_interval_seconds": 0,
+        }
+        requested = []
+
+        def fetch(url, **kwargs):
+            requested.append(urllib.parse.unquote(url))
+            return json.dumps({"items": []}), url
+
+        with mock.patch.object(build, "_fetch_public_text", side_effect=fetch):
+            _, rows = build.discover_github_candidates(config, ["FXX.us", "CNN.us"])
+
+        search_rows = [row for row in rows if row["kind"] == "github-candidate-search"]
+        self.assertEqual(
+            [(row["tvg_id"], row["match_kind"]) for row in search_rows],
+            [
+                ("FXX.us", "exact-id"),
+                ("CNN.us", "exact-id"),
+                ("FXX.us", "approved-alias"),
+            ],
+        )
+        self.assertEqual(len(requested), 3)
+
+    def test_github_search_paces_code_search_requests(self):
+        config = minimal_config()
+        config["discovery"]["github_candidate_search"] = {
+            "enabled": True,
+            "max_targets_per_build": 2,
+            "max_queries_per_build": 2,
+            "min_query_interval_seconds": 7,
+        }
+        with mock.patch.object(
+            build,
+            "_fetch_public_text",
+            return_value=(json.dumps({"items": []}), "https://api.github.test/search"),
+        ), mock.patch.object(
+            build.time,
+            "monotonic",
+            side_effect=[100.0, 101.0, 107.0],
+        ), mock.patch.object(build.time, "sleep") as sleep:
+            _, rows = build.discover_github_candidates(config, ["FXX.us", "CNN.us"])
+
+        sleep.assert_called_once_with(6.0)
+        self.assertEqual(rows[0]["min_query_interval_seconds"], 7.0)
+        self.assertEqual(rows[0]["paced_wait_seconds"], 6.0)
+
+    def test_github_search_retries_bounded_rate_limit(self):
+        config = minimal_config()
+        config["discovery"]["github_candidate_search"] = {
+            "enabled": True,
+            "max_targets_per_build": 1,
+            "max_queries_per_build": 1,
+            "min_query_interval_seconds": 0,
+            "rate_limit_retries": 1,
+            "max_rate_limit_wait_seconds": 10,
+        }
+        error = build.urllib.error.HTTPError(
+            "https://api.github.test/search",
+            429,
+            "Too Many Requests",
+            {"Retry-After": "1"},
+            None,
+        )
+        with mock.patch.object(
+            build,
+            "_fetch_public_text",
+            side_effect=[error, (json.dumps({"items": []}), "https://api.github.test/search")],
+        ), mock.patch.object(build.time, "sleep") as sleep:
+            _, rows = build.discover_github_candidates(config, ["FXX.us"])
+
+        sleep.assert_called_once_with(1.25)
+        self.assertEqual(rows[0]["rate_limit_retries"], 1)
+        self.assertEqual(rows[1]["status"], "ok")
+
+    def test_github_search_fetches_real_repository_freshness(self):
+        config = minimal_config()
+        config["curation"]["approved_unverified_families"].append("github-candidate")
+        config["discovery"]["github_candidate_search"] = {
+            "enabled": True,
+            "max_targets_per_build": 1,
+            "max_queries_per_build": 1,
+            "min_query_interval_seconds": 0,
+            "min_freshness_score": 55,
+        }
+        search_payload = {
+            "items": [{
+                "path": "channels.m3u",
+                "html_url": "https://github.com/example/tv/blob/abc123/channels.m3u",
+                "repository": {
+                    "full_name": "example/tv",
+                    "url": "https://api.github.com/repos/example/tv",
+                },
+            }]
+        }
+        playlist = "\n".join([
+            "#EXTM3U",
+            '#EXTINF:-1 tvg-id="FXX.us",FXX',
+            "https://stream.test/fxx.m3u8",
+        ])
+
+        def fetch(url, **kwargs):
+            if "search/code" in url:
+                return json.dumps(search_payload), url
+            if url == "https://api.github.com/repos/example/tv":
+                return json.dumps({"pushed_at": "2026-09-20T00:00:00Z"}), url
+            return playlist, url
+
+        with mock.patch.object(build, "_fetch_public_text", side_effect=fetch):
+            entries, rows = build.discover_github_candidates(config, ["FXX.us"])
+
+        self.assertEqual(len(entries), 1)
+        file_row = next(row for row in rows if row["kind"] == "github-candidate-search")["files"][0]
+        self.assertEqual(file_row["freshness"]["label"], "fresh")
+        self.assertEqual(file_row["freshness"]["updated_at"], "2026-09-20T00:00:00Z")
+
     def test_github_search_rejects_embedded_provider_credentials(self):
         config = minimal_config()
         config["discovery"]["github_candidate_search"] = {
@@ -352,6 +472,8 @@ class TargetedScannerTests(unittest.TestCase):
             "http://provider.example:8080/live/account-name/secret-value/1234.ts",
             '#EXTINF:-1 tvg-id="FXX.us",FXX email path',
             "https://provider.example/api/stream/person@example.com/1234/fxx.m3u8",
+            '#EXTINF:-1 tvg-id="FXX.us",FXX expiring token',
+            "https://cdn.example.test/fxx/master.m3u8?token=short-lived",
         ])
 
         def fetch(url, **kwargs):
@@ -364,7 +486,7 @@ class TargetedScannerTests(unittest.TestCase):
 
         self.assertEqual([entry["url"] for entry in entries], ["https://cdn.example.test/fxx/master.m3u8"])
         file_row = next(row for row in rows if row["kind"] == "github-candidate-search")["files"][0]
-        self.assertEqual(file_row["credential_urls_rejected"], 2)
+        self.assertEqual(file_row["credential_urls_rejected"], 3)
 
 
 if __name__ == "__main__":

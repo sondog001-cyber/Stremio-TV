@@ -320,10 +320,20 @@
                     "targets": len(row.get("target_ids") or []),
                     "queries_run": row.get("queries_run", 0),
                     "candidates_found": row.get("candidates_found", 0),
+                    "min_query_interval_seconds": row.get("min_query_interval_seconds", 0),
+                    "paced_wait_seconds": row.get("paced_wait_seconds", 0),
+                    "rate_limit_retries": row.get("rate_limit_retries", 0),
                 }
                 for row in discovery_results
                 if row.get("kind") == "github-candidate-summary"
-            ), {"targets": 0, "queries_run": 0, "candidates_found": 0}),
+            ), {
+                "targets": 0,
+                "queries_run": 0,
+                "candidates_found": 0,
+                "min_query_interval_seconds": 0,
+                "paced_wait_seconds": 0,
+                "rate_limit_retries": 0,
+            }),
             "official_player_scans": {
                 "pages": sum(1 for row in discovery_results if str(row.get("kind", "")).endswith("official-page")),
                 "documents": sum(
