@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with strict exact-channel identity matching, exhaustive FMHY/public-mirror candidate scanning, expanded premium coverage, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.14"
+    "description": "Curated Philadelphia-area live TV with exact-channel identity matching, cross-build 5-run stream stability scoring, expanded public/premium candidate scanning, Now/Next EPG, and two-probe playback validation.",
+    "version": "0.3.15"
   },
   "sources": {
     "playlists": [
@@ -2627,5 +2627,11 @@
       "category": "Movies",
       "service_type": "Premium movie network"
     }
+  },
+  "stream_stability": {
+    "enabled": true,
+    "history_size": 5,
+    "retention_builds": 20,
+    "load_timeout_seconds": 8
   }
 }
