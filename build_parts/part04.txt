@@ -573,7 +573,12 @@ def discover_official_page_streams(
                 if len(urls) == 1 or any(word in context for word in ("live", "livestream", "linear", "streaming")):
                     accepted.append(url)
 
-            for url in accepted[: int(item.get("max_candidates", 4))]:
+            candidate_mode = str(item.get("candidate_mode") or "emit").lower()
+            emitted = accepted[: int(item.get("max_candidates", 4))]
+            if candidate_mode == "research-only":
+                emitted = []
+
+            for url in emitted:
                 discovered.append({
                     "name_raw": item.get("name") or tvg_id,
                     "name": item.get("name") or tvg_id,
@@ -594,7 +599,15 @@ def discover_official_page_streams(
                     "content_note": item.get("content_note", ""),
                 })
             row["candidates"] = accepted[: int(item.get("max_candidates", 4))]
-            row["status"] = "found" if row["candidates"] else "no-public-hls-in-page-source"
+            row["candidates_emitted"] = len(emitted)
+            if candidate_mode == "research-only":
+                row["status"] = (
+                    "research-only-public-hls-found"
+                    if row["candidates"]
+                    else "research-only-no-public-hls"
+                )
+            else:
+                row["status"] = "found" if row["candidates"] else "no-public-hls-in-page-source"
         except Exception as exc:
             row["status"] = "failed"
             row["error"] = str(exc)[:240]
