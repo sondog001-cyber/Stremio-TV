@@ -159,6 +159,16 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertEqual(philly, ["WPVI.us", "WPSG.us"])
         self.assertFalse(set(national) & set(philly))
 
+    def test_public_hunt_excludes_private_connector_only_ids(self):
+        config = minimal_config()
+        config["discovery"]["public_search_policy"] = {
+            "private_connector_only_ids": ["FXX.us"]
+        }
+        with mock.patch.object(build, "_load_previous_channel_state", return_value={}):
+            targets = build._target_ids_for_source_hunt(config, [])
+
+        self.assertEqual(targets, ["CNN.us"])
+
     def test_philly_scanner_retains_only_exact_local_ids(self):
         config = minimal_config()
         config["curation"]["philly_allow"] = ["WPVI.us"]

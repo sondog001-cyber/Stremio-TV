@@ -78,7 +78,21 @@
         channels = merge_channels(entries, config.get("favorites", []), max_streams, config)
         label_channel_streams(channels)
         source_ordering_rows = build_source_ordering_diagnostics(channels, config)
+        host_redundancy = build_host_redundancy_diagnostics(channels)
+        source_family_scoreboard = build_source_family_scoreboard(
+            stream_health_results,
+            channels,
+            channel_changes,
+            discovery_results,
+            config,
+            enabled=not bool(fixtures),
+        )
         log(f"Merged passing streams into {len(channels):,} channels")
+        log(
+            "Independent provider backups: "
+            f"{host_redundancy['summary']['with_independent_backup']:,} channels; "
+            f"{host_redundancy['summary']['fragile_single_provider']:,} fragile mirrors"
+        )
 
         build_stamp = build_info["built_at"]
         build_info["channels"] = len(channels)
@@ -279,6 +293,8 @@
             },
             "quality_measurements": quality_measurements["summary"],
             "missing_source_buckets": missing_source_diagnostics["summary"],
+            "host_redundancy": host_redundancy["summary"],
+            "source_family_scoreboard": source_family_scoreboard["summary"],
             "philly_recovery": philly_recovery["summary"],
             "stream_stability": {
                 "history_size": stream_stability_state.get("history_size", 5),

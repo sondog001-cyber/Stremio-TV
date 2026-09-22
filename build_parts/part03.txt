@@ -4,34 +4,52 @@
 
     # remaining() above tracks identity, so use URL based helper after copies.
     def remaining_url(predicate):
-        used = {s.get("url") for s in selected}
-        return [s for s in unique if s.get("url") not in used and predicate(s)]
+        used = {stream_effective_url(s) for s in selected}
+        return [s for s in unique if stream_effective_url(s) not in used and predicate(s)]
 
     current_sd = sum(1 for stream in selected if is_sd_stream(stream))
     for _ in range(current_sd, target_sd):
         candidates = remaining_url(is_sd_stream)
         if not candidates:
             break
-        pick = _choose_prefer_new_family(candidates, selected) if prefer_families else candidates[0]
+        pick = _choose_backup_candidate(
+            candidates,
+            selected,
+            prefer_hosts=prefer_hosts,
+            prefer_families=prefer_families,
+        )
         item = dict(pick)
         item["slot"] = "SD"
         selected.append(item)
 
     # Fill any empty slots with the best remaining stream, even if its quality is
     # unknown or it duplicates an HD/SD class.  Never return more than max_streams.
-    for pick in remaining_url(lambda _s: True):
-        if len(selected) >= max_streams:
+    while len(selected) < max_streams:
+        candidates = remaining_url(lambda _s: True)
+        if not candidates:
             break
+        pick = _choose_backup_candidate(
+            candidates,
+            selected,
+            prefer_hosts=prefer_hosts,
+            prefer_families=prefer_families,
+        )
         item = dict(pick)
         item["slot"] = "Backup"
         selected.append(item)
 
     selected = sorted(selected[:max_streams], key=priority_key)
-    for stream in selected:
+    used_provider_hosts: set[str] = set()
+    for index, stream in enumerate(selected):
         preference_rank, preference_label = _stream_preference_match(stream, preference_rules)
         stream["preference_rank"] = preference_rank + 1 if preference_rank <= len(preference_rules) else None
         stream["preference_label"] = preference_label
         stream["preference_channel_id"] = channel_id
+        provider_host = stream_provider_host(stream)
+        stream["provider_host"] = provider_host
+        stream["independent_provider"] = index == 0 or not provider_host or provider_host not in used_provider_hosts
+        if provider_host:
+            used_provider_hosts.add(provider_host)
     return selected
 
 
