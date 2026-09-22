@@ -35,6 +35,22 @@
             "streams": len(manual_streams),
         })
 
+        private_streams = load_private_connector_streams(config, config_path)
+        if private_streams:
+            build_info["deployment_mode"] = "private-connectors"
+            log(f"Loaded {len(private_streams):,} authorized private connector streams")
+            entries.extend(private_streams)
+        else:
+            build_info["deployment_mode"] = "public"
+        source_results.append({
+            "name": "Private connector overlay",
+            "family": "private-connector",
+            "url": None,
+            "required": False,
+            "status": "enabled" if private_streams else "disabled",
+            "streams": len(private_streams),
+        })
+
         discovered_entries, discovery_results = discover_dynamic_streams(config, entries)
         if discovered_entries:
             log(f"Adding {len(discovered_entries):,} dynamically discovered candidates")
@@ -268,6 +284,10 @@
                 "history_size": stream_stability_state.get("history_size", 5),
                 "prior_state_built_at": stream_stability_state.get("source_state_built_at"),
                 "current_counts": stream_stability_state.get("current_counts", {}),
+                "priority_recovery": {
+                    "eligible_candidates": (stream_stability_state.get("priority_recovery") or {}).get("eligible_candidates", 0),
+                    "selected_count": (stream_stability_state.get("priority_recovery") or {}).get("selected_count", 0),
+                },
             },
             "channel_changes": {
                 "baseline_initialized": channel_changes.get("baseline_initialized", False),
@@ -285,10 +305,37 @@
             "identity_rejected_candidates": len(identity_rejected),
             "dynamic_discovery_candidates": len(discovered_entries),
             "dynamic_discovery_events": len(discovery_results),
+            "private_connectors": {
+                "enabled": bool(private_streams),
+                "streams": len(private_streams),
+                "deployment_mode": build_info["deployment_mode"],
+            },
             "targeted_source_scans": {
                 "families": sum(1 for row in discovery_results if row.get("kind") == "targeted-source-family"),
                 "targets": len(next((row.get("target_ids") or [] for row in discovery_results if row.get("kind") == "targeted-source-summary"), [])),
                 "candidates": sum(int(row.get("candidates_found", 0)) for row in discovery_results if row.get("kind") == "targeted-source-family"),
+            },
+            "github_candidate_search": next((
+                {
+                    "targets": len(row.get("target_ids") or []),
+                    "queries_run": row.get("queries_run", 0),
+                    "candidates_found": row.get("candidates_found", 0),
+                }
+                for row in discovery_results
+                if row.get("kind") == "github-candidate-summary"
+            ), {"targets": 0, "queries_run": 0, "candidates_found": 0}),
+            "official_player_scans": {
+                "pages": sum(1 for row in discovery_results if str(row.get("kind", "")).endswith("official-page")),
+                "documents": sum(
+                    len(row.get("documents_scanned") or [])
+                    for row in discovery_results
+                    if str(row.get("kind", "")).endswith("official-page")
+                ),
+                "manifests": sum(
+                    len(row.get("candidates") or [])
+                    for row in discovery_results
+                    if str(row.get("kind", "")).endswith("official-page")
+                ),
             },
             "philly_local_scans": {
                 "playlists": sum(1 for row in discovery_results if row.get("kind") == "philly-local-playlist"),

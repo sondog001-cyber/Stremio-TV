@@ -28,10 +28,11 @@ Stremio TV reads these in priority order:
 2. **IPTV-org Philadelphia public** — primary local source
 3. **IPTV-org US raw/internal stream list** — preserves alternate URLs that the normal public playlist filters down
 4. **Free-TV/IPTV** — quality-over-quantity backup list that favors mainstream free channels and HD where possible
-5. **Philadelphia-local source hunt** — WPVI, WCAU, KYW, WHYY, WPHL and WPSG are searched separately across station pages, the experimental OTA relay and local MoveOnJoy affiliate entries
+5. **Philadelphia-local source hunt** — WPVI, WCAU, KYW, WHYY, WPHL and WPSG are searched separately across station pages, their bounded public iframe/player documents, the experimental OTA relay and local MoveOnJoy affiliate entries
 6. **National targeted source-family scanners** — aria-tv US, Shovo US, world_ip_tv US, MoveOnJoy/TVPass forks, FreeCastHub and InsolenceTVGo are searched only for exact national IDs that have no candidate now or were missing in the prior build
 7. **Fresh IPTV-org add/remove issues** — recent `check:passed` issues are filtered independently to the remaining local and national exact IDs; removal issues are diagnostic signals and never become stream candidates
-8. **User manual sources** — optional public URLs you add to `manual_sources.json`
+8. **Rotating GitHub candidate search** — bounded exact-ID and approved-alias searches inspect public M3U files, reject stale/weak leads with a repository-activity freshness score, and send retained URLs through the normal media probes
+9. **User manual sources** — optional public URLs you add to `manual_sources.json`
 
 For Philadelphia locals, the builder prefers full-linear station feeds when available. **WHYY uses an official PBS-hosted live feed.** The local hunt is isolated from premium/national cable discovery and produces `site/diagnostics/philly-local-scans.json`. The WPSG station page is diagnostics-only because its embedded player currently exposes CBS News Philadelphia rather than a verified Philly 57 linear feed. The OTA-relay and MoveOnJoy sources are explicitly unverified and remain lower priority than vetted/public sources. They are included for testing closer-to-broadcast linear coverage rather than treated as authoritative or guaranteed-stable sources.
 
@@ -50,6 +51,8 @@ Pluto, Samsung TV Plus and Plex-style playlists were also reviewed. They are use
 ## Passed-only playback policy
 
 Before a stream can appear in Stremio, the builder probes the curated candidate pool. HLS candidates must return a valid playlist and a readable media segment; direct media URLs must be reachable. Only candidates that pass this automated check are eligible for selection, regardless of source family or whether that source is marked unverified. URLs classified as Dead use a 1-hour, 6-hour, then 24-hour retry cooldown so scheduled builds do not repeatedly hammer the same broken upstream.
+
+A bounded priority-recovery pass rotates through cooldown candidates for channels that were missing in the previous build. It favors Philadelphia locals and favorites, retries no more than one URL per channel, limits requests per host, and requires a minimum age since the last real probe. Its selections and outcomes are recorded in `site/diagnostics/priority-recovery.json`.
 
 A failed or untested candidate stays in diagnostics but is not exposed to Stremio.
 
@@ -97,7 +100,7 @@ Each entry shows:
 
 The GitHub Action also uploads the whole diagnostics directory as an artifact. That report is the source of truth for deciding which channels we should manually improve next.
 
-Philadelphia recovery is tracked separately in `site/diagnostics/philly-recovery.json`. It compares builder-runner health with recorded Stremio client results for WPVI, WCAU, KYW, WHYY, WPHL, and WPSG. Client observations can be added to `config.json` under `stremio_client_results` with `status`, `tested_at`, and `note`; an untested client is never reported as passing.
+Philadelphia recovery is tracked separately in `site/diagnostics/philly-recovery.json`. It compares builder-runner health with recorded Stremio client results for WPVI, WCAU, KYW, WHYY, WPHL, and WPSG. Record a direct client observation with `python record_client_result.py WPVI.us passed --note "Played in Stremio desktop"`. Results include an expiry timestamp and default to a seven-day lifetime, so an old pass can never remain trusted indefinitely. Clear one with `python record_client_result.py WPVI.us clear`.
 
 ## Adding a public manual backup
 
@@ -121,7 +124,18 @@ Edit `manual_sources.json`:
 }
 ```
 
-Only entries that also match the curated whitelist are kept. **Do not put private provider URLs, usernames, passwords, API keys or tokenized subscription links in this public GitHub repository.** A private authenticated source would need a different deployment design using secrets rather than a static public Pages site.
+Only entries that also match the curated whitelist are kept. **Do not put private provider URLs, usernames, passwords, API keys or tokenized subscription links in this public GitHub repository.**
+
+## Private OTA/provider connectors
+
+WPSG and NBC Sports Philadelphia Plus may require an antenna tuner or an authorized TV-provider account. That path is deliberately separate from the public GitHub Pages build:
+
+1. Copy `private_connectors.example.json` to the gitignored `private_connectors.json` and keep its environment-variable references—never credentials—in the file.
+2. Set `STREMIO_TV_HDHR_BASE_URL` for a local HDHomeRun, and/or the provider playlist variables shown in the example.
+3. Run `python private_connectors.py` to create the permission-restricted, gitignored `private_sources.generated.json`.
+4. Run `STREMIO_TV_PRIVATE_SOURCES_FILE=private_sources.generated.json python build.py --output private-site` and serve that output only on infrastructure you control.
+
+The builder accepts only exact curated IDs from this overlay and refuses to load it in GitHub Actions. Provider authorization is used only to obtain the authorized playlist unless `forward_authorization` is explicitly enabled; enabling it places that header in the private Stremio response, so the resulting site must never be published. Short-lived provider URLs require regenerating the overlay and private site on a local schedule.
 
 ## Channel curation
 
@@ -197,8 +211,11 @@ The build writes:
 - `diagnostics/missing-source-diagnostics.json`
 - `diagnostics/quality-measurements.json`
 - `diagnostics/targeted-source-scans.json`
+- `diagnostics/github-candidate-scans.json`
+- `diagnostics/official-player-scans.json`
 - `diagnostics/channel-changes.json`
 - `diagnostics/stream-stability.json`
+- `diagnostics/priority-recovery.json`
 - `diagnostics/philly-recovery.json`
 - `diagnostics/stremio-preview.json`
 - `diagnostics/epg-matches.json`
@@ -256,7 +273,7 @@ Current intent:
 - **KYW / CBS3** — test OTA-style linear + MoveOnJoy candidates
 - **WHYY / PBS 12** — official PBS-hosted WHYY live feed
 - **WPHL / PHL17** — test OTA-style linear candidate
-- **WPSG / Philly 57** — no credential-free linear candidate approved yet
-- **NBC Sports Philadelphia Plus** — no free linear candidate approved yet
+- **WPSG / Philly 57** — public discovery continues; a local OTA tuner can fill the gap through the private connector overlay
+- **NBC Sports Philadelphia Plus** — no free linear candidate approved; authorized provider playlists can fill the gap through the private connector overlay
 
 No private usernames, passwords, subscription tokens, or credentials from third-party playlists are committed to this public repository.

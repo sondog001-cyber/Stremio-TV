@@ -76,6 +76,22 @@ def canonicalize_approved_sources(entries: list[dict[str, Any]], config: dict[st
     curation = config.get("curation") or {}
     approved = set(curation.get("approved_unverified_families") or [])
     alias_map = curation.get("approved_source_aliases") or {}
+    canonical_aliases = {
+        canonical_tvg_id(source_id): target_id
+        for source_id, target_id in (curation.get("canonical_id_aliases") or {}).items()
+    }
+    explicitly_remapped: list[dict[str, Any]] = []
+    for entry in entries:
+        source_id = str(entry.get("tvg_id") or "").strip()
+        target_id = canonical_aliases.get(canonical_tvg_id(source_id)) if source_id else None
+        if target_id and canonical_tvg_id(source_id) != canonical_tvg_id(target_id):
+            item = dict(entry)
+            item["source_tvg_id"] = source_id
+            item["tvg_id"] = target_id
+            explicitly_remapped.append(item)
+        else:
+            explicitly_remapped.append(entry)
+    entries = explicitly_remapped
     if not approved:
         return entries
 

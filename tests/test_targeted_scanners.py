@@ -1,5 +1,6 @@
 import json
 import unittest
+import urllib.parse
 from unittest import mock
 
 import build
@@ -111,6 +112,26 @@ class TargetedScannerTests(unittest.TestCase):
 
         self.assertEqual(targets, ["CNN.us"])
 
+    def test_explicit_id_alias_applies_to_trusted_source_family(self):
+        config = minimal_config()
+        config["curation"]["national_allow"].extend(["BloombergTelevision.us", "BloombergTV.us"])
+        config["curation"]["canonical_id_aliases"] = {
+            "BloombergTelevision.us": "BloombergTV.us",
+        }
+        entries = [{
+            "name": "Bloomberg",
+            "name_raw": "Bloomberg",
+            "tvg_id": "BloombergTelevision.us",
+            "url": "https://example.test/bloomberg.m3u8",
+            "source": "Trusted playlist",
+            "family": "iptv-org",
+        }]
+
+        normalized = build.canonicalize_approved_sources(entries, config)
+
+        self.assertEqual(normalized[0]["tvg_id"], "BloombergTV.us")
+        self.assertEqual(normalized[0]["source_tvg_id"], "BloombergTelevision.us")
+
     def test_local_and_national_target_sets_are_disjoint(self):
         config = minimal_config()
         config["curation"]["philly_allow"] = ["WPVI.us", "WPSG.us"]
@@ -190,6 +211,43 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertEqual(rows[0]["status"], "research-only-public-hls-found")
         self.assertEqual(rows[0]["candidates"], ["https://example.test/cbs-news-live.m3u8"])
 
+    def test_official_page_scans_public_iframe_for_manifest(self):
+        config = minimal_config()
+        config["discovery"]["official_player_scan"] = {
+            "enabled": True,
+            "max_documents": 4,
+            "max_depth": 2,
+        }
+        item = {
+            "name": "Station",
+            "tvg_id": "WPVI.us",
+            "page_url": "https://station.test/live",
+            "content_kind": "full-linear",
+        }
+        page = '<iframe src="https://player.test/embed/live"></iframe>'
+        player = '<script>const livestream = "https://cdn.test/station-live.m3u8";</script>'
+
+        def fetch(url, **kwargs):
+            if url == item["page_url"]:
+                return page, url
+            if url == "https://player.test/embed/live":
+                return player, url
+            raise AssertionError(f"unexpected URL: {url}")
+
+        with mock.patch.object(build, "_fetch_public_text", side_effect=fetch):
+            entries, rows = build.discover_official_page_streams(config, items=[item])
+
+        self.assertEqual([entry["url"] for entry in entries], ["https://cdn.test/station-live.m3u8"])
+        self.assertEqual(entries[0]["manifest_provenance"]["document_kind"], "iframe")
+        self.assertEqual(len(rows[0]["documents_scanned"]), 2)
+
+    def test_official_player_scan_rejects_private_document_urls(self):
+        links = build._extract_player_document_urls(
+            '<iframe src="http://127.0.0.1/player"></iframe>',
+            "https://station.test/live",
+        )
+        self.assertEqual(links, [])
+
     def test_iptv_org_removals_are_diagnostics_not_candidates(self):
         config = minimal_config()
         issues = [
@@ -217,6 +275,55 @@ class TargetedScannerTests(unittest.TestCase):
 
         self.assertEqual([entry["url"] for entry in entries], ["https://example.test/fxx.m3u8"])
         self.assertTrue(any(row.get("status") == "removal-signal" for row in rows))
+
+    def test_github_search_keeps_fresh_exact_alias_candidate(self):
+        config = minimal_config()
+        config["curation"]["approved_unverified_families"].append("github-candidate")
+        config["discovery"]["github_candidate_search"] = {
+            "enabled": True,
+            "max_targets_per_build": 1,
+            "max_queries_per_build": 2,
+            "min_freshness_score": 55,
+        }
+        search_payload = {
+            "items": [{
+                "path": "channels.m3u",
+                "html_url": "https://github.com/example/tv/blob/abc123/channels.m3u",
+                "repository": {
+                    "full_name": "example/tv",
+                    "pushed_at": "2026-09-20T00:00:00Z",
+                },
+            }]
+        }
+        playlist = "\n".join([
+            "#EXTM3U",
+            '#EXTINF:-1 tvg-id="",FXX',
+            "https://stream.test/fxx.m3u8",
+        ])
+
+        def fetch(url, **kwargs):
+            if "api.github.com/search/code" in url:
+                if "FXX.us" in urllib.parse.unquote(url):
+                    return json.dumps({"items": []}), url
+                return json.dumps(search_payload), url
+            return playlist, url
+
+        with mock.patch.object(build, "_fetch_public_text", side_effect=fetch):
+            entries, rows = build.discover_github_candidates(config, ["FXX.us"])
+
+        self.assertEqual([entry["tvg_id"] for entry in entries], ["FXX.us"])
+        self.assertEqual(entries[0]["github_repository"], "example/tv")
+        self.assertGreaterEqual(entries[0]["freshness_score"], 55)
+        self.assertEqual(rows[0]["candidates_found"], 1)
+        search_rows = [row for row in rows if row["kind"] == "github-candidate-search"]
+        self.assertEqual([row["match_kind"] for row in search_rows], ["exact-id", "approved-alias"])
+
+    def test_github_freshness_penalizes_old_alias_matches(self):
+        now = build.dt.datetime(2026, 9, 22, tzinfo=build.UTC)
+        fresh = build.score_github_candidate_freshness("2026-09-20T00:00:00Z", "exact-id", now)
+        stale = build.score_github_candidate_freshness("2024-01-01T00:00:00Z", "approved-alias", now)
+        self.assertGreater(fresh["score"], stale["score"])
+        self.assertEqual(stale["label"], "stale")
 
 
 if __name__ == "__main__":

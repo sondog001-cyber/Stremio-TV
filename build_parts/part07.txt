@@ -18,6 +18,10 @@
         })
         write_json(output / "diagnostics" / "stream-health.json", stream_health_results)
         write_json(output / "diagnostics" / "stream-stability.json", stream_stability_state)
+        write_json(
+            output / "diagnostics" / "priority-recovery.json",
+            stream_stability_state.get("priority_recovery") or {},
+        )
         write_json(output / "diagnostics" / "channel-state.json", channel_state)
         write_json(output / "diagnostics" / "channel-changes.json", channel_changes)
         write_json(output / "diagnostics" / "identity-rejected.json", identity_rejected)
@@ -25,6 +29,14 @@
         write_json(
             output / "diagnostics" / "targeted-source-scans.json",
             [row for row in discovery_results if str(row.get("kind", "")).startswith("targeted-source")],
+        )
+        write_json(
+            output / "diagnostics" / "github-candidate-scans.json",
+            [row for row in discovery_results if str(row.get("kind", "")).startswith("github-candidate")],
+        )
+        write_json(
+            output / "diagnostics" / "official-player-scans.json",
+            [row for row in discovery_results if str(row.get("kind", "")).endswith("official-page")],
         )
         write_json(
             output / "diagnostics" / "philly-local-scans.json",

@@ -157,18 +157,22 @@ _PUBLIC_TEXT_CACHE: dict[tuple[str, int], tuple[str, str]] = {}
 
 
 def _fetch_public_text(url: str, timeout: int = 12, byte_limit: int = 2_000_000) -> tuple[str, str]:
-    """Fetch a public page/API response without credentials or session cookies."""
+    """Fetch public text, using the Actions token only for GitHub's public API."""
     cache_key = (url, byte_limit)
     if cache_key in _PUBLIC_TEXT_CACHE:
         return _PUBLIC_TEXT_CACHE[cache_key]
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": USER_AGENT,
-            "Accept": "text/html,application/json,text/plain,*/*",
-            "Accept-Encoding": "identity",
-        },
-    )
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept": "text/html,application/json,text/plain,*/*",
+        "Accept-Encoding": "identity",
+    }
+    if urllib.parse.urlsplit(url).netloc.lower() == "api.github.com":
+        headers["Accept"] = "application/vnd.github+json"
+        headers["X-GitHub-Api-Version"] = "2022-11-28"
+        github_token = os.getenv("GITHUB_TOKEN", "").strip()
+        if github_token:
+            headers["Authorization"] = f"Bearer {github_token}"
+    req = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         final_url = resp.geturl()
         body = resp.read(byte_limit)
@@ -207,6 +211,122 @@ def _extract_public_hls_urls(text: str, base_url: str = "") -> list[str]:
             found.append(urllib.parse.urljoin(base_url, path.rstrip("),.;")))
 
     return list(dict.fromkeys(found))
+
+
+def _is_safe_public_document_url(url: str) -> bool:
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return False
+    hostname = parsed.hostname.lower().rstrip(".")
+    if hostname == "localhost" or hostname.endswith(".localhost"):
+        return False
+    try:
+        address = ipaddress.ip_address(hostname)
+    except ValueError:
+        return True
+    return not (
+        address.is_private
+        or address.is_loopback
+        or address.is_link_local
+        or address.is_reserved
+        or address.is_multicast
+    )
+
+
+def _extract_player_document_urls(text: str, base_url: str) -> list[tuple[str, str]]:
+    normalized = html.unescape(text or "").replace("\\u002F", "/").replace("\\/", "/")
+    found: list[tuple[str, str]] = []
+    patterns = (
+        ("iframe", r'<iframe[^>]+src=["\']([^"\']+)["\']'),
+        ("script", r'<script[^>]+src=["\']([^"\']+)["\']'),
+        ("player-config", r'["\'](https?://[^"\'<>\s]+(?:player|embed|manifest|livestream|live)[^"\'<>\s]*(?:\.json|\.js)?[^"\'<>\s]*)["\']'),
+    )
+    for kind, pattern in patterns:
+        for match in re.findall(pattern, normalized, flags=re.I):
+            candidate = urllib.parse.urljoin(base_url, match.rstrip("),.;"))
+            if ".m3u8" in urllib.parse.urlsplit(candidate).path.lower():
+                continue
+            if _is_safe_public_document_url(candidate):
+                found.append((candidate, kind))
+    return list(dict.fromkeys(found))
+
+
+def scan_official_player_documents(
+    page_text: str,
+    page_url: str,
+    config: dict[str, Any],
+    item: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Follow a bounded set of public player documents and find HLS manifests."""
+    settings = (config.get("discovery") or {}).get("official_player_scan") or {}
+    enabled = bool(settings.get("enabled", True))
+    max_documents = max(1, int(item.get("max_player_documents", settings.get("max_documents", 8))))
+    max_depth = max(0, min(3, int(item.get("player_scan_depth", settings.get("max_depth", 2)))))
+    timeout = max(1, int(item.get("timeout_seconds", settings.get("timeout_seconds", 12))))
+    byte_limit = max(100_000, int(settings.get("byte_limit", 2_000_000)))
+    queue: list[tuple[str, str, int, str]] = [(page_url, page_text, 0, "page")]
+    seen_documents: set[str] = set()
+    seen_manifests: set[str] = set()
+    manifests: list[dict[str, Any]] = []
+    documents: list[dict[str, Any]] = []
+
+    while queue and len(documents) < max_documents:
+        document_url, document_text, depth, kind = queue.pop(0)
+        if document_url in seen_documents:
+            continue
+        seen_documents.add(document_url)
+        urls = _extract_public_hls_urls(document_text, document_url)
+        normalized = html.unescape(document_text).replace("\\u002F", "/").replace("\\/", "/")
+        accepted: list[str] = []
+        for url in urls:
+            if url in seen_manifests or not _is_safe_public_document_url(url):
+                continue
+            index = normalized.find(url)
+            context = normalized[max(0, index - 500): index + len(url) + 500].lower() if index >= 0 else ""
+            if len(urls) == 1 or any(word in context for word in ("live", "livestream", "linear", "streaming")):
+                seen_manifests.add(url)
+                accepted.append(url)
+                manifests.append({
+                    "url": url,
+                    "discovered_in": document_url,
+                    "document_kind": kind,
+                    "depth": depth,
+                })
+        document_row = {
+            "url": document_url,
+            "kind": kind,
+            "depth": depth,
+            "status": "scanned",
+            "hls_found": len(accepted),
+        }
+        documents.append(document_row)
+
+        if not enabled or depth >= max_depth:
+            continue
+        for linked_url, linked_kind in _extract_player_document_urls(document_text, document_url):
+            if linked_url in seen_documents or any(linked_url == queued[0] for queued in queue):
+                continue
+            if len(documents) + len(queue) >= max_documents:
+                break
+            try:
+                linked_text, final_url = _fetch_public_text(
+                    linked_url,
+                    timeout=timeout,
+                    byte_limit=byte_limit,
+                )
+                queue.append((final_url, linked_text, depth + 1, linked_kind))
+            except Exception as exc:
+                documents.append({
+                    "url": linked_url,
+                    "kind": linked_kind,
+                    "depth": depth + 1,
+                    "status": "failed",
+                    "error": str(exc)[:180],
+                    "hls_found": 0,
+                })
+                if len(documents) >= max_documents:
+                    break
+    return manifests, documents
 
 
 def _exact_allowlist_ids(config: dict[str, Any], scope: str = "all") -> list[str]:
@@ -559,18 +679,14 @@ def discover_official_page_streams(
                 page_url,
                 timeout=int(item.get("timeout_seconds", 12)),
             )
-            urls = _extract_public_hls_urls(page_text, final_url)
-
-            # Guard against unrelated clip/ad manifests on a station page. If the
-            # page publishes several HLS URLs, keep only URLs whose nearby source
-            # context looks like a live/linear stream.
-            accepted: list[str] = []
-            normalized = html.unescape(page_text).replace("\\u002F", "/").replace("\\/", "/")
-            for url in urls:
-                idx = normalized.find(url)
-                context = normalized[max(0, idx - 500): idx + len(url) + 500].lower() if idx >= 0 else ""
-                if len(urls) == 1 or any(word in context for word in ("live", "livestream", "linear", "streaming")):
-                    accepted.append(url)
+            manifest_rows, document_rows = scan_official_player_documents(
+                page_text,
+                final_url,
+                config,
+                item,
+            )
+            accepted = [candidate["url"] for candidate in manifest_rows]
+            evidence_by_url = {candidate["url"]: candidate for candidate in manifest_rows}
 
             candidate_mode = str(item.get("candidate_mode") or "emit").lower()
             emitted = accepted[: int(item.get("max_candidates", 4))]
@@ -596,8 +712,15 @@ def discover_official_page_streams(
                     "source_type": "official-public-page",
                     "content_kind": item.get("content_kind", "unknown"),
                     "content_note": item.get("content_note", ""),
+                    "manifest_provenance": evidence_by_url.get(url),
                 })
             row["candidates"] = accepted[: int(item.get("max_candidates", 4))]
+            row["candidate_evidence"] = [
+                evidence_by_url[url]
+                for url in row["candidates"]
+                if url in evidence_by_url
+            ]
+            row["documents_scanned"] = document_rows
             row["candidates_emitted"] = len(emitted)
             if candidate_mode == "research-only":
                 row["status"] = (
@@ -808,6 +931,196 @@ def discover_seed_candidates(
     return discovered, rows
 
 
+def score_github_candidate_freshness(
+    updated_at: Any,
+    match_kind: str,
+    now: dt.datetime | None = None,
+) -> dict[str, Any]:
+    """Score a GitHub lead without treating repository activity as stream health."""
+    now = now or dt.datetime.now(UTC)
+    updated = _parse_state_datetime(updated_at)
+    age_days = None if updated is None else max(0.0, (now - updated).total_seconds() / 86400)
+    identity_points = 50 if match_kind == "exact-id" else 35
+    recency_points = 10 if age_days is None else max(0, round(50 - age_days / 7))
+    score = min(100, identity_points + recency_points)
+    if age_days is None:
+        label = "unknown-age"
+    elif age_days <= 30:
+        label = "fresh"
+    elif age_days <= 180:
+        label = "recent"
+    elif age_days <= 365:
+        label = "aging"
+    else:
+        label = "stale"
+    return {
+        "score": score,
+        "label": label,
+        "match_kind": match_kind,
+        "updated_at": iso_z(updated) if updated else None,
+        "age_days": round(age_days, 1) if age_days is not None else None,
+        "basis": "repository_pushed_at",
+    }
+
+
+def _github_raw_file_url(item: dict[str, Any]) -> str:
+    html_url = str(item.get("html_url") or "")
+    match = re.match(r"https://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.*)", html_url)
+    if not match:
+        return ""
+    owner, repository, revision, path = match.groups()
+    return f"https://raw.githubusercontent.com/{owner}/{repository}/{revision}/{path}"
+
+
+def discover_github_candidates(
+    config: dict[str, Any],
+    target_ids: list[str],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Search fresh public GitHub playlists for exact IDs and approved aliases."""
+    settings = (config.get("discovery") or {}).get("github_candidate_search") or {}
+    if not settings.get("enabled", True) or not target_ids:
+        return [], []
+
+    target_defs = {
+        canonical_tvg_id(row.get("tvg_id", "")): row
+        for row in ((config.get("discovery") or {}).get("iptv_org_issues") or {}).get("targets", [])
+    }
+    alias_map = (config.get("curation") or {}).get("approved_source_aliases") or {}
+    max_targets = max(1, int(settings.get("max_targets_per_build", 6)))
+    max_queries = max(1, int(settings.get("max_queries_per_build", 12)))
+    per_page = max(1, min(20, int(settings.get("results_per_query", 5))))
+    min_score = max(0, int(settings.get("min_freshness_score", 55)))
+    byte_limit = max(100_000, int(settings.get("byte_limit", 6_000_000)))
+    timeout = max(1, int(settings.get("timeout_seconds", 20)))
+    run_number = int(os.getenv("GITHUB_RUN_NUMBER", "0") or 0)
+    ordered_targets = list(target_ids)
+    if ordered_targets:
+        offset = run_number % len(ordered_targets)
+        ordered_targets = (ordered_targets[offset:] + ordered_targets[:offset])[:max_targets]
+
+    discovered: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+    parsed_file_cache: dict[str, list[dict[str, Any]]] = {}
+    seen_candidates: set[tuple[str, str]] = set()
+    query_count = 0
+
+    for target_id in ordered_targets:
+        if query_count >= max_queries:
+            break
+        target = target_defs.get(canonical_tvg_id(target_id)) or {"tvg_id": target_id, "name": target_id}
+        aliases = list(dict.fromkeys(list(target.get("aliases") or []) + list(alias_map.get(target_id, []))))
+        terms = [(target_id, "exact-id")] + [(alias, "approved-alias") for alias in aliases[:2]]
+        target_found = False
+        for term, match_kind in terms:
+            if query_count >= max_queries or (target_found and match_kind != "exact-id"):
+                break
+            query_count += 1
+            query = f'"{term}" extension:m3u'
+            api_url = "https://api.github.com/search/code?" + urllib.parse.urlencode({
+                "q": query,
+                "sort": "indexed",
+                "order": "desc",
+                "per_page": per_page,
+            })
+            search_row: dict[str, Any] = {
+                "kind": "github-candidate-search",
+                "scope": "shared",
+                "status": "pending",
+                "tvg_id": target_id,
+                "term": term,
+                "match_kind": match_kind,
+                "api_url": api_url,
+                "files_found": 0,
+                "candidates_found": 0,
+                "files": [],
+            }
+            try:
+                payload_text, _ = _fetch_public_text(api_url, timeout=timeout)
+                payload = json.loads(payload_text)
+                items = payload.get("items") if isinstance(payload, dict) else []
+                items = items if isinstance(items, list) else []
+                search_row["files_found"] = len(items)
+                for item in items:
+                    raw_url = _github_raw_file_url(item)
+                    if not raw_url:
+                        continue
+                    repository = item.get("repository") if isinstance(item.get("repository"), dict) else {}
+                    freshness = score_github_candidate_freshness(
+                        repository.get("pushed_at") or repository.get("updated_at"),
+                        match_kind,
+                    )
+                    file_row = {
+                        "repository": repository.get("full_name"),
+                        "path": item.get("path"),
+                        "html_url": item.get("html_url"),
+                        "raw_url": raw_url,
+                        "freshness": freshness,
+                        "records_scanned": 0,
+                        "candidates_found": 0,
+                    }
+                    if freshness["score"] < min_score:
+                        file_row["status"] = "below-freshness-threshold"
+                        search_row["files"].append(file_row)
+                        continue
+                    if raw_url in parsed_file_cache:
+                        parsed = parsed_file_cache[raw_url]
+                    else:
+                        playlist_text, _ = _fetch_public_text(raw_url, timeout=timeout, byte_limit=byte_limit)
+                        source = {
+                            "name": f"GitHub candidate: {repository.get('full_name') or 'public repository'}",
+                            "family": "github-candidate",
+                            "priority": int(settings.get("priority", 7)),
+                        }
+                        parsed = parse_m3u(playlist_text, source)
+                        parsed_file_cache[raw_url] = parsed
+                    matched = _filter_entries_to_exact_targets(parsed, [target_id], config)
+                    file_row["records_scanned"] = len(parsed)
+                    accepted = 0
+                    for entry in matched[: int(settings.get("max_candidates_per_file", 3))]:
+                        marker = (canonical_tvg_id(target_id), str(entry.get("url") or ""))
+                        if marker in seen_candidates:
+                            continue
+                        seen_candidates.add(marker)
+                        entry.update({
+                            "github_candidate": True,
+                            "github_repository": repository.get("full_name"),
+                            "github_path": item.get("path"),
+                            "github_updated_at": freshness["updated_at"],
+                            "freshness_score": freshness["score"],
+                            "freshness_label": freshness["label"],
+                            "research_url": item.get("html_url"),
+                            "source_type": "public-github-playlist",
+                        })
+                        discovered.append(entry)
+                        accepted += 1
+                    file_row["candidates_found"] = accepted
+                    file_row["status"] = "candidate-found" if accepted else "no-exact-match"
+                    search_row["files"].append(file_row)
+                    if accepted:
+                        target_found = True
+                        search_row["candidates_found"] += accepted
+                search_row["status"] = "ok"
+            except Exception as exc:
+                search_row["status"] = "failed"
+                search_row["error"] = str(exc)[:240]
+            rows.append(search_row)
+
+    rows.insert(0, {
+        "kind": "github-candidate-summary",
+        "scope": "shared",
+        "status": "complete",
+        "target_ids": ordered_targets,
+        "queries_run": query_count,
+        "candidates_found": len(discovered),
+        "min_freshness_score": min_score,
+    })
+    log(
+        f"GitHub candidate search: {len(ordered_targets)} rotating exact IDs, "
+        f"{query_count} queries, {len(discovered)} candidates retained"
+    )
+    return discovered, rows
+
+
 def discover_dynamic_streams(
     config: dict[str, Any],
     existing_entries: list[dict[str, Any]],
@@ -835,12 +1148,16 @@ def discover_dynamic_streams(
     local_seed_entries, local_seed_rows = discover_seed_candidates(
         config, philly_target_ids, scope="philly-local",
     )
+    github_entries, github_rows = discover_github_candidates(
+        config,
+        list(dict.fromkeys(philly_target_ids + national_target_ids)),
+    )
 
     combined: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
     all_entries = (
         targeted_entries + local_entries + national_issue_entries + local_issue_entries
-        + national_seed_entries + local_seed_entries
+        + national_seed_entries + local_seed_entries + github_entries
     )
     for entry in all_entries:
         marker = (canonical_tvg_id(entry.get("tvg_id", "")), entry.get("url", ""))
@@ -853,11 +1170,12 @@ def discover_dynamic_streams(
         f"Dynamic discovery: {len(targeted_entries)} targeted-family + "
         f"{len(local_entries)} Philadelphia-local + "
         f"{len(national_issue_entries) + len(local_issue_entries)} IPTV-org issue + "
-        f"{len(national_seed_entries) + len(local_seed_entries)} seed candidates"
+        f"{len(national_seed_entries) + len(local_seed_entries)} seed + "
+        f"{len(github_entries)} GitHub candidates"
     )
     return combined, (
         targeted_rows + local_rows + national_issue_rows + local_issue_rows
-        + national_seed_rows + local_seed_rows
+        + national_seed_rows + local_seed_rows + github_rows
     )
 
 
@@ -1503,6 +1821,129 @@ def _dead_source_cooldown(
     }
 
 
+def _parse_state_datetime(value: Any) -> dt.datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed.astimezone(UTC)
+
+
+def plan_priority_recovery_probes(
+    cooldown_entries: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]],
+    previous_stability: dict[str, Any],
+    previous_channel_state: dict[str, Any],
+    config: dict[str, Any],
+    now: dt.datetime,
+) -> tuple[set[tuple[str, tuple[tuple[str, str], ...]]], dict[str, Any]]:
+    """Select a bounded, rotating set of dead candidates for an early retry."""
+    settings = (config.get("stream_health") or {}).get("priority_recovery") or {}
+    enabled = bool(settings.get("enabled", True))
+    max_urls = max(0, int(settings.get("max_forced_urls_per_build", 12)))
+    min_retry_hours = max(0, int(settings.get("min_retry_hours", 6)))
+    max_per_host = max(1, int(settings.get("max_per_host", 2)))
+    favorite_patterns = config.get("favorites") or []
+    prior_channels = previous_channel_state.get("channels") or {}
+    missing_ids = {
+        canonical_tvg_id(str(row.get("pattern") or ""))
+        for row in prior_channels.values()
+        if isinstance(row, dict) and not row.get("present") and row.get("pattern")
+    }
+    restrict_to_prior_missing = bool(missing_ids)
+    previous_streams = previous_stability.get("streams") or {}
+    candidates: list[dict[str, Any]] = []
+    deferred_too_recent = 0
+    deferred_not_missing = 0
+
+    for key, entry in cooldown_entries.items():
+        channel_id = canonical_tvg_id(str(entry.get("tvg_id") or ""))
+        if restrict_to_prior_missing and channel_id not in missing_ids:
+            deferred_not_missing += 1
+            continue
+        old = previous_streams.get(_stream_stability_key(entry))
+        old = old if isinstance(old, dict) else {}
+        last_probed = _parse_state_datetime(old.get("last_probed_at") or old.get("last_seen"))
+        age_hours = None if last_probed is None else max(0.0, (now - last_probed).total_seconds() / 3600)
+        if age_hours is not None and age_hours < min_retry_hours:
+            deferred_too_recent += 1
+            continue
+        hostname = (urllib.parse.urlparse(str(entry.get("url") or "")).hostname or "unknown").lower()
+        favorite = is_favorite(
+            {"name": entry.get("name"), "tvg_id": entry.get("tvg_id")},
+            favorite_patterns,
+        )
+        candidates.append({
+            "key": key,
+            "entry": entry,
+            "channel_id": channel_id,
+            "hostname": hostname,
+            "philly": bool(entry.get("philly")),
+            "favorite": favorite,
+            "last_probed_at": iso_z(last_probed) if last_probed else None,
+            "age_hours": age_hours,
+        })
+
+    candidates.sort(key=lambda row: (
+        0 if row["philly"] else 1,
+        0 if row["favorite"] else 1,
+        row["last_probed_at"] or "",
+        int(row["entry"].get("priority", 50)),
+        row["channel_id"],
+        str(row["entry"].get("url") or ""),
+    ))
+
+    selected: list[dict[str, Any]] = []
+    selected_keys: set[tuple[str, tuple[tuple[str, str], ...]]] = set()
+    selected_channels: set[str] = set()
+    host_counts: dict[str, int] = defaultdict(int)
+    for candidate in candidates:
+        if len(selected) >= max_urls:
+            break
+        if candidate["channel_id"] in selected_channels:
+            continue
+        if host_counts[candidate["hostname"]] >= max_per_host:
+            continue
+        entry = candidate["entry"]
+        selected_keys.add(candidate["key"])
+        selected_channels.add(candidate["channel_id"])
+        host_counts[candidate["hostname"]] += 1
+        selected.append({
+            "channel_id": entry.get("tvg_id"),
+            "name": entry.get("name"),
+            "source": entry.get("source"),
+            "family": entry.get("family"),
+            "url": entry.get("url"),
+            "hostname": candidate["hostname"],
+            "philly": candidate["philly"],
+            "favorite": candidate["favorite"],
+            "last_probed_at": candidate["last_probed_at"],
+            "age_hours": round(candidate["age_hours"], 1) if candidate["age_hours"] is not None else None,
+            "status": "scheduled",
+        })
+
+    report = {
+        "version": 1,
+        "built_at": iso_z(now),
+        "enabled": enabled,
+        "max_forced_urls_per_build": max_urls,
+        "min_retry_hours": min_retry_hours,
+        "max_per_host": max_per_host,
+        "restricted_to_prior_missing": restrict_to_prior_missing,
+        "prior_missing_channels": len(missing_ids),
+        "cooldown_candidates": len(cooldown_entries),
+        "eligible_candidates": len(candidates),
+        "selected_count": len(selected) if enabled else 0,
+        "deferred_too_recent": deferred_too_recent,
+        "deferred_not_missing": deferred_not_missing,
+        "selected": selected if enabled else [],
+    }
+    if not enabled or max_urls == 0:
+        return set(), report
+    return selected_keys, report
+
+
 def probe_candidate_entries(
     entries: list[dict[str, Any]],
     config: dict[str, Any],
@@ -1547,17 +1988,39 @@ def probe_candidate_entries(
     jobs: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
     refs: dict[tuple[str, tuple[tuple[str, str], ...]], list[dict[str, Any]]] = defaultdict(list)
     results: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
+    entries_by_key: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
+    cooldown_entries: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
+    cooldown_results: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
     now = dt.datetime.now(UTC)
 
     for entry in entries:
         headers_key = tuple(sorted((entry.get("headers") or {}).items()))
         key = (entry.get("url") or "", headers_key)
         refs[key].append(entry)
+        entries_by_key.setdefault(key, entry)
         cooldown = _dead_source_cooldown(entry, previous_stability, config, now)
         if cooldown:
-            results.setdefault(key, cooldown)
+            cooldown_entries.setdefault(key, entry)
+            cooldown_results.setdefault(key, cooldown)
+
+    previous_channel_state = _load_previous_channel_state(config)
+    forced_keys, priority_recovery = plan_priority_recovery_probes(
+        cooldown_entries,
+        previous_stability,
+        previous_channel_state,
+        config,
+        now,
+    )
+    for key, entry in entries_by_key.items():
+        if key in cooldown_results and key not in forced_keys:
+            results[key] = cooldown_results[key]
         else:
-            jobs.setdefault(key, entry)
+            jobs[key] = entry
+    if forced_keys:
+        log(
+            "Priority recovery: forcing "
+            f"{len(forced_keys):,}/{len(cooldown_entries):,} cooldown candidates"
+        )
 
     def run_probe_batch(batch: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]]) -> dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]]:
         batch_results: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
@@ -1613,6 +2076,17 @@ def probe_candidate_entries(
                     "stable": False,
                 }
 
+    selected_by_url = {row["url"]: row for row in priority_recovery["selected"]}
+    for key in forced_keys:
+        health = results.get(key, {"status": "failed", "detail": "No probe result"})
+        health["priority_recovery"] = True
+        health["priority_recovery_reason"] = "bounded retry for a previously missing channel"
+        results[key] = health
+        selected = selected_by_url.get(key[0])
+        if selected is not None:
+            selected["status"] = health.get("status", "failed")
+            selected["detail"] = health.get("detail")
+
     for key, linked_entries in refs.items():
         health = results.get(key, {"status": "failed", "detail": "No probe result"})
         for entry in linked_entries:
@@ -1633,6 +2107,7 @@ def probe_candidate_entries(
         enabled=True,
         previous=previous_stability,
     )
+    stability_state["priority_recovery"] = priority_recovery
 
     for entry in entries:
         rows.append({
@@ -1832,6 +2307,8 @@ def build_philly_recovery_diagnostics(
     settings = ((config.get("discovery") or {}).get("philly_local_sources") or {})
     target_ids = settings.get("target_ids") or []
     client_results = config.get("stremio_client_results") or {}
+    verification_settings = config.get("stremio_client_verification") or {}
+    now = dt.datetime.now(UTC)
     health_by_id: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in health_rows:
         health_by_id[canonical_tvg_id(row.get("tvg_id", ""))].append(row)
@@ -1857,9 +2334,18 @@ def build_philly_recovery_diagnostics(
         configured_client = client_results.get(tvg_id) or {}
         if isinstance(configured_client, str):
             configured_client = {"status": configured_client}
-        client_status = configured_client.get("status", "not-tested")
+        client_verification = evaluate_client_verification(
+            configured_client,
+            verification_settings,
+            now,
+        )
+        client_status = client_verification["status"]
         if runner_status == "passing" and client_status == "not-tested":
             next_action = "Test the Primary URL in Stremio and record pass/fail in stremio_client_results."
+        elif runner_status == "passing" and client_status == "expired":
+            next_action = "Retest the Primary URL in Stremio; the prior client result has expired."
+        elif client_status == "invalid":
+            next_action = "Record a valid passed/failed client result with an ISO tested_at timestamp."
         elif runner_status == "passing" and client_status == "failed":
             next_action = "Investigate a Stremio-versus-runner playback mismatch."
         elif runner_status == "no-candidate":
@@ -1877,21 +2363,77 @@ def build_philly_recovery_diagnostics(
             "selected_streams": len(selected),
             "stremio_ready_selected_streams": len(client_ready),
             "stremio_client_status": client_status,
-            "stremio_client_tested_at": configured_client.get("tested_at"),
+            "stremio_client_recorded_status": client_verification["recorded_status"],
+            "stremio_client_tested_at": client_verification["tested_at"],
+            "stremio_client_expires_at": client_verification["expires_at"],
+            "stremio_client_age_hours": client_verification["age_hours"],
             "stremio_client_note": configured_client.get("note"),
+            "verification_required": runner_status == "passing" and client_status not in {"passed", "failed"},
             "next_action": next_action,
         })
     return {
         "summary": {
             "targets": len(rows),
             "runner_passing": sum(1 for row in rows if row["runner_status"] == "passing"),
-            "client_tested": sum(1 for row in rows if row["stremio_client_status"] != "not-tested"),
+            "client_tested": sum(1 for row in rows if row["stremio_client_status"] in {"passed", "failed"}),
+            "client_expired": sum(1 for row in rows if row["stremio_client_status"] == "expired"),
+            "verification_required": sum(1 for row in rows if row["verification_required"]),
             "client_runner_mismatches": sum(
                 1 for row in rows
                 if row["runner_status"] == "passing" and row["stremio_client_status"] == "failed"
             ),
         },
         "channels": rows,
+    }
+
+
+def evaluate_client_verification(
+    result: dict[str, Any],
+    settings: dict[str, Any],
+    now: dt.datetime | None = None,
+) -> dict[str, Any]:
+    """Normalize and expire a manually recorded Stremio playback observation."""
+    now = now or dt.datetime.now(UTC)
+    aliases = {
+        "pass": "passed",
+        "passed": "passed",
+        "ok": "passed",
+        "fail": "failed",
+        "failed": "failed",
+        "not-tested": "not-tested",
+        "": "not-tested",
+    }
+    raw_status = str(result.get("status") or "not-tested").strip().lower()
+    recorded_status = aliases.get(raw_status, "invalid")
+    ttl_hours = max(1, int(result.get("ttl_hours") or settings.get("default_ttl_hours", 168)))
+    tested_at = _parse_state_datetime(result.get("tested_at"))
+    if recorded_status == "not-tested":
+        return {
+            "status": "not-tested",
+            "recorded_status": "not-tested",
+            "tested_at": None,
+            "expires_at": None,
+            "age_hours": None,
+            "ttl_hours": ttl_hours,
+        }
+    if recorded_status == "invalid" or tested_at is None or tested_at > now + dt.timedelta(minutes=5):
+        return {
+            "status": "invalid",
+            "recorded_status": recorded_status,
+            "tested_at": iso_z(tested_at) if tested_at else result.get("tested_at"),
+            "expires_at": None,
+            "age_hours": None,
+            "ttl_hours": ttl_hours,
+        }
+    expires_at = tested_at + dt.timedelta(hours=ttl_hours)
+    age_hours = max(0.0, (now - tested_at).total_seconds() / 3600)
+    return {
+        "status": "expired" if now >= expires_at else recorded_status,
+        "recorded_status": recorded_status,
+        "tested_at": iso_z(tested_at),
+        "expires_at": iso_z(expires_at),
+        "age_hours": round(age_hours, 1),
+        "ttl_hours": ttl_hours,
     }
 
 
