@@ -861,6 +861,36 @@ def discover_dynamic_streams(
     )
 
 
+def _parse_hls_variants(text: str, base_url: str) -> list[dict[str, Any]]:
+    """Parse master-playlist variants without downloading every rendition."""
+    variants: list[dict[str, Any]] = []
+    lines = [line.strip() for line in text.splitlines()]
+    for index, line in enumerate(lines):
+        if not line.upper().startswith("#EXT-X-STREAM-INF:"):
+            continue
+        uri = ""
+        for following in lines[index + 1:]:
+            if not following:
+                continue
+            if following.startswith("#"):
+                continue
+            uri = urllib.parse.urljoin(base_url, following)
+            break
+        if not uri:
+            continue
+        resolution = re.search(r"(?:^|,)\s*RESOLUTION=(\d+)[xX](\d+)", line, re.I)
+        bandwidth = re.search(r"(?:^|,)\s*(?:AVERAGE-)?BANDWIDTH=(\d+)", line, re.I)
+        width = int(resolution.group(1)) if resolution else 0
+        height = int(resolution.group(2)) if resolution else 0
+        variants.append({
+            "url": uri,
+            "width": width,
+            "height": height,
+            "bandwidth": int(bandwidth.group(1)) if bandwidth else 0,
+        })
+    return variants
+
+
 def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) -> dict[str, Any]:
     url = stream.get("url") or ""
     if not re.match(r"^https?://", url, re.I):
@@ -904,9 +934,28 @@ def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) ->
 
             media_text = text
             media_url = final_url
-            lines = [line.strip() for line in text.splitlines() if line.strip() and not line.startswith("#")]
-            if "#EXT-X-STREAM-INF" in text and lines:
-                candidate = urllib.parse.urljoin(final_url, lines[0])
+            measurement: dict[str, Any] = {}
+            variants = _parse_hls_variants(text, final_url)
+            if variants:
+                measured = max(variants, key=lambda item: (item["height"], item["width"], item["bandwidth"]))
+                known_resolutions = sorted(
+                    {
+                        (item["width"], item["height"])
+                        for item in variants
+                        if item["width"] > 0 and item["height"] > 0
+                    },
+                    key=lambda item: (item[1], item[0]),
+                    reverse=True,
+                )
+                if measured["height"] > 0:
+                    measurement = {
+                        "measured_width": measured["width"],
+                        "measured_height": measured["height"],
+                        "measured_quality": quality_label_for_height(measured["height"]),
+                        "quality_source": "hls-master",
+                        "available_resolutions": [f"{width}x{height}" for width, height in known_resolutions],
+                    }
+                candidate = measured["url"]
                 child_status, child_url, _child_type, child_body = fetch(candidate)
                 media_text = child_body.decode("utf-8", errors="ignore")
                 media_url = child_url
@@ -937,6 +986,7 @@ def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) ->
                 "detail": "Valid HLS playlist" + (" + segment" if verify_segment else ""),
                 "http_status": status,
                 "latency_ms": round((time.monotonic() - started) * 1000),
+                **measurement,
             }
 
         if "text/html" in content_type:
@@ -1055,6 +1105,7 @@ def apply_stream_stability(
     entries: list[dict[str, Any]],
     config: dict[str, Any],
     enabled: bool = True,
+    previous: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Persist and score URL health across builds.
 
@@ -1066,6 +1117,10 @@ def apply_stream_stability(
     enabled = enabled and bool(settings.get("enabled", True))
     history_size = max(1, int(settings.get("history_size", 5)))
     retention_builds = max(history_size, int(settings.get("retention_builds", 20)))
+    cooldown_hours = [
+        max(1, int(value))
+        for value in settings.get("dead_source_cooldown_hours", [1, 6, 24])
+    ] or [1, 6, 24]
     built_at = iso_z(dt.datetime.now(UTC))
 
     if not enabled:
@@ -1087,7 +1142,7 @@ def apply_stream_stability(
             "current_counts": {},
         }
 
-    previous = _load_previous_stream_stability(config)
+    previous = previous if previous is not None else _load_previous_stream_stability(config)
     previous_streams = previous.get("streams") or {}
     state_streams: dict[str, dict[str, Any]] = {}
 
@@ -1114,11 +1169,41 @@ def apply_stream_stability(
     for key, entry in current_by_key.items():
         old = previous_streams.get(key) if isinstance(previous_streams.get(key), dict) else {}
         history = [bool(x) for x in (old.get("history") or [])][-history_size:]
-        passed = (entry.get("health") or {}).get("status") == "ok"
-        history = (history + [passed])[-history_size:]
+        health = entry.get("health") or {}
+        health_status = health.get("status")
+        skipped_cooldown = health_status == "cooldown"
+        passed = health_status == "ok"
+        if not skipped_cooldown:
+            history = (history + [passed])[-history_size:]
         score = _classify_stream_stability(history, history_size)
-        score["last_result"] = "pass" if passed else "fail"
+        score["last_result"] = "cooldown" if skipped_cooldown else "pass" if passed else "fail"
         score["last_seen"] = built_at
+
+        old_failures = int(old.get("consecutive_failures", 0) or 0)
+        if not old_failures and old.get("last_result") == "fail":
+            for result in reversed(old.get("history") or []):
+                if result:
+                    break
+                old_failures += 1
+        if skipped_cooldown:
+            consecutive_failures = old_failures
+            next_probe_at = health.get("cooldown_until") or old.get("next_probe_at")
+            last_probed_at = old.get("last_probed_at") or old.get("last_seen")
+            last_failure_detail = old.get("last_failure_detail")
+            last_failure_http_status = old.get("last_failure_http_status")
+        elif passed:
+            consecutive_failures = 0
+            next_probe_at = None
+            last_probed_at = built_at
+            last_failure_detail = None
+            last_failure_http_status = None
+        else:
+            consecutive_failures = old_failures + 1
+            delay = cooldown_hours[min(consecutive_failures - 1, len(cooldown_hours) - 1)]
+            next_probe_at = iso_z(dt.datetime.now(UTC) + dt.timedelta(hours=delay))
+            last_probed_at = built_at
+            last_failure_detail = health.get("detail")
+            last_failure_http_status = health.get("http_status")
 
         record = {
             "url": entry.get("url"),
@@ -1127,8 +1212,15 @@ def apply_stream_stability(
             "name": entry.get("name"),
             "source": entry.get("source"),
             "family": entry.get("family"),
-            "quality": entry.get("quality") or "Unknown",
+            "quality": quality_label(entry),
+            "declared_quality": entry.get("quality") or "Unknown",
+            "measured_quality": entry.get("measured_quality"),
             **score,
+            "consecutive_failures": consecutive_failures,
+            "next_probe_at": next_probe_at,
+            "last_probed_at": last_probed_at,
+            "last_failure_detail": last_failure_detail,
+            "last_failure_http_status": last_failure_http_status,
             "missed_builds": 0,
         }
         state_streams[key] = record
@@ -1147,6 +1239,8 @@ def apply_stream_stability(
                 "last_seen",
             )
         }
+        entry_score["consecutive_failures"] = consecutive_failures
+        entry_score["next_probe_at"] = next_probe_at
         for linked in linked_by_key[key]:
             linked["stability"] = dict(entry_score)
 
@@ -1162,6 +1256,7 @@ def apply_stream_stability(
         "version": 1,
         "enabled": True,
         "history_size": history_size,
+        "dead_source_cooldown_hours": cooldown_hours,
         "updated_at": built_at,
         "source_state_built_at": previous.get("updated_at"),
         "streams": state_streams,
@@ -1353,6 +1448,61 @@ def build_channel_diagnostics(
     return state, report
 
 
+def _dead_source_cooldown(
+    entry: dict[str, Any],
+    previous: dict[str, Any],
+    config: dict[str, Any],
+    now: dt.datetime,
+) -> dict[str, Any] | None:
+    """Return a skip result while a previously dead URL is backing off."""
+    settings = config.get("stream_stability") or {}
+    if not settings.get("enabled", True):
+        return None
+    old = (previous.get("streams") or {}).get(_stream_stability_key(entry))
+    if not isinstance(old, dict) or old.get("classification") != "Dead":
+        return None
+
+    failures = int(old.get("consecutive_failures", 0) or 0)
+    if failures <= 0:
+        for result in reversed(old.get("history") or []):
+            if result:
+                break
+            failures += 1
+    failures = max(1, failures)
+    hours = [
+        max(1, int(value))
+        for value in settings.get("dead_source_cooldown_hours", [1, 6, 24])
+    ] or [1, 6, 24]
+
+    next_probe_at = old.get("next_probe_at")
+    try:
+        if next_probe_at:
+            retry_at = dt.datetime.fromisoformat(str(next_probe_at).replace("Z", "+00:00"))
+        else:
+            anchor_text = old.get("last_probed_at") or old.get("last_seen")
+            if not anchor_text:
+                return None
+            anchor = dt.datetime.fromisoformat(str(anchor_text).replace("Z", "+00:00"))
+            retry_at = anchor + dt.timedelta(hours=hours[min(failures - 1, len(hours) - 1)])
+    except (TypeError, ValueError):
+        return None
+    if retry_at.tzinfo is None:
+        retry_at = retry_at.replace(tzinfo=UTC)
+    if retry_at <= now:
+        return None
+    prior_detail = str(old.get("last_failure_detail") or "").strip()
+    detail = "Dead source probe deferred by backoff"
+    if prior_detail:
+        detail += f"; last failure: {prior_detail}"
+    return {
+        "status": "cooldown",
+        "detail": detail,
+        "cooldown_until": iso_z(retry_at),
+        "consecutive_failures": failures,
+        "last_http_status": old.get("last_failure_http_status"),
+    }
+
+
 def probe_candidate_entries(
     entries: list[dict[str, Any]],
     config: dict[str, Any],
@@ -1374,6 +1524,7 @@ def probe_candidate_entries(
     second_probe_delay = int(settings.get("second_probe_delay_seconds", 60))
 
     rows: list[dict[str, Any]] = []
+    previous_stability: dict[str, Any] = {}
 
     if not enabled:
         for entry in entries:
@@ -1392,14 +1543,21 @@ def probe_candidate_entries(
             row["stability"] = entry.get("stability")
         return entries, rows, stability_state
 
+    previous_stability = _load_previous_stream_stability(config)
     jobs: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
     refs: dict[tuple[str, tuple[tuple[str, str], ...]], list[dict[str, Any]]] = defaultdict(list)
+    results: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
+    now = dt.datetime.now(UTC)
 
     for entry in entries:
         headers_key = tuple(sorted((entry.get("headers") or {}).items()))
         key = (entry.get("url") or "", headers_key)
-        jobs.setdefault(key, entry)
         refs[key].append(entry)
+        cooldown = _dead_source_cooldown(entry, previous_stability, config, now)
+        if cooldown:
+            results.setdefault(key, cooldown)
+        else:
+            jobs.setdefault(key, entry)
 
     def run_probe_batch(batch: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]]) -> dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]]:
         batch_results: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
@@ -1416,7 +1574,7 @@ def probe_candidate_entries(
                     batch_results[key] = {"status": "failed", "detail": str(exc)[:180]}
         return batch_results
 
-    results = run_probe_batch(jobs)
+    results.update(run_probe_batch(jobs))
 
     first_pass = {
         key: jobs[key]
@@ -1459,8 +1617,22 @@ def probe_candidate_entries(
         health = results.get(key, {"status": "failed", "detail": "No probe result"})
         for entry in linked_entries:
             entry["health"] = dict(health)
+            for field in (
+                "measured_width",
+                "measured_height",
+                "measured_quality",
+                "quality_source",
+                "available_resolutions",
+            ):
+                if health.get(field) is not None:
+                    entry[field] = health[field]
 
-    stability_state = apply_stream_stability(entries, config, enabled=True)
+    stability_state = apply_stream_stability(
+        entries,
+        config,
+        enabled=True,
+        previous=previous_stability,
+    )
 
     for entry in entries:
         rows.append({
@@ -1469,7 +1641,13 @@ def probe_candidate_entries(
             "source": entry.get("source"),
             "family": entry.get("family"),
             "source_type": entry.get("source_type"),
-            "quality": entry.get("quality") or "Unknown",
+            "quality": quality_label(entry),
+            "declared_quality": entry.get("quality") or "Unknown",
+            "measured_quality": entry.get("measured_quality"),
+            "measured_width": entry.get("measured_width"),
+            "measured_height": entry.get("measured_height"),
+            "quality_source": entry.get("quality_source"),
+            "available_resolutions": entry.get("available_resolutions") or [],
             "url": entry.get("url"),
             "health": entry.get("health"),
             "stability": entry.get("stability"),
@@ -1520,7 +1698,14 @@ def build_source_ordering_diagnostics(
                 "role": stream.get("display_role"),
                 "source": stream.get("source"),
                 "family": stream.get("family"),
-                "quality": stream.get("quality"),
+                "quality": quality_label(stream),
+                "declared_quality": stream.get("quality"),
+                "measured_quality": stream.get("measured_quality"),
+                "measured_resolution": (
+                    f"{stream.get('measured_width')}x{stream.get('measured_height')}"
+                    if stream.get("measured_width") and stream.get("measured_height")
+                    else None
+                ),
                 "content_kind": stream.get("content_kind", "unknown"),
                 "stability": stability.get("classification", "Unknown"),
                 "stability_passes": stability.get("passes", 0),
@@ -1540,6 +1725,224 @@ def build_source_ordering_diagnostics(
             "streams": stream_rows,
         })
     return rows
+
+
+def build_missing_source_diagnostics(
+    candidate_coverage: list[dict[str, Any]],
+    passing_coverage: list[dict[str, Any]],
+    health_rows: list[dict[str, Any]],
+    channels: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    """Turn broad missing-source counts into mutually exclusive work queues."""
+    passing_by_id = {canonical_tvg_id(row.get("pattern", "")): row for row in passing_coverage}
+    health_by_id: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in health_rows:
+        health_by_id[canonical_tvg_id(row.get("tvg_id", ""))].append(row)
+    channels_by_id = {canonical_tvg_id(channel.get("tvg_id", "")): channel for channel in channels}
+    target = config.get("stream_selection") or {}
+    target_hd = int(target.get("target_hd", 2))
+    target_sd = int(target.get("target_sd", 1))
+
+    rows: list[dict[str, Any]] = []
+    bucket_counts: dict[str, int] = defaultdict(int)
+    without_passing_counts: dict[str, int] = defaultdict(int)
+    for candidate in candidate_coverage:
+        channel_id = candidate.get("pattern", "")
+        key = canonical_tvg_id(channel_id)
+        passing = passing_by_id.get(key) or {}
+        channel = channels_by_id.get(key)
+        probes = health_by_id.get(key, [])
+        statuses = [(row.get("health") or {}).get("status", "not-tested") for row in probes]
+        details = [str((row.get("health") or {}).get("detail") or "") for row in probes]
+        candidate_count = int(candidate.get("candidate_count", 0) or 0)
+        passing_count = int(passing.get("candidate_count", 0) or 0)
+        failure_kind: str | None = None
+
+        if candidate_count == 0:
+            bucket = "no_candidate"
+            action = "Find an exact-ID public source."
+        elif passing_count == 0:
+            blocked = any(
+                re.search(r"(?:HTTP\s+(?:401|403|451|429)|geo|forbidden|access denied)", detail, re.I)
+                for detail in details
+            )
+            if statuses and all(status == "cooldown" for status in statuses):
+                bucket = "failed_probes"
+                action = "Wait for the dead-source cooldown, then review the next scheduled retry."
+                failure_kind = "dead_source_cooldown"
+            elif blocked:
+                bucket = "runner_or_geo_blocked"
+                action = "Compare the URL in Stremio with the GitHub runner result before replacing it."
+                failure_kind = "access_or_geo_signal"
+            else:
+                bucket = "failed_probes"
+                action = "Replace or repair candidates that failed playlist/media validation."
+                failure_kind = "playback_validation"
+        else:
+            streams = (channel or {}).get("streams", [])
+            measured = [stream for stream in streams if stream.get("measured_height")]
+            hd_count = sum(1 for stream in streams if is_hd_stream(stream))
+            sd_count = sum(1 for stream in streams if is_sd_stream(stream))
+            if streams and not measured:
+                bucket = "missing_quality_metadata"
+                action = "Add or expose an HLS master playlist with RESOLUTION metadata."
+            elif hd_count < target_hd or sd_count < target_sd:
+                bucket = "insufficient_quality_mix"
+                action = "Find the missing measured HD/SD rendition or backup family."
+            else:
+                bucket = "complete"
+                action = "No source work required."
+            failure_kind = None
+
+        bucket_counts[bucket] += 1
+        if passing_count == 0:
+            without_passing_counts[bucket] += 1
+        row = {
+            "group": candidate.get("group"),
+            "tvg_id": channel_id,
+            "bucket": bucket,
+            "candidate_count": candidate_count,
+            "passing_candidate_count": passing_count,
+            "probe_statuses": dict(Counter(statuses)),
+            "sources": candidate.get("sources") or [],
+            "action": action,
+        }
+        if failure_kind:
+            row["failure_kind"] = failure_kind
+        rows.append(row)
+
+    rows.sort(key=lambda row: (row["bucket"], row.get("group", ""), row["tvg_id"]))
+    return {
+        "summary": {
+            "expected_channels": len(rows),
+            "channels_without_passing_stream": sum(1 for row in rows if row["passing_candidate_count"] == 0),
+            "bucket_counts": dict(sorted(bucket_counts.items())),
+            "without_passing_bucket_counts": dict(sorted(without_passing_counts.items())),
+        },
+        "channels": rows,
+    }
+
+
+def build_philly_recovery_diagnostics(
+    health_rows: list[dict[str, Any]],
+    channels: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    settings = ((config.get("discovery") or {}).get("philly_local_sources") or {})
+    target_ids = settings.get("target_ids") or []
+    client_results = config.get("stremio_client_results") or {}
+    health_by_id: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in health_rows:
+        health_by_id[canonical_tvg_id(row.get("tvg_id", ""))].append(row)
+    channels_by_id = {canonical_tvg_id(channel.get("tvg_id", "")): channel for channel in channels}
+
+    rows: list[dict[str, Any]] = []
+    for tvg_id in target_ids:
+        key = canonical_tvg_id(tvg_id)
+        probes = health_by_id.get(key, [])
+        statuses = [(row.get("health") or {}).get("status", "not-tested") for row in probes]
+        channel = channels_by_id.get(key)
+        selected = (channel or {}).get("streams", [])
+        client_ready = [
+            stream for stream in selected
+            if str(stream.get("url") or "").lower().startswith("https://") and not stream.get("headers")
+        ]
+        runner_status = (
+            "passing" if "ok" in statuses
+            else "cooldown" if statuses and all(status == "cooldown" for status in statuses)
+            else "failing" if probes
+            else "no-candidate"
+        )
+        configured_client = client_results.get(tvg_id) or {}
+        if isinstance(configured_client, str):
+            configured_client = {"status": configured_client}
+        client_status = configured_client.get("status", "not-tested")
+        if runner_status == "passing" and client_status == "not-tested":
+            next_action = "Test the Primary URL in Stremio and record pass/fail in stremio_client_results."
+        elif runner_status == "passing" and client_status == "failed":
+            next_action = "Investigate a Stremio-versus-runner playback mismatch."
+        elif runner_status == "no-candidate":
+            next_action = "Continue exact-station source discovery; do not substitute a news/FAST lookalike."
+        elif runner_status == "cooldown":
+            next_action = "Wait for the scheduled retry or add a new exact-station candidate."
+        else:
+            next_action = "Review failed probe details and compare any plausible URL in Stremio."
+        rows.append({
+            "tvg_id": tvg_id,
+            "name": (channel or {}).get("name") or tvg_id,
+            "candidate_count": len(probes),
+            "probe_statuses": dict(Counter(statuses)),
+            "runner_status": runner_status,
+            "selected_streams": len(selected),
+            "stremio_ready_selected_streams": len(client_ready),
+            "stremio_client_status": client_status,
+            "stremio_client_tested_at": configured_client.get("tested_at"),
+            "stremio_client_note": configured_client.get("note"),
+            "next_action": next_action,
+        })
+    return {
+        "summary": {
+            "targets": len(rows),
+            "runner_passing": sum(1 for row in rows if row["runner_status"] == "passing"),
+            "client_tested": sum(1 for row in rows if row["stremio_client_status"] != "not-tested"),
+            "client_runner_mismatches": sum(
+                1 for row in rows
+                if row["runner_status"] == "passing" and row["stremio_client_status"] == "failed"
+            ),
+        },
+        "channels": rows,
+    }
+
+
+def build_quality_measurements(
+    health_rows: list[dict[str, Any]],
+    channels: list[dict[str, Any]],
+) -> dict[str, Any]:
+    selected_streams = [
+        stream
+        for channel in channels
+        for stream in channel.get("streams", [])
+    ]
+    selected_urls = {
+        stream.get("url")
+        for stream in selected_streams
+        if stream.get("url")
+    }
+    rows: list[dict[str, Any]] = []
+    for stream in health_rows:
+        health = stream.get("health") or {}
+        if health.get("status") != "ok":
+            continue
+        rows.append({
+            "name": stream.get("name"),
+            "tvg_id": stream.get("tvg_id"),
+            "source": stream.get("source"),
+            "family": stream.get("family"),
+            "selected": stream.get("url") in selected_urls,
+            "declared_quality": stream.get("declared_quality") or "Unknown",
+            "measured_quality": stream.get("measured_quality"),
+            "measured_width": stream.get("measured_width"),
+            "measured_height": stream.get("measured_height"),
+            "available_resolutions": stream.get("available_resolutions") or [],
+            "quality_source": stream.get("quality_source"),
+            "url": stream.get("url"),
+        })
+    return {
+        "summary": {
+            "passing_candidates": len(rows),
+            "measured_passing_candidates": sum(1 for row in rows if row["measured_height"]),
+            "selected_streams": len(selected_streams),
+            "measured_selected_streams": sum(1 for stream in selected_streams if stream.get("measured_height")),
+            "selected_hd": sum(1 for stream in selected_streams if is_hd_stream(stream)),
+            "selected_sd": sum(1 for stream in selected_streams if is_sd_stream(stream)),
+            "selected_quality_unknown": sum(
+                1 for stream in selected_streams
+                if not stream.get("measured_height") and not stream.get("quality")
+            ),
+        },
+        "streams": rows,
+    }
 
 
 def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | None = None) -> dict[str, Any]:
@@ -1573,21 +1976,20 @@ def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | Non
             f"{_display_time(upcoming['startTime'])}–{_display_time(upcoming['endTime'])}"
         )
     if not current and not upcoming and channel.get("epg_matched"):
-        description_lines.append("LIVE TV • No current programme data")
+        description_lines.append("LIVE • No current guide data")
+    elif channel.get("epg_status") == "unavailable":
+        description_lines.append("LIVE • No exact listing in the guide source")
     elif not channel.get("epg_matched"):
-        description_lines.append("LIVE TV • EPG unavailable")
+        description_lines.append("LIVE • Guide match pending")
 
     info_bits = []
     if channel.get("philly"):
-        info_bits.append("Philadelphia local")
+        info_bits.append("Philadelphia")
     info_bits.append(channel.get("category", "Live TV"))
-    if channel.get("service_type"):
-        info_bits.append(channel["service_type"])
     info_bits.append(
-        f"{len(channel.get('streams', []))} stream source"
+        f"{len(channel.get('streams', []))} source"
         + ("s" if len(channel.get("streams", [])) != 1 else "")
     )
-    description_lines.append("")
     description_lines.append(" • ".join(info_bits))
 
     version = channel.get("build_version")
@@ -1596,7 +1998,7 @@ def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | Non
     if version or built_at or build_id:
         build_bits = []
         if version:
-            build_bits.append(f"Stremio TV v{version}")
+            build_bits.append(f"v{version}")
         if build_id:
             build_bits.append(f"build {build_id}")
         if built_at:
@@ -1630,25 +2032,34 @@ def stream_object(
     index: int,
     build_info: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    quality = stream.get("quality") or "Live"
+    quality = quality_label(stream, "Live")
     source = _short_source_name(stream)
     role = stream.get("display_role") or ("Primary" if index == 1 else f"Backup {index - 1}")
     url = stream["url"]
     health = stream.get("health") or {}
     health_status = health.get("status", "not-tested")
 
-    description_parts = [source, quality]
+    description_parts = [source]
+    if stream.get("measured_quality"):
+        description_parts.append(f"Measured {quality}")
+    elif stream.get("quality"):
+        description_parts.append(f"Declared {quality}")
+    else:
+        description_parts.append("Quality unknown")
     if health_status == "ok":
         description_parts.append("Builder check: OK")
     elif health_status == "failed":
         description_parts.append("Builder check failed — may still work locally")
     else:
         description_parts.append("Not health-tested")
+    stability = (stream.get("stability") or {}).get("classification")
+    if stability and stability != "Unknown":
+        description_parts.append(stability)
     if build_info:
         description_parts.append(f"Build {build_info.get('build_id')}")
 
     obj: dict[str, Any] = {
-        "name": f"{role} • {quality} • {source}",
+        "name": f"{role} • {quality}",
         "description": " • ".join(description_parts),
         "url": url,
     }

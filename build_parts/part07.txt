@@ -5,9 +5,17 @@
         write_json(output / "diagnostics" / "allowlist-coverage.json", allowlist_coverage)
         write_json(output / "diagnostics" / "passing-allowlist-coverage.json", healthy_allowlist_coverage)
         write_json(output / "diagnostics" / "epg-matches.json", matches)
+        write_json(output / "diagnostics" / "epg-unavailable.json", epg_unavailable)
         write_json(output / "diagnostics" / "epg-unmatched.json", unmatched)
         write_json(output / "diagnostics" / "channels.json", channel_rows)
         write_json(output / "diagnostics" / "needs-sources.json", needs_sources)
+        write_json(output / "diagnostics" / "quality-measurements.json", quality_measurements)
+        write_json(output / "diagnostics" / "missing-source-diagnostics.json", missing_source_diagnostics)
+        write_json(output / "diagnostics" / "philly-recovery.json", philly_recovery)
+        write_json(output / "diagnostics" / "stremio-preview.json", {
+            "build": build_info,
+            "channels": stremio_preview_rows,
+        })
         write_json(output / "diagnostics" / "stream-health.json", stream_health_results)
         write_json(output / "diagnostics" / "stream-stability.json", stream_stability_state)
         write_json(output / "diagnostics" / "channel-state.json", channel_state)

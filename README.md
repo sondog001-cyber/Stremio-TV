@@ -49,7 +49,7 @@ Pluto, Samsung TV Plus and Plex-style playlists were also reviewed. They are use
 
 ## Passed-only playback policy
 
-Before a stream can appear in Stremio, the builder probes the full curated candidate pool. HLS candidates must return a valid playlist and a readable media segment; direct media URLs must be reachable. Only candidates that pass this automated check are eligible for selection, regardless of source family or whether that source is marked unverified.
+Before a stream can appear in Stremio, the builder probes the curated candidate pool. HLS candidates must return a valid playlist and a readable media segment; direct media URLs must be reachable. Only candidates that pass this automated check are eligible for selection, regardless of source family or whether that source is marked unverified. URLs classified as Dead use a 1-hour, 6-hour, then 24-hour retry cooldown so scheduled builds do not repeatedly hammer the same broken upstream.
 
 A failed or untested candidate stays in diagnostics but is not exposed to Stremio.
 
@@ -67,14 +67,14 @@ For each curated channel the builder:
 
 The exact Primary/Backup decision for every built channel is written to `site/diagnostics/source-ordering.json`, including stability history, matched preference rank and the configured channel rule.
 
-The HD/SD classification is based on the **quality declared by the source playlist**. The static builder does not decode every HLS rendition, so a source label is not a promise about the actual encoder output.
+The HD/SD classification prefers the **measured maximum rendition in an HLS master playlist's `RESOLUTION` attributes**. A declared playlist quality is used only when the stream does not expose measurable rendition metadata. The builder records both values so a misleading source label cannot override measured output.
 
 In Stremio the choices look like:
 
 ```text
-HD 1 • IPTV-org US
-HD 2 • Free-TV/IPTV
-SD • IPTV-org US Raw
+Primary • 1080P
+Backup 1 • 720P
+Backup 2 • 480P
 ```
 
 ## Finding channels that still need a source
@@ -82,6 +82,8 @@ SD • IPTV-org US Raw
 Every build creates:
 
 `site/diagnostics/needs-sources.json`
+
+For the actionable work queue, use `site/diagnostics/missing-source-diagnostics.json`. It separates exact IDs into `no_candidate`, `failed_probes`, `runner_or_geo_blocked`, `missing_quality_metadata`, `insufficient_quality_mix`, and `complete` buckets.
 
 Each entry shows:
 
@@ -94,6 +96,8 @@ Each entry shows:
 - current source names
 
 The GitHub Action also uploads the whole diagnostics directory as an artifact. That report is the source of truth for deciding which channels we should manually improve next.
+
+Philadelphia recovery is tracked separately in `site/diagnostics/philly-recovery.json`. It compares builder-runner health with recorded Stremio client results for WPVI, WCAU, KYW, WHYY, WPHL, and WPSG. Client observations can be added to `config.json` under `stremio_client_results` with `status`, `tested_at`, and `note`; an untested client is never reported as passing.
 
 ## Adding a public manual backup
 
@@ -190,10 +194,15 @@ The build writes:
 - `diagnostics/source-results.json`
 - `diagnostics/channels.json`
 - `diagnostics/needs-sources.json`
+- `diagnostics/missing-source-diagnostics.json`
+- `diagnostics/quality-measurements.json`
 - `diagnostics/targeted-source-scans.json`
 - `diagnostics/channel-changes.json`
 - `diagnostics/stream-stability.json`
+- `diagnostics/philly-recovery.json`
+- `diagnostics/stremio-preview.json`
 - `diagnostics/epg-matches.json`
+- `diagnostics/epg-unavailable.json`
 - `diagnostics/epg-unmatched.json`
 
 Every manifest, channel metadata response, and stream response carries the same immutable build ID, addon version, UTC build timestamp, and—on GitHub Actions—the source revision/run identity. This makes it possible to identify exactly which deployment Stremio is displaying when testing a stream.

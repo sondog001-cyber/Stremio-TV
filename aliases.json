@@ -1,4 +1,24 @@
 {
-  "by_tvg_id": {},
-  "by_name": {}
+  "by_tvg_id": {
+    "Fox.us@WTXFTV": "WTXF-DT.us_locals1",
+    "TLC.us": "TLC.HD.(US).us2",
+    "AE.us@East": "A.and.E.HD.East.us2",
+    "E.us@East": "E!.Entertainment.Television.HD.us2",
+    "FX.us@EastHD": "FX.HD.us2",
+    "VICETV.us": "Vice.HD.us2",
+    "DisneyChannel.us@East": "Disney.Channel.HD.us2",
+    "DisneyXD.us@East": "Disney.XD.HD.us2",
+    "Nickelodeon.us@East": "Nickelodeon.HD.us2",
+    "Nicktoons.us@East": "Nicktoons.us2",
+    "AMC.us@EastHD": "AMC.HD.us2",
+    "StarzEncoreSpanish.us@East": "Starz.Encore.Español.SD.us2",
+    "StarzKidsFamily.us@East": "Starz.Kids.HD.us2",
+    "NationalGeographic.us@East": "National.Geographic.HD.us2",
+    "MTV.us@East": "MTV.-.Music.Television.HD.us2",
+    "TurnerClassicMovies.us": "Turner.Classic.Movies.HD.us2"
+  },
+  "by_name": {},
+  "unavailable_by_tvg_id": {
+    "HallmarkMoviesMore.us@SD": "The configured EPG feed has no exact Hallmark Movies & More listing; a different Hallmark service is not substituted."
+  }
 }

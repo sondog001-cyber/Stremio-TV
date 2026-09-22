@@ -85,6 +85,7 @@
 
         matches: list[dict[str, Any]] = []
         unmatched: list[dict[str, Any]] = []
+        epg_unavailable: list[dict[str, Any]] = []
         epg_to_channels: dict[str, list[str]] = defaultdict(list)
         channel_epg: dict[str, str] = {}
         for ch in channels:
@@ -97,7 +98,12 @@
                 "method": method,
                 "score": round(score, 4),
             }
+            intentionally_unavailable = method.startswith("manual-unavailable:")
+            if intentionally_unavailable:
+                row["method"] = "manual-unavailable"
+                row["reason"] = method.split(":", 1)[1]
             ch["epg_matched"] = bool(epg_id)
+            ch["epg_status"] = "matched" if epg_id else "unavailable" if intentionally_unavailable else "unmatched"
             if epg_id:
                 matches.append(row)
                 epg_to_channels[epg_id].append(ch["id"])
@@ -106,10 +112,15 @@
                     icon = indexes["info"].get(epg_id, {}).get("icon", "")
                     if icon:
                         ch["logo"] = icon
+            elif intentionally_unavailable:
+                epg_unavailable.append(row)
             else:
                 unmatched.append(row)
 
-        log(f"EPG matched {len(matches):,}/{len(channels):,} channels")
+        log(
+            f"EPG matched {len(matches):,}/{len(channels):,} channels; "
+            f"unavailable={len(epg_unavailable):,}, unmatched={len(unmatched):,}"
+        )
         schedules, dates = build_program_index(epg_path, epg_to_channels)
 
         # Main EPG catalog + normal channel list.
@@ -130,6 +141,7 @@
         # Meta and stream endpoints.
         now = dt.datetime.now(UTC)
         horizon = now + dt.timedelta(hours=int(config.get("meta_schedule_hours", 30)))
+        stremio_preview_rows: list[dict[str, Any]] = []
         for ch in channels:
             nearby: list[dict[str, Any]] = []
             for day_programmes in schedules.get(ch["id"], {}).values():
@@ -140,12 +152,18 @@
                         nearby.append(p)
             dedup = {p["id"]: p for p in nearby}
             nearby = sorted(dedup.values(), key=lambda p: p["startTime"])
-            write_json(output / "meta" / "tv" / f"{ch['id']}.json", {"meta": channel_meta(ch, nearby)})
+            meta = channel_meta(ch, nearby)
+            write_json(output / "meta" / "tv" / f"{ch['id']}.json", {"meta": meta})
             streams = [stream_object(s, i + 1, build_info) for i, s in enumerate(ch["streams"])]
             write_json(
                 output / "stream" / "tv" / f"{ch['id']}.json",
                 {"streams": streams, "stremioTvBuild": build_info},
             )
+            stremio_preview_rows.append({
+                "channel": channel_preview(ch),
+                "meta": meta,
+                "streams": streams,
+            })
 
         manifest = build_manifest(config, build_info)
         if public_base:
@@ -172,7 +190,14 @@
                 "sd_count": sd_count,
                 "sources": [s.get("source") for s in c["streams"]],
                 "families": sorted({s.get("family") for s in c["streams"] if s.get("family")}),
-                "qualities": [s.get("quality") or "Unknown" for s in c["streams"]],
+                "qualities": [quality_label(s) for s in c["streams"]],
+                "declared_qualities": [s.get("quality") or "Unknown" for s in c["streams"]],
+                "measured_qualities": [s.get("measured_quality") for s in c["streams"]],
+                "measured_resolutions": [
+                    f"{s.get('measured_width')}x{s.get('measured_height')}"
+                    if s.get("measured_width") and s.get("measured_height") else None
+                    for s in c["streams"]
+                ],
                 "health": [(s.get("health") or {}).get("status", "not-tested") for s in c["streams"]],
                 "stability": [
                     {
@@ -194,6 +219,20 @@
                     "missing_sd": missing_sd,
                 })
 
+        quality_measurements = build_quality_measurements(stream_health_results, channels)
+        missing_source_diagnostics = build_missing_source_diagnostics(
+            allowlist_coverage,
+            healthy_allowlist_coverage,
+            stream_health_results,
+            channels,
+            config,
+        )
+        philly_recovery = build_philly_recovery_diagnostics(
+            stream_health_results,
+            channels,
+            config,
+        )
+
         total_streams = sum(len(c["streams"]) for c in channels)
         status = {
             "built_at": build_info["built_at"],
@@ -208,6 +247,7 @@
             "favorite_channels": sum(1 for c in channels if c["favorite"]),
             "epg_channels_available": len(epg_channels),
             "epg_matched_channels": len(matches),
+            "epg_unavailable_channels": len(epg_unavailable),
             "epg_unmatched_channels": len(unmatched),
             "epg_dates": sorted(dates),
             "public_base_url": public_base,
@@ -219,8 +259,11 @@
                     for row in stream_health_results
                     if (row.get("health") or {}).get("status") == status
                 )
-                for status in ("ok", "failed", "not-tested")
+                for status in ("ok", "failed", "cooldown", "not-tested")
             },
+            "quality_measurements": quality_measurements["summary"],
+            "missing_source_buckets": missing_source_diagnostics["summary"],
+            "philly_recovery": philly_recovery["summary"],
             "stream_stability": {
                 "history_size": stream_stability_state.get("history_size", 5),
                 "prior_state_built_at": stream_stability_state.get("source_state_built_at"),

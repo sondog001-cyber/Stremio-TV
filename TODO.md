@@ -4,7 +4,7 @@ Working roadmap for the next development pass.
 
 ## UI / presentation
 
-- [ ] **Clean up the stream-choice column**
+- [x] **Clean up the stream-choice column**
   - Keep the selectable stream title short enough for Stremio's narrow right-side panel.
   - Proposed title format: `Primary • 720p`, `Backup 1 • 1080p`, etc.
   - Move source family, health/stability details, and builder-check text into the secondary description instead of repeating them in the title.
@@ -45,6 +45,14 @@ Working roadmap for the next development pass.
 
 - [x] Clean up optional source URLs that return permanent 404s (removed stale Buddy/Tubi paths).
 
+- [x] Measure HLS master-playlist resolution and prefer it over declared quality labels.
+
+- [x] Back off Dead URLs for 1, 6, then 24 hours before retrying.
+
+- [x] Split missing-source work into absent, failed, access/geo-blocked, quality-metadata, and quality-mix buckets.
+
+- [x] Publish a Philadelphia runner-versus-Stremio client verification matrix.
+
 ## Source hunting
 
 - [ ] Continue exact-channel hunting only after stability tracking is in place.
@@ -58,4 +66,8 @@ Working roadmap for the next development pass.
 
 - [ ] Keep exact identity rules so FAST lookalikes cannot satisfy premium/full-linear targets.
 - [ ] Improve canonical channel metadata and category labels where source names are messy.
-- [ ] Consider adding resolution/codec detail only when it can be measured reliably rather than trusting source labels.
+- [x] Add measured HLS resolution detail while retaining declared quality as provenance.
+
+- [x] Resolve current EPG mismatches with exact aliases and an explicit unavailable override where the guide has no exact service.
+
+- [x] Generate a compact `stremio-preview.json` view of channel metadata and stream choices.
