@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, expiring client verification, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.24"
+    "version": "0.3.25"
   },
   "sources": {
     "playlists": [
@@ -1058,11 +1058,11 @@
     },
     "github_candidate_search": {
       "enabled": true,
-      "max_targets_per_build": 4,
-      "max_queries_per_build": 8,
-      "min_query_interval_seconds": 7,
+      "max_targets_per_build": 3,
+      "max_queries_per_build": 6,
+      "min_query_interval_seconds": 12,
       "rate_limit_retries": 1,
-      "max_rate_limit_wait_seconds": 15,
+      "max_rate_limit_wait_seconds": 70,
       "results_per_query": 5,
       "max_candidates_per_file": 3,
       "min_freshness_score": 55,
