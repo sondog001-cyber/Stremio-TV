@@ -186,6 +186,7 @@ The main live-TV catalog contains the entire curated package. Programme rows are
 The build writes:
 
 - `status.json`
+- `diagnostics/build-info.json`
 - `diagnostics/source-results.json`
 - `diagnostics/channels.json`
 - `diagnostics/needs-sources.json`
@@ -194,6 +195,8 @@ The build writes:
 - `diagnostics/stream-stability.json`
 - `diagnostics/epg-matches.json`
 - `diagnostics/epg-unmatched.json`
+
+Every manifest, channel metadata response, and stream response carries the same immutable build ID, addon version, UTC build timestamp, and—on GitHub Actions—the source revision/run identity. This makes it possible to identify exactly which deployment Stremio is displaying when testing a stream.
 
 Optional playlist failures do not take down the whole build. The two primary IPTV-org public playlists remain required; secondary sources are allowed to fail independently.
 

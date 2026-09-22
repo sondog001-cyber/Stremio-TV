@@ -1,6 +1,7 @@
             "sources": config["sources"],
         }
         write_json(output / "status.json", status)
+        write_json(output / "diagnostics" / "build-info.json", build_info)
         write_json(output / "diagnostics" / "allowlist-coverage.json", allowlist_coverage)
         write_json(output / "diagnostics" / "passing-allowlist-coverage.json", healthy_allowlist_coverage)
         write_json(output / "diagnostics" / "epg-matches.json", matches)

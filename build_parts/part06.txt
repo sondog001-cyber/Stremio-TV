@@ -64,10 +64,14 @@
         source_ordering_rows = build_source_ordering_diagnostics(channels, config)
         log(f"Merged passing streams into {len(channels):,} channels")
 
-        build_stamp = iso_z(dt.datetime.now(UTC))
+        build_stamp = build_info["built_at"]
+        build_info["channels"] = len(channels)
+        build_info["total_streams"] = sum(len(channel.get("streams", [])) for channel in channels)
         for ch in channels:
-            ch["build_version"] = config["addon"]["version"]
+            ch["build_version"] = build_info["version"]
             ch["built_at"] = build_stamp
+            ch["build_id"] = build_info["build_id"]
+            ch["build_revision"] = build_info.get("source_revision")
 
         if fixtures:
             epg_path = fixtures / "epg.xml.gz"
@@ -137,11 +141,13 @@
             dedup = {p["id"]: p for p in nearby}
             nearby = sorted(dedup.values(), key=lambda p: p["startTime"])
             write_json(output / "meta" / "tv" / f"{ch['id']}.json", {"meta": channel_meta(ch, nearby)})
-            streams = [stream_object(s, i + 1) for i, s in enumerate(ch["streams"])]
-            write_json(output / "stream" / "tv" / f"{ch['id']}.json", {"streams": streams})
+            streams = [stream_object(s, i + 1, build_info) for i, s in enumerate(ch["streams"])]
+            write_json(
+                output / "stream" / "tv" / f"{ch['id']}.json",
+                {"streams": streams, "stremioTvBuild": build_info},
+            )
 
-        manifest = build_manifest(config)
-        public_base = derive_public_base()
+        manifest = build_manifest(config, build_info)
         if public_base:
             manifest["logo"] = f"{public_base}/icon.svg"
         write_json(output / "manifest.json", manifest)
@@ -190,7 +196,10 @@
 
         total_streams = sum(len(c["streams"]) for c in channels)
         status = {
-            "built_at": iso_z(dt.datetime.now(UTC)),
+            "built_at": build_info["built_at"],
+            "addon_version": build_info["version"],
+            "build_id": build_info["build_id"],
+            "source_revision": build_info.get("source_revision"),
             "channels": len(channels),
             "total_streams": total_streams,
             "filtered_stream_entries": len(filtered_entries),
