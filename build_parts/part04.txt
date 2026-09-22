@@ -745,6 +745,179 @@ def apply_stream_stability(
     }
 
 
+def _channel_state_key(row: dict[str, Any]) -> str:
+    group = str(row.get("group") or "Unknown").strip()
+    pattern = str(row.get("pattern") or "").strip()
+    return f"{group}:{canonical_tvg_id(pattern)}"
+
+
+def _load_previous_channel_state(config: dict[str, Any]) -> dict[str, Any]:
+    """Load the last deployed exact-channel state for build-to-build comparison."""
+    settings = config.get("channel_diagnostics") or {}
+    if not settings.get("enabled", True):
+        return {}
+
+    explicit = (settings.get("previous_state_url") or "").strip()
+    public_base = derive_public_base()
+    if explicit:
+        state_url = explicit
+    elif public_base:
+        state_url = f"{public_base}/diagnostics/channel-state.json"
+    else:
+        return {}
+
+    cache_bust = os.getenv("GITHUB_RUN_ID") or str(int(time.time()))
+    separator = "&" if "?" in state_url else "?"
+    request_url = f"{state_url}{separator}build={urllib.parse.quote(cache_bust)}"
+    req = urllib.request.Request(
+        request_url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+            "Accept-Encoding": "identity",
+            "Cache-Control": "no-cache",
+        },
+    )
+    try:
+        with urllib.request.urlopen(
+            req,
+            timeout=int(settings.get("load_timeout_seconds", 8)),
+        ) as resp:
+            payload = json.loads(resp.read(4_000_000).decode("utf-8"))
+        if isinstance(payload, dict) and isinstance(payload.get("channels"), dict):
+            log(
+                "Channel diagnostics: loaded "
+                f"{len(payload['channels']):,} prior exact-channel states"
+            )
+            return payload
+    except urllib.error.HTTPError as exc:
+        if exc.code != 404:
+            log(f"WARNING: could not load prior channel state: HTTP {exc.code}")
+    except Exception as exc:
+        log(f"WARNING: could not load prior channel state: {str(exc)[:160]}")
+    return {}
+
+
+def build_channel_diagnostics(
+    passing_allowlist_coverage: list[dict[str, Any]],
+    config: dict[str, Any],
+    enabled: bool = True,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Track exact allow-listed channels across builds.
+
+    A channel is considered present only when at least one candidate for that exact
+    allow-list ID passed the current build's health gate. This intentionally tracks
+    zero-candidate IDs too, instead of looking only at channels that happened to
+    make it into the merged catalog.
+    """
+    settings = config.get("channel_diagnostics") or {}
+    enabled = enabled and bool(settings.get("enabled", True))
+    built_at = iso_z(dt.datetime.now(UTC))
+    previous = _load_previous_channel_state(config) if enabled else {}
+    previous_channels = previous.get("channels") if isinstance(previous.get("channels"), dict) else {}
+    has_prior_state = bool(previous_channels)
+
+    channels: dict[str, dict[str, Any]] = {}
+    recovered: list[dict[str, Any]] = []
+    lost: list[dict[str, Any]] = []
+    still_missing: list[dict[str, Any]] = []
+    stable: list[dict[str, Any]] = []
+
+    for row in passing_allowlist_coverage:
+        key = _channel_state_key(row)
+        old = previous_channels.get(key) if isinstance(previous_channels.get(key), dict) else {}
+        was_present = bool(old.get("present")) if old else False
+        present = bool(row.get("found"))
+
+        if present:
+            stable_builds = int(old.get("stable_builds", 0)) + 1 if was_present else 1
+            missing_builds = 0
+        else:
+            stable_builds = 0
+            missing_builds = int(old.get("missing_builds", 0)) + 1 if old and not was_present else 1
+
+        record = {
+            "group": row.get("group"),
+            "pattern": row.get("pattern"),
+            "present": present,
+            "candidate_count": int(row.get("candidate_count", 0)),
+            "sources": row.get("sources") or [],
+            "qualities": row.get("qualities") or [],
+            "stable_builds": stable_builds,
+            "missing_builds": missing_builds,
+            "last_changed_at": (
+                old.get("last_changed_at")
+                if old and was_present == present
+                else built_at
+            ),
+            "last_seen_at": built_at if present else old.get("last_seen_at"),
+            "last_missing_at": built_at if not present else old.get("last_missing_at"),
+        }
+        channels[key] = record
+
+        summary_row = {
+            "group": record["group"],
+            "channel_id": record["pattern"],
+            "candidate_count": record["candidate_count"],
+            "sources": record["sources"],
+            "qualities": record["qualities"],
+        }
+
+        if present:
+            stable.append({**summary_row, "stable_for_builds": stable_builds})
+            if has_prior_state and old and not was_present:
+                recovered.append({
+                    **summary_row,
+                    "stable_for_builds": stable_builds,
+                    "previously_missing_for_builds": int(old.get("missing_builds", 0)),
+                })
+        else:
+            if has_prior_state and old and was_present:
+                lost.append({
+                    **summary_row,
+                    "missing_for_builds": missing_builds,
+                    "previously_stable_for_builds": int(old.get("stable_builds", 0)),
+                })
+            else:
+                still_missing.append({**summary_row, "missing_for_builds": missing_builds})
+
+    sort_key = lambda item: (str(item.get("group") or ""), str(item.get("channel_id") or ""))
+    recovered.sort(key=sort_key)
+    lost.sort(key=sort_key)
+    still_missing.sort(key=sort_key)
+    stable.sort(key=sort_key)
+
+    state = {
+        "version": 1,
+        "enabled": enabled,
+        "updated_at": built_at,
+        "source_state_built_at": previous.get("updated_at"),
+        "has_prior_state": has_prior_state,
+        "channels": channels,
+    }
+    report = {
+        "version": 1,
+        "built_at": built_at,
+        "source_state_built_at": previous.get("updated_at"),
+        "baseline_initialized": not has_prior_state,
+        "expected_channels": len(channels),
+        "present_channels": sum(1 for item in channels.values() if item.get("present")),
+        "missing_channels": sum(1 for item in channels.values() if not item.get("present")),
+        "recovered_this_build": recovered,
+        "lost_this_build": lost,
+        "still_missing": still_missing,
+        "stable": stable,
+    }
+
+    log(
+        "Channel changes: "
+        f"recovered={len(recovered)}, lost={len(lost)}, "
+        f"still_missing={len(still_missing)}, stable={len(stable)}"
+        + (" (baseline initialized)" if not has_prior_state else "")
+    )
+    return state, report
+
+
 def probe_candidate_entries(
     entries: list[dict[str, Any]],
     config: dict[str, Any],
