@@ -545,11 +545,211 @@ def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) ->
         }
 
 
+def _stream_stability_key(entry: dict[str, Any]) -> str:
+    """Stable identity for one playback URL + request-header combination."""
+    payload = {
+        "url": entry.get("url") or "",
+        "headers": sorted((entry.get("headers") or {}).items()),
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha1(encoded.encode("utf-8")).hexdigest()
+
+
+def _classify_stream_stability(history: list[bool], history_size: int) -> dict[str, Any]:
+    history = [bool(x) for x in history][-history_size:]
+    passes = sum(1 for x in history if x)
+    samples = len(history)
+    if samples >= history_size and passes == history_size:
+        classification = "Stable"
+        rank = 0
+    elif passes >= 3:
+        classification = "Backup"
+        rank = 1
+    elif passes >= 1:
+        classification = "Quarantine"
+        rank = 2
+    else:
+        classification = "Dead"
+        rank = 3
+    return {
+        "classification": classification,
+        "rank": rank,
+        "passes": passes,
+        "samples": samples,
+        "history_size": history_size,
+        "history": history,
+    }
+
+
+def _load_previous_stream_stability(config: dict[str, Any]) -> dict[str, Any]:
+    settings = config.get("stream_stability") or {}
+    if not settings.get("enabled", True):
+        return {}
+
+    explicit = (settings.get("previous_state_url") or "").strip()
+    public_base = derive_public_base()
+    if explicit:
+        state_url = explicit
+    elif public_base:
+        state_url = f"{public_base}/diagnostics/stream-stability.json"
+    else:
+        return {}
+
+    cache_bust = os.getenv("GITHUB_RUN_ID") or str(int(time.time()))
+    separator = "&" if "?" in state_url else "?"
+    request_url = f"{state_url}{separator}build={urllib.parse.quote(cache_bust)}"
+    req = urllib.request.Request(
+        request_url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+            "Accept-Encoding": "identity",
+            "Cache-Control": "no-cache",
+        },
+    )
+    try:
+        with urllib.request.urlopen(
+            req,
+            timeout=int(settings.get("load_timeout_seconds", 8)),
+        ) as resp:
+            payload = json.loads(resp.read(8_000_000).decode("utf-8"))
+        if isinstance(payload, dict) and isinstance(payload.get("streams"), dict):
+            log(
+                "Stream stability: loaded "
+                f"{len(payload['streams']):,} prior URL histories"
+            )
+            return payload
+    except urllib.error.HTTPError as exc:
+        if exc.code != 404:
+            log(f"WARNING: could not load prior stream stability state: HTTP {exc.code}")
+    except Exception as exc:
+        log(f"WARNING: could not load prior stream stability state: {str(exc)[:160]}")
+    return {}
+
+
+def apply_stream_stability(
+    entries: list[dict[str, Any]],
+    config: dict[str, Any],
+    enabled: bool = True,
+) -> dict[str, Any]:
+    """Persist and score URL health across builds.
+
+    Current playback health remains mandatory. Stability only changes ordering
+    among candidates that passed this build, so an old successful URL is never
+    exposed while it is currently failing.
+    """
+    settings = config.get("stream_stability") or {}
+    enabled = enabled and bool(settings.get("enabled", True))
+    history_size = max(1, int(settings.get("history_size", 5)))
+    retention_builds = max(history_size, int(settings.get("retention_builds", 20)))
+    built_at = iso_z(dt.datetime.now(UTC))
+
+    if not enabled:
+        for entry in entries:
+            entry["stability"] = {
+                "classification": "Unknown",
+                "rank": 2,
+                "passes": 0,
+                "samples": 0,
+                "history_size": history_size,
+                "history": [],
+            }
+        return {
+            "version": 1,
+            "enabled": False,
+            "history_size": history_size,
+            "updated_at": built_at,
+            "streams": {},
+            "current_counts": {},
+        }
+
+    previous = _load_previous_stream_stability(config)
+    previous_streams = previous.get("streams") or {}
+    state_streams: dict[str, dict[str, Any]] = {}
+
+    # Keep recently unseen candidates so a temporary source-playlist outage does
+    # not erase four builds of useful history.
+    for key, old in previous_streams.items():
+        if not isinstance(old, dict):
+            continue
+        missed = int(old.get("missed_builds", 0)) + 1
+        if missed > retention_builds:
+            continue
+        copied = dict(old)
+        copied["missed_builds"] = missed
+        state_streams[key] = copied
+
+    current_by_key: dict[str, dict[str, Any]] = {}
+    linked_by_key: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for entry in entries:
+        key = _stream_stability_key(entry)
+        current_by_key.setdefault(key, entry)
+        linked_by_key[key].append(entry)
+
+    current_counts: dict[str, int] = defaultdict(int)
+    for key, entry in current_by_key.items():
+        old = previous_streams.get(key) if isinstance(previous_streams.get(key), dict) else {}
+        history = [bool(x) for x in (old.get("history") or [])][-history_size:]
+        passed = (entry.get("health") or {}).get("status") == "ok"
+        history = (history + [passed])[-history_size:]
+        score = _classify_stream_stability(history, history_size)
+        score["last_result"] = "pass" if passed else "fail"
+        score["last_seen"] = built_at
+
+        record = {
+            "url": entry.get("url"),
+            "headers": entry.get("headers") or {},
+            "tvg_id": entry.get("tvg_id"),
+            "name": entry.get("name"),
+            "source": entry.get("source"),
+            "family": entry.get("family"),
+            "quality": entry.get("quality") or "Unknown",
+            **score,
+            "missed_builds": 0,
+        }
+        state_streams[key] = record
+        current_counts[score["classification"]] += 1
+
+        entry_score = {
+            k: score[k]
+            for k in (
+                "classification",
+                "rank",
+                "passes",
+                "samples",
+                "history_size",
+                "history",
+                "last_result",
+                "last_seen",
+            )
+        }
+        for linked in linked_by_key[key]:
+            linked["stability"] = dict(entry_score)
+
+    log(
+        "Cross-build stream stability: "
+        + ", ".join(
+            f"{name}={current_counts.get(name, 0)}"
+            for name in ("Stable", "Backup", "Quarantine", "Dead")
+        )
+    )
+
+    return {
+        "version": 1,
+        "enabled": True,
+        "history_size": history_size,
+        "updated_at": built_at,
+        "source_state_built_at": previous.get("updated_at"),
+        "streams": state_streams,
+        "current_counts": dict(current_counts),
+    }
+
+
 def probe_candidate_entries(
     entries: list[dict[str, Any]],
     config: dict[str, Any],
     enabled: bool = True,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     """Probe the full curated candidate pool before selecting channel streams.
 
     Production can require two successful probes separated by one global wait.
@@ -579,7 +779,10 @@ def probe_candidate_entries(
                 "url": entry.get("url"),
                 "health": entry.get("health"),
             })
-        return entries, rows
+        stability_state = apply_stream_stability(entries, config, enabled=False)
+        for row, entry in zip(rows, entries):
+            row["stability"] = entry.get("stability")
+        return entries, rows, stability_state
 
     jobs: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
     refs: dict[tuple[str, tuple[tuple[str, str], ...]], list[dict[str, Any]]] = defaultdict(list)
@@ -649,6 +852,8 @@ def probe_candidate_entries(
         for entry in linked_entries:
             entry["health"] = dict(health)
 
+    stability_state = apply_stream_stability(entries, config, enabled=True)
+
     for entry in entries:
         rows.append({
             "name": entry.get("name"),
@@ -659,6 +864,7 @@ def probe_candidate_entries(
             "quality": entry.get("quality") or "Unknown",
             "url": entry.get("url"),
             "health": entry.get("health"),
+            "stability": entry.get("stability"),
             "discovery_issue": entry.get("discovery_issue"),
             "content_note": entry.get("content_note"),
         })
@@ -672,7 +878,7 @@ def probe_candidate_entries(
     )
 
     if not require_passed_only:
-        return entries, rows
+        return entries, rows, stability_state
 
     healthy = [
         entry
@@ -680,7 +886,7 @@ def probe_candidate_entries(
         if (entry.get("health") or {}).get("status") == "ok"
     ]
     log(f"Passed-only policy: keeping {len(healthy):,}/{len(entries):,} curated candidates")
-    return healthy, rows
+    return healthy, rows, stability_state
 
 
 def label_channel_streams(channels: list[dict[str, Any]]) -> None:
