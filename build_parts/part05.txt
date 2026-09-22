@@ -171,6 +171,7 @@ def load_manual_streams(config: dict[str, Any], config_path: Path) -> list[dict[
 
 
 def build(config_path: Path, aliases_path: Path, output: Path, fixtures: Path | None = None) -> dict[str, Any]:
+    _PUBLIC_TEXT_CACHE.clear()
     config = load_json(config_path)
     aliases = load_json(aliases_path) if aliases_path.exists() else {"by_tvg_id": {}, "by_name": {}}
     page_size = int(config.get("page_size", 100))

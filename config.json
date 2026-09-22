@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with exact-channel identity matching, cross-build 5-run stream stability scoring, expanded public/premium candidate scanning, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.17"
+    "version": "0.3.18"
   },
   "sources": {
     "playlists": [
@@ -42,15 +42,6 @@
         "priority": 2,
         "required": false,
         "fixture": "free-tv.m3u"
-      },
-      {
-        "name": "Philadelphia OTA Relay Mirror (Unverified)",
-        "family": "localbtv-relay",
-        "url": "https://raw.githubusercontent.com/kilirushi/iptv/master/us_localbtv.m3u",
-        "philly": false,
-        "priority": 4,
-        "required": false,
-        "fixture": "localbtv-relay.m3u"
       },
       {
         "name": "Samsung TV Plus US (BuddyChewChew)",
@@ -796,6 +787,112 @@
   },
   "discovery": {
     "enabled": true,
+    "philly_local_sources": {
+      "enabled": true,
+      "target_ids": [
+        "WPVI.us",
+        "WCAU.us",
+        "KYW.us",
+        "WHYY.us",
+        "WPHL.us",
+        "WPSG.us"
+      ],
+      "timeout_seconds": 20,
+      "byte_limit": 8000000,
+      "max_candidates_per_target": 6,
+      "playlists": [
+        {
+          "name": "Philadelphia OTA Relay Mirror (Unverified)",
+          "family": "localbtv-relay",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/kilirushi/iptv/master/us_localbtv.m3u",
+          "priority": 4,
+          "philly": true
+        },
+        {
+          "name": "MoveOnJoy Philadelphia Affiliates",
+          "family": "moveonjoy",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/judy-gotv/iptv/main/Moveonjoy.m3u",
+          "priority": 5,
+          "philly": true
+        }
+      ],
+      "official_pages": [
+        {
+          "name": "6ABC Philadelphia 24/7",
+          "tvg_id": "WPVI.us",
+          "page_url": "https://6abc.com/watch/live/",
+          "source": "6ABC Official Public Stream",
+          "priority": -20,
+          "philly": true,
+          "group": "Local",
+          "max_candidates": 4,
+          "content_note": "Official free 6ABC streaming channel; may be news/FAST rather than full WPVI-DT1 linear.",
+          "content_kind": "news-fast"
+        },
+        {
+          "name": "NBC10 Philadelphia News",
+          "tvg_id": "WCAU.us",
+          "page_url": "https://www.nbcphiladelphia.com/watch/",
+          "source": "NBC10 Official Public Stream",
+          "priority": -20,
+          "philly": true,
+          "group": "Local",
+          "max_candidates": 4,
+          "content_note": "Official free NBC10 streaming channel; may differ from full WCAU-DT1 linear.",
+          "content_kind": "news-fast"
+        },
+        {
+          "name": "CBS News Philadelphia",
+          "tvg_id": "KYW.us",
+          "page_url": "https://www.cbsnews.com/philadelphia/live/",
+          "source": "CBS News Philadelphia Official",
+          "priority": -20,
+          "philly": true,
+          "group": "Local",
+          "max_candidates": 4,
+          "content_note": "Official free CBS News Philadelphia stream; not necessarily full KYW/CBS3 linear.",
+          "content_kind": "news-fast"
+        },
+        {
+          "name": "WHYY",
+          "tvg_id": "WHYY.us",
+          "page_url": "https://video.whyy.org/livestream/",
+          "source": "WHYY / PBS Official Page",
+          "priority": -20,
+          "philly": true,
+          "group": "Local",
+          "max_candidates": 4,
+          "content_note": "Official WHYY livestream; PBS service-area geo rules may prevent GitHub-runner validation.",
+          "content_kind": "full-linear"
+        },
+        {
+          "name": "PHL17+",
+          "tvg_id": "WPHL.us",
+          "page_url": "https://phl17.com/",
+          "source": "PHL17 Official Public Page",
+          "priority": -15,
+          "philly": true,
+          "group": "Local",
+          "max_candidates": 4,
+          "content_note": "Official PHL17 web/CTV lead; candidate accepted only if a public HLS is plainly exposed and passes both probes.",
+          "content_kind": "unknown"
+        },
+        {
+          "name": "Philly 57 / WPSG",
+          "tvg_id": "WPSG.us",
+          "page_url": "https://www.cbsnews.com/philadelphia/philly-57/",
+          "source": "Philly 57 Official Public Page",
+          "priority": -15,
+          "philly": true,
+          "group": "Local",
+          "max_candidates": 4,
+          "content_note": "Official Philly 57 page; candidate accepted only if a public HLS is plainly exposed and passes both probes.",
+          "content_kind": "unknown"
+        }
+      ]
+    },
     "targeted_source_families": {
       "enabled": true,
       "timeout_seconds": 20,
@@ -860,68 +957,6 @@
         }
       ]
     },
-    "official_pages": [
-      {
-        "name": "6ABC Philadelphia 24/7",
-        "tvg_id": "WPVI.us",
-        "page_url": "https://6abc.com/watch/live/",
-        "source": "6ABC Official Public Stream",
-        "priority": -20,
-        "philly": true,
-        "group": "Local",
-        "max_candidates": 4,
-        "content_note": "Official free 6ABC streaming channel; may be news/FAST rather than full WPVI-DT1 linear.",
-        "content_kind": "news-fast"
-      },
-      {
-        "name": "NBC10 Philadelphia News",
-        "tvg_id": "WCAU.us",
-        "page_url": "https://www.nbcphiladelphia.com/watch/",
-        "source": "NBC10 Official Public Stream",
-        "priority": -20,
-        "philly": true,
-        "group": "Local",
-        "max_candidates": 4,
-        "content_note": "Official free NBC10 streaming channel; may differ from full WCAU-DT1 linear.",
-        "content_kind": "news-fast"
-      },
-      {
-        "name": "CBS News Philadelphia",
-        "tvg_id": "KYW.us",
-        "page_url": "https://www.cbsnews.com/philadelphia/live/",
-        "source": "CBS News Philadelphia Official",
-        "priority": -20,
-        "philly": true,
-        "group": "Local",
-        "max_candidates": 4,
-        "content_note": "Official free CBS News Philadelphia stream; not necessarily full KYW/CBS3 linear.",
-        "content_kind": "news-fast"
-      },
-      {
-        "name": "WHYY",
-        "tvg_id": "WHYY.us",
-        "page_url": "https://video.whyy.org/livestream/",
-        "source": "WHYY / PBS Official Page",
-        "priority": -20,
-        "philly": true,
-        "group": "Local",
-        "max_candidates": 4,
-        "content_note": "Official WHYY livestream; PBS service-area geo rules may prevent GitHub-runner validation.",
-        "content_kind": "full-linear"
-      },
-      {
-        "name": "PHL17+",
-        "tvg_id": "WPHL.us",
-        "page_url": "https://phl17.com/",
-        "source": "PHL17 Official Public Page",
-        "priority": -15,
-        "philly": true,
-        "group": "Local",
-        "max_candidates": 4,
-        "content_note": "Official PHL17 web/CTV lead; candidate accepted only if a public HLS is plainly exposed and passes both probes.",
-        "content_kind": "unknown"
-      }
-    ],
     "iptv_org_issues": {
       "enabled": true,
       "per_page": 100,

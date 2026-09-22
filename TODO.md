@@ -44,7 +44,7 @@ Working roadmap for the next development pass.
 ## Source hunting
 
 - [ ] Continue exact-channel hunting only after stability tracking is in place.
-- [ ] Keep Philadelphia locals as a separate source hunt from national premium cable.
+- [x] Keep Philadelphia locals as a separate source hunt from national premium cable.
 - [ ] Prioritize fresh machine-readable sources and public HLS mirrors.
 - [x] Scan IPTV-org issues, aria-tv, Shovo, world_ip_tv, MoveOnJoy/TVPass forks, and FMHY-adjacent caches only for remaining exact IDs.
 - [ ] Keep browser-only/tokenized/DRM/authenticated sites as research indexes only; never expose protected credentials/tokens in the public addon.
