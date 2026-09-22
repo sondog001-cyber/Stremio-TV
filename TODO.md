@@ -23,7 +23,7 @@ Working roadmap for the next development pass.
 
 ## Source stability / diagnostics
 
-- [ ] **Cross-build source stability history**
+- [x] **Cross-build source stability history**
   - Track approximately the last 5 builds per URL.
   - 5/5 passes = Stable / preferred Primary.
   - 3-4/5 = usable Backup.
@@ -37,7 +37,7 @@ Working roadmap for the next development pass.
   - Stable for N consecutive builds.
   - Include the source family that caused a recovery/loss.
 
-- [ ] Use stability score when choosing Primary vs Backup rather than relying only on a single successful build.
+- [x] Use stability score when choosing Primary vs Backup rather than relying only on a single successful build.
 
 - [ ] Clean up optional source URLs that return permanent 404s (currently including stale Buddy/Tubi paths).
 
