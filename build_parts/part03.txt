@@ -168,6 +168,12 @@ def match_epg_channel(channel: dict[str, Any], indexes: dict[str, Any], aliases:
     tvg_id = channel.get("tvg_id", "")
     name = channel.get("name", "")
 
+    unavailable = aliases.get("unavailable_by_tvg_id", {}).get(tvg_id)
+    if not unavailable:
+        unavailable = aliases.get("unavailable_by_name", {}).get(name)
+    if unavailable:
+        return None, f"manual-unavailable:{unavailable}", 1.0
+
     manual_id = aliases.get("by_tvg_id", {}).get(tvg_id)
     if manual_id and manual_id in indexes["info"]:
         return manual_id, "manual-tvg-id", 1.0

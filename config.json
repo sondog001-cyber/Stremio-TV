@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with exact-channel identity matching, cross-build 5-run stream stability scoring, expanded public/premium candidate scanning, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.21"
+    "description": "Curated Philadelphia-area live TV with measured HLS quality, dead-source backoff, exact-channel identity matching, Now/Next EPG, and two-probe playback validation.",
+    "version": "0.3.22"
   },
   "sources": {
     "playlists": [
@@ -2716,6 +2716,12 @@
     "enabled": true,
     "history_size": 5,
     "retention_builds": 20,
-    "load_timeout_seconds": 8
-  }
+    "load_timeout_seconds": 8,
+    "dead_source_cooldown_hours": [
+      1,
+      6,
+      24
+    ]
+  },
+  "stremio_client_results": {}
 }

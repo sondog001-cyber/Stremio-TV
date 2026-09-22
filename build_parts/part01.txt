@@ -34,7 +34,7 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from zoneinfo import ZoneInfo
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -142,7 +142,15 @@ def extract_quality(name: str, tvg_id: str = "") -> str | None:
 
 
 def quality_height(stream: dict[str, Any]) -> int:
-    quality = (stream.get("quality") or "").upper()
+    measured_height = stream.get("measured_height")
+    try:
+        measured_height = int(measured_height or 0)
+    except (TypeError, ValueError):
+        measured_height = 0
+    if measured_height > 0:
+        return measured_height
+
+    quality = (stream.get("measured_quality") or stream.get("quality") or "").upper()
     return {
         "4K": 2160, "UHD": 2160, "2160P": 2160,
         "1440P": 1440,
@@ -151,6 +159,21 @@ def quality_height(stream: dict[str, Any]) -> int:
         "576P": 576, "540P": 540, "480P": 480, "SD": 480,
         "360P": 360, "240P": 240, "144P": 144,
     }.get(quality, 0)
+
+
+def quality_label(stream: dict[str, Any], fallback: str = "Unknown") -> str:
+    """Return measured rendition quality before an unverified source label."""
+    measured = str(stream.get("measured_quality") or "").strip()
+    if measured:
+        return measured
+    declared = str(stream.get("quality") or "").strip()
+    return declared or fallback
+
+
+def quality_label_for_height(height: int) -> str:
+    if height >= 2160:
+        return "4K"
+    return f"{height}P" if height > 0 else "Unknown"
 
 
 def is_hd_stream(stream: dict[str, Any]) -> bool:

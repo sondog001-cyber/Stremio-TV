@@ -254,7 +254,9 @@ def build_allowlist_coverage(entries: list[dict[str, Any]], config: dict[str, An
             "found": bool(matches),
             "candidate_count": len({e.get("url") for e in matches if e.get("url")}),
             "sources": sorted({e.get("source") for e in matches if e.get("source")}),
-            "qualities": sorted({e.get("quality") or "Unknown" for e in matches}),
+            "qualities": sorted({quality_label(e) for e in matches}),
+            "declared_qualities": sorted({e.get("quality") or "Unknown" for e in matches}),
+            "measured_qualities": sorted({e.get("measured_quality") for e in matches if e.get("measured_quality")}),
         })
     return rows
 
