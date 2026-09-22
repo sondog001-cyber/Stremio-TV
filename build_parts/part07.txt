@@ -1,4 +1,3 @@
-s,
             "sources": config["sources"],
         }
         write_json(output / "status.json", status)
@@ -14,6 +13,10 @@ s,
         write_json(output / "diagnostics" / "channel-changes.json", channel_changes)
         write_json(output / "diagnostics" / "identity-rejected.json", identity_rejected)
         write_json(output / "diagnostics" / "dynamic-discovery.json", discovery_results)
+        write_json(
+            output / "diagnostics" / "targeted-source-scans.json",
+            [row for row in discovery_results if str(row.get("kind", "")).startswith("targeted-source")],
+        )
         write_json(output / "diagnostics" / "source-results.json", source_results)
         write_landing_page(output, config, status)
         write_icon(output)

@@ -30,7 +30,7 @@ Working roadmap for the next development pass.
   - 1-2/5 = quarantine / low priority.
   - 0/5 = dead until it recovers.
 
-- [ ] **Recovered / lost channel report**
+- [x] **Recovered / lost channel report**
   - Recovered this build.
   - Lost this build.
   - Still missing.
@@ -39,14 +39,14 @@ Working roadmap for the next development pass.
 
 - [x] Use stability score when choosing Primary vs Backup rather than relying only on a single successful build.
 
-- [ ] Clean up optional source URLs that return permanent 404s (currently including stale Buddy/Tubi paths).
+- [x] Clean up optional source URLs that return permanent 404s (removed stale Buddy/Tubi paths).
 
 ## Source hunting
 
 - [ ] Continue exact-channel hunting only after stability tracking is in place.
 - [ ] Keep Philadelphia locals as a separate source hunt from national premium cable.
 - [ ] Prioritize fresh machine-readable sources and public HLS mirrors.
-- [ ] Continue scanning IPTV-org issues/forks, aria-tv, Shovo, world_ip_tv, MoveOnJoy forks, and useful FMHY-adjacent public mirrors.
+- [x] Scan IPTV-org issues, aria-tv, Shovo, world_ip_tv, MoveOnJoy/TVPass forks, and FMHY-adjacent caches only for remaining exact IDs.
 - [ ] Keep browser-only/tokenized/DRM/authenticated sites as research indexes only; never expose protected credentials/tokens in the public addon.
 - [ ] Re-run the exact missing-channel list after each stable build and target only the remaining gaps.
 

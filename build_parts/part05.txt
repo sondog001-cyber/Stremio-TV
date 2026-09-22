@@ -1,4 +1,3 @@
-e_json(catalog_dir / f"skip={skip}&date={day}.json", {"metasDetailed": page})
             skip += page_size
 
         final_skip = ((len(detailed) + page_size - 1) // page_size) * page_size
