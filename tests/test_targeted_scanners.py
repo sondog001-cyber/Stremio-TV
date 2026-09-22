@@ -339,7 +339,11 @@ class TargetedScannerTests(unittest.TestCase):
             requested.append(urllib.parse.unquote(url))
             return json.dumps({"items": []}), url
 
-        with mock.patch.object(build, "_fetch_public_text", side_effect=fetch):
+        with mock.patch.dict(build.os.environ, {"GITHUB_RUN_NUMBER": "0"}), mock.patch.object(
+            build,
+            "_fetch_public_text",
+            side_effect=fetch,
+        ):
             _, rows = build.discover_github_candidates(config, ["FXX.us", "CNN.us"])
 
         search_rows = [row for row in rows if row["kind"] == "github-candidate-search"]
