@@ -53,6 +53,11 @@
             enabled=not bool(fixtures),
         )
         healthy_allowlist_coverage = build_allowlist_coverage(entries, config)
+        channel_state, channel_changes = build_channel_diagnostics(
+            healthy_allowlist_coverage,
+            config,
+            enabled=not bool(fixtures),
+        )
 
         channels = merge_channels(entries, config.get("favorites", []), max_streams, config)
         label_channel_streams(channels)
@@ -210,6 +215,17 @@
                 "history_size": stream_stability_state.get("history_size", 5),
                 "prior_state_built_at": stream_stability_state.get("source_state_built_at"),
                 "current_counts": stream_stability_state.get("current_counts", {}),
+            },
+            "channel_changes": {
+                "baseline_initialized": channel_changes.get("baseline_initialized", False),
+                "prior_state_built_at": channel_changes.get("source_state_built_at"),
+                "expected_channels": channel_changes.get("expected_channels", 0),
+                "present_channels": channel_changes.get("present_channels", 0),
+                "missing_channels": channel_changes.get("missing_channels", 0),
+                "recovered_this_build": len(channel_changes.get("recovered_this_build", [])),
+                "lost_this_build": len(channel_changes.get("lost_this_build", [])),
+                "still_missing": len(channel_changes.get("still_missing", [])),
+                "stable": len(channel_changes.get("stable", [])),
             },
             "allowlist_ids_missing_entirely": sum(1 for r in allowlist_coverage if not r["found"]),
             "allowlist_ids_without_passing_stream": sum(1 for r in healthy_allowlist_coverage if not r["found"]),
