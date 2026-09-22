@@ -7,7 +7,44 @@
         write_json(catalog_dir / f"skip={final_skip}&date={day}.json", {"metasDetailed": []})
 
 
-def build_manifest(config: dict[str, Any]) -> dict[str, Any]:
+def make_build_info(
+    config: dict[str, Any],
+    now: dt.datetime | None = None,
+) -> dict[str, Any]:
+    """Create one immutable identity shared by every artifact in this build."""
+    built_at = iso_z(now or dt.datetime.now(UTC))
+    version = str((config.get("addon") or {}).get("version") or "0.0.0")
+    revision = os.getenv("GITHUB_SHA", "").strip()
+    compact_stamp = built_at.replace("-", "").replace(":", "")
+    build_id = f"v{version}-{compact_stamp}"
+    if revision:
+        build_id += f"-{revision[:12]}"
+
+    info: dict[str, Any] = {
+        "build_id": build_id,
+        "version": version,
+        "built_at": built_at,
+        "builder": "stremio-tv-static",
+    }
+    optional_env = {
+        "source_revision": "GITHUB_SHA",
+        "repository": "GITHUB_REPOSITORY",
+        "workflow": "GITHUB_WORKFLOW",
+        "workflow_run_id": "GITHUB_RUN_ID",
+        "workflow_run_number": "GITHUB_RUN_NUMBER",
+        "workflow_run_attempt": "GITHUB_RUN_ATTEMPT",
+    }
+    for key, env_name in optional_env.items():
+        value = os.getenv(env_name, "").strip()
+        if value:
+            info[key] = value
+    return info
+
+
+def build_manifest(
+    config: dict[str, Any],
+    build_info: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     addon = config["addon"]
     catalogs: list[dict[str, Any]] = [
         {
@@ -30,7 +67,7 @@ def build_manifest(config: dict[str, Any]) -> dict[str, Any]:
             }
         )
 
-    return {
+    manifest = {
         "id": addon["id"],
         "version": addon["version"],
         "name": addon["name"],
@@ -43,6 +80,9 @@ def build_manifest(config: dict[str, Any]) -> dict[str, Any]:
             "p2p": False,
         },
     }
+    if build_info:
+        manifest["stremioTvBuild"] = dict(build_info)
+    return manifest
 
 
 def derive_public_base() -> str:
@@ -173,6 +213,10 @@ def load_manual_streams(config: dict[str, Any], config_path: Path) -> list[dict[
 def build(config_path: Path, aliases_path: Path, output: Path, fixtures: Path | None = None) -> dict[str, Any]:
     _PUBLIC_TEXT_CACHE.clear()
     config = load_json(config_path)
+    build_info = make_build_info(config)
+    public_base = derive_public_base()
+    if public_base:
+        build_info["public_base_url"] = public_base
     aliases = load_json(aliases_path) if aliases_path.exists() else {"by_tvg_id": {}, "by_name": {}}
     page_size = int(config.get("page_size", 100))
     max_streams = int(config.get("max_streams_per_channel", 3))

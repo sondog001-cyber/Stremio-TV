@@ -41,6 +41,8 @@ Working roadmap for the next development pass.
 
 - [x] Apply channel-specific preferred-source ordering after content identity and stability, with explicit Primary/Backup diagnostics.
 
+- [x] Publish one build/version identity across manifest, channel metadata, stream responses, status, and diagnostics.
+
 - [x] Clean up optional source URLs that return permanent 404s (removed stale Buddy/Tubi paths).
 
 ## Source hunting

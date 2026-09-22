@@ -1592,12 +1592,15 @@ def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | Non
 
     version = channel.get("build_version")
     built_at = channel.get("built_at")
-    if version or built_at:
+    build_id = channel.get("build_id")
+    if version or built_at or build_id:
         build_bits = []
         if version:
             build_bits.append(f"Stremio TV v{version}")
+        if build_id:
+            build_bits.append(f"build {build_id}")
         if built_at:
-            build_bits.append(f"built {_display_time(built_at)} ET")
+            build_bits.append(built_at)
         description_lines.append(" • ".join(build_bits))
 
     meta: dict[str, Any] = {
@@ -1612,10 +1615,21 @@ def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | Non
     if channel.get("logo"):
         meta["poster"] = channel["logo"]
         meta["background"] = channel["logo"]
+    if build_id:
+        meta["stremioTvBuild"] = {
+            "build_id": build_id,
+            "version": version,
+            "built_at": built_at,
+            "source_revision": channel.get("build_revision"),
+        }
     return meta
 
 
-def stream_object(stream: dict[str, Any], index: int) -> dict[str, Any]:
+def stream_object(
+    stream: dict[str, Any],
+    index: int,
+    build_info: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     quality = stream.get("quality") or "Live"
     source = _short_source_name(stream)
     role = stream.get("display_role") or ("Primary" if index == 1 else f"Backup {index - 1}")
@@ -1630,12 +1644,21 @@ def stream_object(stream: dict[str, Any], index: int) -> dict[str, Any]:
         description_parts.append("Builder check failed — may still work locally")
     else:
         description_parts.append("Not health-tested")
+    if build_info:
+        description_parts.append(f"Build {build_info.get('build_id')}")
 
     obj: dict[str, Any] = {
         "name": f"{role} • {quality} • {source}",
         "description": " • ".join(description_parts),
         "url": url,
     }
+    if build_info:
+        obj["stremioTvBuild"] = {
+            "build_id": build_info.get("build_id"),
+            "version": build_info.get("version"),
+            "built_at": build_info.get("built_at"),
+            "source_revision": build_info.get("source_revision"),
+        }
     headers = stream.get("headers") or {}
     not_web_ready = (not url.lower().startswith("https://")) or bool(headers)
     if not_web_ready:
