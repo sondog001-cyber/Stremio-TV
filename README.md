@@ -226,13 +226,14 @@ Every manifest, channel metadata response, and stream response carries the same 
 
 Optional playlist failures do not take down the whole build. The two primary IPTV-org public playlists remain required; secondary sources are allowed to fail independently.
 
-GitHub exact-ID discovery uses the authenticated Actions token, gives every
-rotating channel an exact-ID search before alias fallbacks, and paces code-search
-requests at twelve-second intervals below GitHub's dedicated search-rate ceiling.
-Three channels rotate through each build, completing roughly one full missing-ID
-pass in ten scheduled builds. A bounded `Retry-After`/reset-header
-retry is recorded in `github-candidate-scans.json`. Repository freshness comes
-from the core repository API instead of the incomplete code-search payload.
+Scheduled GitHub code search is disabled because GitHub's secondary search limit
+continued returning HTTP 429 after reset-window retries. Its useful discoveries
+were promoted into the direct targeted-source scanner instead: Judy GoTV smart,
+three additional MoveOnJoy mirrors, two GoGetta indexes, and the Nachoo index.
+These sources are fetched as ordinary public files, scanned only for exact missing
+IDs, rejected when URLs look credentialed or short-lived, and admitted only after
+both media probes pass. The bounded authenticated code-search implementation and
+diagnostics remain available for deliberate opt-in testing.
 
 The targeted missing-channel scanner also checks the curated CeresLabX US TV
 index and OpenStream's maintained TVPass/MoveOnJoy indexes. These are research

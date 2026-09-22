@@ -142,6 +142,7 @@ def _short_source_name(stream: dict[str, Any]) -> str:
         "worldiptv": "world_ip_tv",
         "ceres-us-tv": "Ceres US TV",
         "openstream": "OpenStream",
+        "github-playlist": "GitHub Playlist",
         "iptv-org-issue": "IPTV-org New",
         "official-page": "Official",
         "research-seed": "Research Lead",
