@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with measured HLS quality, dead-source backoff, exact-channel identity matching, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.22"
+    "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, expiring client verification, Now/Next EPG, and two-probe playback validation.",
+    "version": "0.3.23"
   },
   "sources": {
     "playlists": [
@@ -489,6 +489,8 @@
       "localbtv-relay",
       "moveonjoy",
       "iptv-org-issue",
+      "github-candidate",
+      "private-connector",
       "research-seed",
       "samsungtvplus",
       "plutotv",
@@ -833,10 +835,23 @@
     "max_workers": 16,
     "verify_segment_for_all_candidates": true,
     "double_probe": true,
-    "second_probe_delay_seconds": 60
+    "second_probe_delay_seconds": 60,
+    "priority_recovery": {
+      "enabled": true,
+      "max_forced_urls_per_build": 12,
+      "min_retry_hours": 6,
+      "max_per_host": 2
+    }
   },
   "discovery": {
     "enabled": true,
+    "official_player_scan": {
+      "enabled": true,
+      "max_documents": 8,
+      "max_depth": 2,
+      "timeout_seconds": 12,
+      "byte_limit": 2000000
+    },
     "philly_local_sources": {
       "enabled": true,
       "target_ids": [
@@ -1011,6 +1026,17 @@
           "philly": false
         }
       ]
+    },
+    "github_candidate_search": {
+      "enabled": true,
+      "max_targets_per_build": 4,
+      "max_queries_per_build": 12,
+      "results_per_query": 5,
+      "max_candidates_per_file": 3,
+      "min_freshness_score": 55,
+      "timeout_seconds": 20,
+      "byte_limit": 6000000,
+      "priority": 7
     },
     "iptv_org_issues": {
       "enabled": true,
@@ -2722,6 +2748,9 @@
       6,
       24
     ]
+  },
+  "stremio_client_verification": {
+    "default_ttl_hours": 168
   },
   "stremio_client_results": {}
 }

@@ -210,6 +210,48 @@ def load_manual_streams(config: dict[str, Any], config_path: Path) -> list[dict[
     return result
 
 
+def load_private_connector_streams(config: dict[str, Any], config_path: Path) -> list[dict[str, Any]]:
+    """Load a generated private overlay only when explicitly enabled locally."""
+    configured_path = os.getenv("STREMIO_TV_PRIVATE_SOURCES_FILE", "").strip()
+    if not configured_path:
+        return []
+    if os.getenv("GITHUB_ACTIONS", "").strip().lower() == "true":
+        raise RuntimeError("Private connector overlays are blocked in GitHub Actions public builds")
+    path = Path(configured_path).expanduser()
+    if not path.is_absolute():
+        path = config_path.parent / path
+    if not path.is_file():
+        raise FileNotFoundError("Configured private connector overlay does not exist")
+
+    data = load_json(path)
+    rows = data.get("streams", []) if isinstance(data, dict) else []
+    allowed_ids = {canonical_tvg_id(item) for item in _exact_allowlist_ids(config)}
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict) or not row.get("url") or not row.get("tvg_id"):
+            continue
+        if canonical_tvg_id(str(row["tvg_id"])) not in allowed_ids:
+            continue
+        item = dict(row)
+        item.setdefault("source", "Private connector")
+        item.setdefault("family", "private-connector")
+        item.setdefault("priority", -30)
+        item.setdefault("philly", False)
+        item.setdefault("headers", {})
+        item.setdefault("group", "")
+        item.setdefault("logo", "")
+        item.setdefault("language", "English")
+        item.setdefault("country", "US")
+        item.setdefault("name", item["tvg_id"])
+        item.setdefault("name_raw", item["name"])
+        item.setdefault("source_type", "private-authorized-connector")
+        item["private_connector"] = True
+        if not item.get("quality"):
+            item["quality"] = extract_quality(item.get("name_raw", ""), item.get("tvg_id", ""))
+        result.append(item)
+    return result
+
+
 def build(config_path: Path, aliases_path: Path, output: Path, fixtures: Path | None = None) -> dict[str, Any]:
     _PUBLIC_TEXT_CACHE.clear()
     config = load_json(config_path)

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "connectors": [
+    {
+      "type": "hdhomerun",
+      "name": "Home OTA tuner",
+      "base_url_env": "STREMIO_TV_HDHR_BASE_URL",
+      "channels": [
+        {
+          "tvg_id": "WPSG.us",
+          "name": "Philly 57 / WPSG",
+          "guide_numbers": ["57.1"],
+          "name_contains": ["WPSG", "Philly 57"],
+          "philly": true,
+          "group": "Local"
+        }
+      ]
+    },
+    {
+      "type": "provider-m3u",
+      "name": "Authorized TV provider",
+      "playlist_url_env": "STREMIO_TV_PROVIDER_PLAYLIST_URL",
+      "authorization_env": "STREMIO_TV_PROVIDER_AUTHORIZATION",
+      "forward_authorization": false,
+      "channels": [
+        {
+          "tvg_id": "NBCSportsPhiladelphiaPlus.us",
+          "name": "NBC Sports Philadelphia Plus",
+          "match_ids": ["NBCSportsPhiladelphiaPlus.us"],
+          "name_contains": ["NBC Sports Philadelphia Plus", "NBCSP+"],
+          "philly": true,
+          "group": "Sports"
+        }
+      ]
+    }
+  ]
+}
