@@ -226,6 +226,17 @@ Every manifest, channel metadata response, and stream response carries the same 
 
 Optional playlist failures do not take down the whole build. The two primary IPTV-org public playlists remain required; secondary sources are allowed to fail independently.
 
+GitHub exact-ID discovery uses the authenticated Actions token, gives every
+rotating channel an exact-ID search before alias fallbacks, and paces code-search
+requests below GitHub's dedicated search-rate ceiling. A bounded `Retry-After`
+retry is recorded in `github-candidate-scans.json`. Repository freshness comes
+from the core repository API instead of the incomplete code-search payload.
+
+The targeted missing-channel scanner also checks the curated CeresLabX US TV
+index and OpenStream's maintained TVPass/MoveOnJoy indexes. These are research
+families only: exact allow-listed IDs are retained and every URL must still pass
+the normal two-probe playlist and media-segment gate.
+
 ## Local test
 
 Network build:

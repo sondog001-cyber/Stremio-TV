@@ -140,6 +140,8 @@ def _short_source_name(stream: dict[str, Any]) -> str:
         "aria-tv": "aria-tv",
         "shovo": "Shovo",
         "worldiptv": "world_ip_tv",
+        "ceres-us-tv": "Ceres US TV",
+        "openstream": "OpenStream",
         "iptv-org-issue": "IPTV-org New",
         "official-page": "Official",
         "research-seed": "Research Lead",
@@ -972,6 +974,50 @@ def _github_raw_file_url(item: dict[str, Any]) -> str:
     return f"https://raw.githubusercontent.com/{owner}/{repository}/{revision}/{path}"
 
 
+def _github_repository_updated_at(
+    repository: dict[str, Any],
+    timeout: int,
+) -> Any:
+    """Resolve repository activity from the core API, not code-search metadata.
+
+    GitHub's code-search response normally omits ``pushed_at`` and ``updated_at``.
+    Treating that omission as an unknown-age exact match made the freshness score
+    largely cosmetic. Repository metadata uses GitHub's separate core-rate bucket
+    and is cached by ``_fetch_public_text`` for the remainder of the build.
+    """
+    direct = repository.get("pushed_at") or repository.get("updated_at")
+    if direct:
+        return direct
+    api_url = str(repository.get("url") or "").strip()
+    if not api_url.startswith("https://api.github.com/repos/"):
+        return None
+    try:
+        payload_text, _ = _fetch_public_text(api_url, timeout=timeout)
+        payload = json.loads(payload_text)
+        if isinstance(payload, dict):
+            return payload.get("pushed_at") or payload.get("updated_at")
+    except Exception:
+        return None
+    return None
+
+
+def _github_rate_limit_wait(exc: urllib.error.HTTPError, maximum: float) -> float:
+    """Return a bounded GitHub-request delay from Retry-After/reset headers."""
+    retry_after = str(exc.headers.get("Retry-After") or "").strip()
+    wait = 0.0
+    try:
+        wait = float(retry_after)
+    except (TypeError, ValueError):
+        reset = str(exc.headers.get("X-RateLimit-Reset") or "").strip()
+        try:
+            wait = max(0.0, float(reset) - time.time())
+        except (TypeError, ValueError):
+            wait = 0.0
+    if wait <= 0:
+        wait = 7.0
+    return min(maximum, wait + 0.25)
+
+
 def _is_clean_github_media_url(url: str) -> bool:
     """Reject account-shaped provider links copied into public playlists.
 
@@ -994,7 +1040,15 @@ def _is_clean_github_media_url(url: str) -> bool:
     if len(segments) >= 4 and [part.lower() for part in segments[:2]] == ["api", "stream"]:
         return False
 
-    sensitive_keys = {"user", "username", "pass", "password", "pwd"}
+    # Static GitHub playlists frequently copy short-lived signed player URLs.
+    # They may pass once, then expire and create exactly the churn this scanner
+    # is meant to reduce, so do not promote them as durable discoveries.
+    sensitive_keys = {
+        "user", "username", "pass", "password", "pwd",
+        "token", "access_token", "auth", "authorization", "jwt",
+        "signature", "sig", "expires", "expiry", "exp", "policy",
+        "key-pair-id", "hdnts", "hdnea",
+    }
     if any(key.lower() in sensitive_keys for key, _ in urllib.parse.parse_qsl(parsed.query)):
         return False
     return True
@@ -1020,6 +1074,9 @@ def discover_github_candidates(
     min_score = max(0, int(settings.get("min_freshness_score", 55)))
     byte_limit = max(100_000, int(settings.get("byte_limit", 6_000_000)))
     timeout = max(1, int(settings.get("timeout_seconds", 20)))
+    min_interval = max(0.0, float(settings.get("min_query_interval_seconds", 0)))
+    max_rate_wait = max(0.0, float(settings.get("max_rate_limit_wait_seconds", 15)))
+    rate_retries = max(0, min(2, int(settings.get("rate_limit_retries", 1))))
     run_number = int(os.getenv("GITHUB_RUN_NUMBER", "0") or 0)
     ordered_targets = list(target_ids)
     if ordered_targets:
@@ -1031,111 +1088,154 @@ def discover_github_candidates(
     parsed_file_cache: dict[str, list[dict[str, Any]]] = {}
     seen_candidates: set[tuple[str, str]] = set()
     query_count = 0
-
+    paced_wait_seconds = 0.0
+    rate_limit_retries = 0
+    last_query_started: float | None = None
+    target_found: dict[str, bool] = {target_id: False for target_id in ordered_targets}
+    terms_by_target: dict[str, list[tuple[str, str]]] = {}
     for target_id in ordered_targets:
+        target = target_defs.get(canonical_tvg_id(target_id)) or {
+            "tvg_id": target_id,
+            "name": target_id,
+        }
+        aliases = list(dict.fromkeys(
+            list(target.get("aliases") or []) + list(alias_map.get(target_id, []))
+        ))
+        terms_by_target[target_id] = (
+            [(target_id, "exact-id")]
+            + [(alias, "approved-alias") for alias in aliases[:2]]
+        )
+
+    # Exact IDs get one fair pass before any channel consumes alias searches.
+    # Alias pass 1 then pass 2 are also round-robin across the same targets.
+    query_queue: list[tuple[str, str, str]] = []
+    for term_index in range(3):
+        for target_id in ordered_targets:
+            terms = terms_by_target.get(target_id) or []
+            if term_index < len(terms):
+                term, match_kind = terms[term_index]
+                query_queue.append((target_id, term, match_kind))
+
+    for target_id, term, match_kind in query_queue:
         if query_count >= max_queries:
             break
-        target = target_defs.get(canonical_tvg_id(target_id)) or {"tvg_id": target_id, "name": target_id}
-        aliases = list(dict.fromkeys(list(target.get("aliases") or []) + list(alias_map.get(target_id, []))))
-        terms = [(target_id, "exact-id")] + [(alias, "approved-alias") for alias in aliases[:2]]
-        target_found = False
-        for term, match_kind in terms:
-            if query_count >= max_queries or (target_found and match_kind != "exact-id"):
-                break
-            query_count += 1
-            query = f'"{term}" extension:m3u'
-            api_url = "https://api.github.com/search/code?" + urllib.parse.urlencode({
-                "q": query,
-                "sort": "indexed",
-                "order": "desc",
-                "per_page": per_page,
-            })
-            search_row: dict[str, Any] = {
-                "kind": "github-candidate-search",
-                "scope": "shared",
-                "status": "pending",
-                "tvg_id": target_id,
-                "term": term,
-                "match_kind": match_kind,
-                "api_url": api_url,
-                "files_found": 0,
-                "candidates_found": 0,
-                "files": [],
-            }
-            try:
-                payload_text, _ = _fetch_public_text(api_url, timeout=timeout)
-                payload = json.loads(payload_text)
-                items = payload.get("items") if isinstance(payload, dict) else []
-                items = items if isinstance(items, list) else []
-                search_row["files_found"] = len(items)
-                for item in items:
-                    raw_url = _github_raw_file_url(item)
-                    if not raw_url:
-                        continue
-                    repository = item.get("repository") if isinstance(item.get("repository"), dict) else {}
-                    freshness = score_github_candidate_freshness(
-                        repository.get("pushed_at") or repository.get("updated_at"),
-                        match_kind,
-                    )
-                    file_row = {
-                        "repository": repository.get("full_name"),
-                        "path": item.get("path"),
-                        "html_url": item.get("html_url"),
-                        "raw_url": raw_url,
-                        "freshness": freshness,
-                        "records_scanned": 0,
-                        "candidates_found": 0,
-                        "credential_urls_rejected": 0,
-                    }
-                    if freshness["score"] < min_score:
-                        file_row["status"] = "below-freshness-threshold"
-                        search_row["files"].append(file_row)
-                        continue
-                    if raw_url in parsed_file_cache:
-                        parsed = parsed_file_cache[raw_url]
-                    else:
-                        playlist_text, _ = _fetch_public_text(raw_url, timeout=timeout, byte_limit=byte_limit)
-                        source = {
-                            "name": f"GitHub candidate: {repository.get('full_name') or 'public repository'}",
-                            "family": "github-candidate",
-                            "priority": int(settings.get("priority", 7)),
-                        }
-                        parsed = parse_m3u(playlist_text, source)
-                        parsed_file_cache[raw_url] = parsed
-                    matched = _filter_entries_to_exact_targets(parsed, [target_id], config)
-                    file_row["records_scanned"] = len(parsed)
-                    accepted = 0
-                    for entry in matched[: int(settings.get("max_candidates_per_file", 3))]:
-                        if not _is_clean_github_media_url(str(entry.get("url") or "")):
-                            file_row["credential_urls_rejected"] += 1
-                            continue
-                        marker = (canonical_tvg_id(target_id), str(entry.get("url") or ""))
-                        if marker in seen_candidates:
-                            continue
-                        seen_candidates.add(marker)
-                        entry.update({
-                            "github_candidate": True,
-                            "github_repository": repository.get("full_name"),
-                            "github_path": item.get("path"),
-                            "github_updated_at": freshness["updated_at"],
-                            "freshness_score": freshness["score"],
-                            "freshness_label": freshness["label"],
-                            "research_url": item.get("html_url"),
-                            "source_type": "public-github-playlist",
-                        })
-                        discovered.append(entry)
-                        accepted += 1
-                    file_row["candidates_found"] = accepted
-                    file_row["status"] = "candidate-found" if accepted else "no-exact-match"
+        if match_kind != "exact-id" and target_found.get(target_id):
+            continue
+        query_count += 1
+        query = f'"{term}" extension:m3u'
+        api_url = "https://api.github.com/search/code?" + urllib.parse.urlencode({
+            "q": query,
+            "sort": "indexed",
+            "order": "desc",
+            "per_page": per_page,
+        })
+        search_row: dict[str, Any] = {
+            "kind": "github-candidate-search",
+            "scope": "shared",
+            "status": "pending",
+            "tvg_id": target_id,
+            "term": term,
+            "match_kind": match_kind,
+            "api_url": api_url,
+            "files_found": 0,
+            "candidates_found": 0,
+            "files": [],
+        }
+        try:
+            if last_query_started is not None and min_interval > 0:
+                delay = max(0.0, min_interval - (time.monotonic() - last_query_started))
+                if delay > 0:
+                    time.sleep(delay)
+                    paced_wait_seconds += delay
+            payload_text = ""
+            for attempt in range(rate_retries + 1):
+                last_query_started = time.monotonic()
+                try:
+                    payload_text, _ = _fetch_public_text(api_url, timeout=timeout)
+                    break
+                except urllib.error.HTTPError as exc:
+                    if exc.code not in {403, 429} or attempt >= rate_retries:
+                        raise
+                    wait = _github_rate_limit_wait(exc, max_rate_wait)
+                    if wait <= 0:
+                        raise
+                    search_row.setdefault("rate_limit_waits", []).append(round(wait, 2))
+                    rate_limit_retries += 1
+                    time.sleep(wait)
+                    paced_wait_seconds += wait
+            payload = json.loads(payload_text)
+            items = payload.get("items") if isinstance(payload, dict) else []
+            items = items if isinstance(items, list) else []
+            search_row["files_found"] = len(items)
+            for item in items:
+                raw_url = _github_raw_file_url(item)
+                if not raw_url:
+                    continue
+                repository = item.get("repository") if isinstance(item.get("repository"), dict) else {}
+                repository_updated_at = _github_repository_updated_at(repository, timeout)
+                freshness = score_github_candidate_freshness(
+                    repository_updated_at,
+                    match_kind,
+                )
+                file_row = {
+                    "repository": repository.get("full_name"),
+                    "path": item.get("path"),
+                    "html_url": item.get("html_url"),
+                    "raw_url": raw_url,
+                    "freshness": freshness,
+                    "records_scanned": 0,
+                    "candidates_found": 0,
+                    "credential_urls_rejected": 0,
+                }
+                if freshness["score"] < min_score:
+                    file_row["status"] = "below-freshness-threshold"
                     search_row["files"].append(file_row)
-                    if accepted:
-                        target_found = True
-                        search_row["candidates_found"] += accepted
-                search_row["status"] = "ok"
-            except Exception as exc:
-                search_row["status"] = "failed"
-                search_row["error"] = str(exc)[:240]
-            rows.append(search_row)
+                    continue
+                if raw_url in parsed_file_cache:
+                    parsed = parsed_file_cache[raw_url]
+                else:
+                    playlist_text, _ = _fetch_public_text(raw_url, timeout=timeout, byte_limit=byte_limit)
+                    source = {
+                        "name": f"GitHub candidate: {repository.get('full_name') or 'public repository'}",
+                        "family": "github-candidate",
+                        "priority": int(settings.get("priority", 7)),
+                    }
+                    parsed = parse_m3u(playlist_text, source)
+                    parsed_file_cache[raw_url] = parsed
+                matched = _filter_entries_to_exact_targets(parsed, [target_id], config)
+                file_row["records_scanned"] = len(parsed)
+                accepted = 0
+                for entry in matched[: int(settings.get("max_candidates_per_file", 3))]:
+                    if not _is_clean_github_media_url(str(entry.get("url") or "")):
+                        file_row["credential_urls_rejected"] += 1
+                        continue
+                    marker = (canonical_tvg_id(target_id), str(entry.get("url") or ""))
+                    if marker in seen_candidates:
+                        continue
+                    seen_candidates.add(marker)
+                    entry.update({
+                        "github_candidate": True,
+                        "github_repository": repository.get("full_name"),
+                        "github_path": item.get("path"),
+                        "github_updated_at": freshness["updated_at"],
+                        "freshness_score": freshness["score"],
+                        "freshness_label": freshness["label"],
+                        "research_url": item.get("html_url"),
+                        "source_type": "public-github-playlist",
+                    })
+                    discovered.append(entry)
+                    accepted += 1
+                file_row["candidates_found"] = accepted
+                file_row["status"] = "candidate-found" if accepted else "no-exact-match"
+                search_row["files"].append(file_row)
+                if accepted:
+                    target_found[target_id] = True
+                    search_row["candidates_found"] += accepted
+            search_row["status"] = "ok"
+        except Exception as exc:
+            search_row["status"] = "failed"
+            search_row["error"] = str(exc)[:240]
+        rows.append(search_row)
 
     rows.insert(0, {
         "kind": "github-candidate-summary",
@@ -1143,6 +1243,9 @@ def discover_github_candidates(
         "status": "complete",
         "target_ids": ordered_targets,
         "queries_run": query_count,
+        "paced_wait_seconds": round(paced_wait_seconds, 2),
+        "rate_limit_retries": rate_limit_retries,
+        "min_query_interval_seconds": min_interval,
         "candidates_found": len(discovered),
         "min_freshness_score": min_score,
     })

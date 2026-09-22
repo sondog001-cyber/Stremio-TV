@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, expiring client verification, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.23"
+    "version": "0.3.24"
   },
   "sources": {
     "playlists": [
@@ -517,7 +517,9 @@
       "buddy-fast",
       "shovo",
       "worldiptv",
-      "jromero-legacy"
+      "jromero-legacy",
+      "ceres-us-tv",
+      "openstream"
     ],
     "canonical_id_aliases": {
       "MSNBC.us": "MSNOW.us",
@@ -1024,13 +1026,43 @@
           "url": "https://raw.githubusercontent.com/InsolenceWillow/insolencetvgo/main/insolencetvgo.m3u",
           "priority": 11,
           "philly": false
+        },
+        {
+          "name": "CeresLabX fresh US TV",
+          "family": "ceres-us-tv",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/CeresLabX/us-tv/main/full_playlist.m3u",
+          "priority": 9,
+          "philly": false,
+          "content_note": "Fresh public US playlist scanned only for exact missing IDs; every retained URL still requires two successful media probes."
+        },
+        {
+          "name": "OpenStream TVPass mirror",
+          "family": "openstream",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/SajadTroy/openstream/main/streams/us_tvpass.m3u",
+          "priority": 11,
+          "philly": false,
+          "content_note": "Actively maintained fallback index; exact missing IDs only."
+        },
+        {
+          "name": "OpenStream MoveOnJoy mirror",
+          "family": "openstream",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/SajadTroy/openstream/main/streams/us_moveonjoy.m3u",
+          "priority": 11,
+          "philly": false,
+          "content_note": "Actively maintained fallback index; exact missing IDs only."
         }
       ]
     },
     "github_candidate_search": {
       "enabled": true,
       "max_targets_per_build": 4,
-      "max_queries_per_build": 12,
+      "max_queries_per_build": 8,
+      "min_query_interval_seconds": 7,
+      "rate_limit_retries": 1,
+      "max_rate_limit_wait_seconds": 15,
       "results_per_query": 5,
       "max_candidates_per_file": 3,
       "min_freshness_score": 55,
