@@ -8,6 +8,7 @@ on:
       - "build.py"
       - "assemble_build.py"
       - "build_parts/**"
+      - "tests/**"
       - "config.json"
       - "aliases.json"
       - "manual_sources.json"
@@ -37,6 +38,8 @@ jobs:
           python-version: "3.12"
       - name: Assemble builder
         run: python assemble_build.py
+      - name: Run builder tests
+        run: python -m unittest discover -s tests -v
       - name: Build static Stremio addon
         run: python build.py
       - name: Upload build diagnostics

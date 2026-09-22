@@ -35,7 +35,7 @@
             "streams": len(manual_streams),
         })
 
-        discovered_entries, discovery_results = discover_dynamic_streams(config)
+        discovered_entries, discovery_results = discover_dynamic_streams(config, entries)
         if discovered_entries:
             log(f"Adding {len(discovered_entries):,} dynamically discovered candidates")
             entries.extend(discovered_entries)
@@ -232,4 +232,9 @@
             "identity_rejected_candidates": len(identity_rejected),
             "dynamic_discovery_candidates": len(discovered_entries),
             "dynamic_discovery_events": len(discovery_results),
-            "source_results": source_result
+            "targeted_source_scans": {
+                "families": sum(1 for row in discovery_results if row.get("kind") == "targeted-source-family"),
+                "targets": len(next((row.get("target_ids") or [] for row in discovery_results if row.get("kind") == "targeted-source-summary"), [])),
+                "candidates": sum(int(row.get("candidates_found", 0)) for row in discovery_results if row.get("kind") == "targeted-source-family"),
+            },
+            "source_results": source_results,

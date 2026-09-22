@@ -138,6 +138,9 @@ def _short_source_name(stream: dict[str, Any]) -> str:
         "moveonjoy": "MoveOnJoy",
         "tvpass": "TVPass",
         "insolence": "InsolenceTV",
+        "aria-tv": "aria-tv",
+        "shovo": "Shovo",
+        "worldiptv": "world_ip_tv",
         "iptv-org-issue": "IPTV-org New",
         "official-page": "Official",
         "research-seed": "Research Lead",
@@ -180,7 +183,7 @@ def _extract_public_hls_urls(text: str, base_url: str = "") -> list[str]:
 
     found: list[str] = []
     absolute = re.findall(
-        r'https?://[^\\s\\"\'<>]+?\\.m3u8(?:\\?[^\\s\\"\'<>]*)?',
+        r'https?://[^\s\\"\'<>]+?\.m3u8(?:\?[^\s\\"\'<>]*)?',
         normalized,
         flags=re.I,
     )
@@ -189,7 +192,7 @@ def _extract_public_hls_urls(text: str, base_url: str = "") -> list[str]:
 
     if base_url:
         relative = re.findall(
-            r'(?:(?:src|url|file|stream|hls)[\"\'=: ]+)(/[^\\s\\"\'<>]+?\\.m3u8(?:\\?[^\\s\\"\'<>]*)?)',
+            r'(?:(?:src|url|file|stream|hls)[\"\'=: ]+)(/[^\s\\"\'<>]+?\.m3u8(?:\?[^\s\\"\'<>]*)?)',
             normalized,
             flags=re.I,
         )
@@ -197,6 +200,206 @@ def _extract_public_hls_urls(text: str, base_url: str = "") -> list[str]:
             found.append(urllib.parse.urljoin(base_url, path.rstrip("),.;")))
 
     return list(dict.fromkeys(found))
+
+
+def _exact_allowlist_ids(config: dict[str, Any]) -> list[str]:
+    """Return the deduplicated exact IDs that define the curated lineup."""
+    curation = config.get("curation") or {}
+    ids: list[str] = []
+    seen: set[str] = set()
+    for key in ("philly_allow", "national_allow"):
+        for pattern in curation.get(key, []):
+            if "." not in (pattern or ""):
+                continue
+            target = _desired_id(pattern, curation)
+            marker = canonical_tvg_id(target)
+            if marker in seen:
+                continue
+            seen.add(marker)
+            ids.append(target)
+    return ids
+
+
+def _target_ids_for_source_hunt(
+    config: dict[str, Any],
+    existing_entries: list[dict[str, Any]],
+) -> list[str]:
+    """Target only current candidate gaps plus channels missing last build.
+
+    A source can disappear before health probing, so the previous deployed channel
+    state is included alongside exact IDs that have no candidate in this build.
+    The union means a recovered URL is actively hunted without feeding every
+    unrelated upstream channel into the health checker.
+    """
+    targets: dict[str, str] = {}
+    for row in build_allowlist_coverage(existing_entries, config):
+        if not row.get("found"):
+            pattern = str(row.get("pattern") or "")
+            if pattern:
+                targets[canonical_tvg_id(pattern)] = pattern
+
+    previous = _load_previous_channel_state(config)
+    for record in (previous.get("channels") or {}).values():
+        if not isinstance(record, dict) or record.get("present"):
+            continue
+        pattern = str(record.get("pattern") or "")
+        if pattern:
+            targets[canonical_tvg_id(pattern)] = pattern
+
+    allow_order = _exact_allowlist_ids(config)
+    return [item for item in allow_order if canonical_tvg_id(item) in targets]
+
+
+def _filter_entries_to_exact_targets(
+    entries: list[dict[str, Any]],
+    target_ids: list[str],
+    config: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Canonicalize a source and retain only the requested exact logical IDs."""
+    wanted = {canonical_tvg_id(item) for item in target_ids}
+    canonicalized = canonicalize_approved_sources(entries, config)
+    return [
+        entry
+        for entry in canonicalized
+        if canonical_tvg_id(entry.get("tvg_id", "")) in wanted
+    ]
+
+
+def _parse_aria_markdown(text: str, source: dict[str, Any]) -> tuple[list[dict[str, Any]], int]:
+    """Parse aria-tv's small US channel table without loading its global M3U."""
+    entries: list[dict[str, Any]] = []
+    scanned = 0
+    row_re = re.compile(
+        r"^\|\s*\d+\s*\|\s*(?P<name>[^|]+?)\s*\|\s*\[>\]\((?P<url>[^)]+)\)\s*\|(?P<rest>.*)$",
+        re.I,
+    )
+    for raw in text.splitlines():
+        match = row_re.match(raw.strip())
+        if not match:
+            continue
+        scanned += 1
+        name = html.unescape(match.group("name").strip())
+        url = html.unescape(match.group("url").strip())
+        rest = match.group("rest")
+        fields = [field.strip() for field in rest.split("|") if field.strip()]
+        status = fields[-1].lower() if fields else ""
+        if status == "not-working" or not re.match(r"^https?://", url, re.I):
+            continue
+        logo_match = re.search(r'<img[^>]+src="([^"]+)"', rest, re.I)
+        entries.append({
+            "name_raw": name,
+            "name": clean_display_name(name),
+            "quality": extract_quality(name),
+            "tvg_id": "",
+            "logo": html.unescape(logo_match.group(1)) if logo_match else "",
+            "group": "",
+            "language": "English",
+            "country": "US",
+            "source": source.get("name", "aria-tv US"),
+            "family": source.get("family", "aria-tv"),
+            "priority": int(source.get("priority", 8)),
+            "philly": bool(source.get("philly", False)),
+            "url": url,
+            "headers": {},
+            "source_status": status or "unknown",
+        })
+    return entries, scanned
+
+
+def discover_targeted_source_families(
+    config: dict[str, Any],
+    existing_entries: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str]]:
+    """Scan high-value public source families only for remaining exact IDs."""
+    settings = (config.get("discovery") or {}).get("targeted_source_families") or {}
+    if not settings.get("enabled", True):
+        return [], [], []
+
+    target_ids = _target_ids_for_source_hunt(config, existing_entries)
+    sources = settings.get("sources") or []
+    if not target_ids or not sources:
+        return [], [{
+            "kind": "targeted-source-summary",
+            "status": "nothing-to-scan",
+            "target_ids": target_ids,
+            "source_count": len(sources),
+        }], target_ids
+
+    discovered: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    timeout = int(settings.get("timeout_seconds", 20))
+    byte_limit = int(settings.get("byte_limit", 8_000_000))
+    default_cap = max(1, int(settings.get("max_candidates_per_target", 4)))
+
+    for source in sources:
+        url = str(source.get("url") or "").strip()
+        fmt = str(source.get("format") or "m3u").lower()
+        row: dict[str, Any] = {
+            "kind": "targeted-source-family",
+            "name": source.get("name"),
+            "family": source.get("family"),
+            "url": url,
+            "format": fmt,
+            "target_count": len(target_ids),
+            "target_ids": target_ids,
+            "status": "pending",
+            "records_scanned": 0,
+            "candidates_found": 0,
+            "matched_ids": [],
+        }
+        try:
+            text, final_url = _fetch_public_text(
+                url,
+                timeout=int(source.get("timeout_seconds", timeout)),
+                byte_limit=int(source.get("byte_limit", byte_limit)),
+            )
+            source_info = dict(source)
+            if fmt == "aria-markdown":
+                parsed, scanned = _parse_aria_markdown(text, source_info)
+            else:
+                parsed = parse_m3u(text, source_info)
+                scanned = len(parsed)
+            matched = _filter_entries_to_exact_targets(parsed, target_ids, config)
+            accepted: list[dict[str, Any]] = []
+            per_target: dict[str, int] = defaultdict(int)
+            source_cap = max(1, int(source.get("max_candidates_per_target", default_cap)))
+            for entry in matched:
+                target_marker = canonical_tvg_id(entry.get("tvg_id", ""))
+                if per_target[target_marker] >= source_cap:
+                    continue
+                marker = (target_marker, entry.get("url", ""))
+                if marker in seen:
+                    continue
+                seen.add(marker)
+                per_target[target_marker] += 1
+                entry["targeted_scan"] = True
+                discovered.append(entry)
+                accepted.append(entry)
+
+            row["status"] = "ok"
+            row["final_url"] = final_url
+            row["records_scanned"] = scanned
+            row["matches_before_cap"] = len(matched)
+            row["candidates_found"] = len(accepted)
+            row["matched_ids"] = sorted({entry.get("tvg_id") for entry in accepted if entry.get("tvg_id")})
+        except Exception as exc:
+            row["status"] = "failed"
+            row["error"] = str(exc)[:240]
+        rows.append(row)
+
+    rows.insert(0, {
+        "kind": "targeted-source-summary",
+        "status": "complete",
+        "target_ids": target_ids,
+        "source_count": len(sources),
+        "candidates_found": len(discovered),
+    })
+    log(
+        f"Targeted source-family scan: {len(target_ids)} exact IDs across "
+        f"{len(sources)} sources; {len(discovered)} candidates retained"
+    )
+    return discovered, rows, target_ids
 
 
 def discover_official_page_streams(config: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -266,35 +469,45 @@ def discover_official_page_streams(config: dict[str, Any]) -> tuple[list[dict[st
     return discovered, rows
 
 
-def discover_iptv_org_passed_issues(config: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Discover recent public IPTV-org additions already labeled check:passed.
+def discover_iptv_org_passed_issues(
+    config: dict[str, Any],
+    target_ids: list[str] | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Inspect fresh IPTV-org add/remove issues for remaining exact IDs.
 
-    IPTV-org's label is only a discovery pre-filter; every URL still goes through
-    our own double HLS/media-segment probe before it can reach Stremio.
+    Additions that passed IPTV-org's check can become candidates. Removal issues
+    are diagnostics only and never reintroduce their broken URL. Every addition
+    still goes through our own double HLS/media-segment probe.
     """
     settings = (config.get("discovery") or {}).get("iptv_org_issues") or {}
     if not settings.get("enabled", True):
         return [], []
 
     targets = settings.get("targets") or []
+    if target_ids is not None:
+        wanted = {canonical_tvg_id(item) for item in target_ids}
+        targets = [
+            target
+            for target in targets
+            if canonical_tvg_id(target.get("tvg_id", "")) in wanted
+        ]
     if not targets:
         return [], []
 
-    query = 'repo:iptv-org/iptv is:issue is:open label:"check:passed"'
     params = urllib.parse.urlencode({
-        "q": query,
+        "state": "all",
         "sort": "updated",
-        "order": "desc",
+        "direction": "desc",
         "per_page": int(settings.get("per_page", 100)),
     })
-    api_url = "https://api.github.com/search/issues?" + params
+    api_url = "https://api.github.com/repos/iptv-org/iptv/issues?" + params
     rows: list[dict[str, Any]] = []
     discovered: list[dict[str, Any]] = []
 
     try:
         payload_text, _ = _fetch_public_text(api_url, timeout=int(settings.get("timeout_seconds", 20)))
         payload = json.loads(payload_text)
-        issues = payload.get("items") or []
+        issues = payload if isinstance(payload, list) else []
     except Exception as exc:
         return [], [{
             "kind": "iptv-org-issues",
@@ -304,6 +517,17 @@ def discover_iptv_org_passed_issues(config: dict[str, Any]) -> tuple[list[dict[s
         }]
 
     for issue in issues:
+        labels = {
+            str(label.get("name") or "")
+            for label in (issue.get("labels") or [])
+            if isinstance(label, dict)
+        }
+        change_kind = "add" if "streams:add" in labels else "remove" if "streams:remove" in labels else ""
+        if not change_kind or "check:passed" not in labels:
+            continue
+        if any(label.startswith("rejected:") for label in labels):
+            continue
+
         title = issue.get("title") or ""
         body = issue.get("body") or ""
         combined = f"{title}\n{body}"
@@ -318,13 +542,25 @@ def discover_iptv_org_passed_issues(config: dict[str, Any]) -> tuple[list[dict[s
         if not matched_target:
             continue
 
+        issue_number = issue.get("number")
+        issue_url = issue.get("html_url")
+        if change_kind == "remove":
+            rows.append({
+                "kind": "iptv-org-issue",
+                "status": "removal-signal",
+                "change": "remove",
+                "issue": issue_number,
+                "issue_url": issue_url,
+                "tvg_id": matched_target["tvg_id"],
+                "name": matched_target.get("name"),
+            })
+            continue
+
         urls = _extract_public_hls_urls(combined)
         urls = [u for u in urls if ".m3u8" in u.lower()]
         if not urls:
             continue
 
-        issue_number = issue.get("number")
-        issue_url = issue.get("html_url")
         for url in urls[: int(settings.get("max_urls_per_issue", 3))]:
             discovered.append({
                 "name_raw": matched_target.get("name") or matched_target["tvg_id"],
@@ -348,6 +584,7 @@ def discover_iptv_org_passed_issues(config: dict[str, Any]) -> tuple[list[dict[s
         rows.append({
             "kind": "iptv-org-issue",
             "status": "candidate-found",
+            "change": "add",
             "issue": issue_number,
             "issue_url": issue_url,
             "tvg_id": matched_target["tvg_id"],
@@ -358,7 +595,10 @@ def discover_iptv_org_passed_issues(config: dict[str, Any]) -> tuple[list[dict[s
     return discovered, rows
 
 
-def discover_seed_candidates(config: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def discover_seed_candidates(
+    config: dict[str, Any],
+    target_ids: list[str] | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Load public research leads from config.
 
     These are not trusted merely because they are listed here. They are only
@@ -369,9 +609,12 @@ def discover_seed_candidates(config: dict[str, Any]) -> tuple[list[dict[str, Any
     discovered: list[dict[str, Any]] = []
     rows: list[dict[str, Any]] = []
 
+    wanted = {canonical_tvg_id(item) for item in target_ids} if target_ids is not None else None
     for item in items:
         url = (item.get("url") or "").strip()
         tvg_id = (item.get("tvg_id") or "").strip()
+        if wanted is not None and canonical_tvg_id(tvg_id) not in wanted:
+            continue
         if not url or not tvg_id or not re.match(r"^https?://", url, re.I):
             continue
         if ".m3u8" not in url.lower():
@@ -413,17 +656,24 @@ def discover_seed_candidates(config: dict[str, Any]) -> tuple[list[dict[str, Any
     return discovered, rows
 
 
-def discover_dynamic_streams(config: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def discover_dynamic_streams(
+    config: dict[str, Any],
+    existing_entries: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if not (config.get("discovery") or {}).get("enabled", True):
         return [], []
 
+    targeted_entries, targeted_rows, target_ids = discover_targeted_source_families(
+        config,
+        existing_entries,
+    )
     official_entries, official_rows = discover_official_page_streams(config)
-    issue_entries, issue_rows = discover_iptv_org_passed_issues(config)
-    seed_entries, seed_rows = discover_seed_candidates(config)
+    issue_entries, issue_rows = discover_iptv_org_passed_issues(config, target_ids)
+    seed_entries, seed_rows = discover_seed_candidates(config, target_ids)
 
     combined: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
-    for entry in official_entries + issue_entries + seed_entries:
+    for entry in targeted_entries + official_entries + issue_entries + seed_entries:
         marker = (canonical_tvg_id(entry.get("tvg_id", "")), entry.get("url", ""))
         if marker in seen:
             continue
@@ -431,10 +681,11 @@ def discover_dynamic_streams(config: dict[str, Any]) -> tuple[list[dict[str, Any
         combined.append(entry)
 
     log(
-        f"Dynamic discovery: {len(official_entries)} official-page + "
-        f"{len(issue_entries)} IPTV-org issue + {len(seed_entries)} seed candidates"
+        f"Dynamic discovery: {len(targeted_entries)} targeted-family + "
+        f"{len(official_entries)} official-page + {len(issue_entries)} IPTV-org issue + "
+        f"{len(seed_entries)} seed candidates"
     )
-    return combined, official_rows + issue_rows + seed_rows
+    return combined, targeted_rows + official_rows + issue_rows + seed_rows
 
 
 def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) -> dict[str, Any]:
@@ -751,11 +1002,19 @@ def _channel_state_key(row: dict[str, Any]) -> str:
     return f"{group}:{canonical_tvg_id(pattern)}"
 
 
+_PREVIOUS_CHANNEL_STATE_CACHE: dict[str, Any] | None = None
+
+
 def _load_previous_channel_state(config: dict[str, Any]) -> dict[str, Any]:
     """Load the last deployed exact-channel state for build-to-build comparison."""
+    global _PREVIOUS_CHANNEL_STATE_CACHE
+    if _PREVIOUS_CHANNEL_STATE_CACHE is not None:
+        return _PREVIOUS_CHANNEL_STATE_CACHE
+
     settings = config.get("channel_diagnostics") or {}
     if not settings.get("enabled", True):
-        return {}
+        _PREVIOUS_CHANNEL_STATE_CACHE = {}
+        return _PREVIOUS_CHANNEL_STATE_CACHE
 
     explicit = (settings.get("previous_state_url") or "").strip()
     public_base = derive_public_base()
@@ -764,7 +1023,8 @@ def _load_previous_channel_state(config: dict[str, Any]) -> dict[str, Any]:
     elif public_base:
         state_url = f"{public_base}/diagnostics/channel-state.json"
     else:
-        return {}
+        _PREVIOUS_CHANNEL_STATE_CACHE = {}
+        return _PREVIOUS_CHANNEL_STATE_CACHE
 
     cache_bust = os.getenv("GITHUB_RUN_ID") or str(int(time.time()))
     separator = "&" if "?" in state_url else "?"
@@ -789,13 +1049,15 @@ def _load_previous_channel_state(config: dict[str, Any]) -> dict[str, Any]:
                 "Channel diagnostics: loaded "
                 f"{len(payload['channels']):,} prior exact-channel states"
             )
-            return payload
+            _PREVIOUS_CHANNEL_STATE_CACHE = payload
+            return _PREVIOUS_CHANNEL_STATE_CACHE
     except urllib.error.HTTPError as exc:
         if exc.code != 404:
             log(f"WARNING: could not load prior channel state: HTTP {exc.code}")
     except Exception as exc:
         log(f"WARNING: could not load prior channel state: {str(exc)[:160]}")
-    return {}
+    _PREVIOUS_CHANNEL_STATE_CACHE = {}
+    return _PREVIOUS_CHANNEL_STATE_CACHE
 
 
 def build_channel_diagnostics(
@@ -1234,4 +1496,4 @@ def write_epg_pages(
         while skip < len(detailed):
             page = detailed[skip : skip + page_size]
             write_json(catalog_dir / f"date={day}&skip={skip}.json", {"metasDetailed": page})
-            writ
+            write_json(catalog_dir / f"skip={skip}&date={day}.json", {"metasDetailed": page})
