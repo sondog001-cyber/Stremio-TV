@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, expiring client verification, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.25"
+    "version": "0.3.26"
   },
   "sources": {
     "playlists": [
@@ -519,7 +519,8 @@
       "worldiptv",
       "jromero-legacy",
       "ceres-us-tv",
-      "openstream"
+      "openstream",
+      "github-playlist"
     ],
     "canonical_id_aliases": {
       "MSNBC.us": "MSNOW.us",
@@ -794,38 +795,105 @@
     ],
     "channel_preferences": {
       "WPVI.us": [
-        {"family": "iptv-org", "label": "vetted public feed"},
-        {"family": "localbtv-relay", "label": "OTA relay fallback"},
-        {"family": "moveonjoy", "label": "MoveOnJoy fallback"},
-        {"family": "official-page", "label": "official news fallback"}
+        {
+          "family": "iptv-org",
+          "label": "vetted public feed"
+        },
+        {
+          "family": "localbtv-relay",
+          "label": "OTA relay fallback"
+        },
+        {
+          "family": "moveonjoy",
+          "label": "MoveOnJoy fallback"
+        },
+        {
+          "family": "official-page",
+          "label": "official news fallback"
+        }
       ],
       "WCAU.us": [
-        {"family": "iptv-org", "label": "vetted public feed"},
-        {"family": "localbtv-relay", "label": "OTA relay fallback"},
-        {"family": "moveonjoy", "label": "MoveOnJoy fallback"},
-        {"family": "official-page", "label": "official news fallback"}
+        {
+          "family": "iptv-org",
+          "label": "vetted public feed"
+        },
+        {
+          "family": "localbtv-relay",
+          "label": "OTA relay fallback"
+        },
+        {
+          "family": "moveonjoy",
+          "label": "MoveOnJoy fallback"
+        },
+        {
+          "family": "official-page",
+          "label": "official news fallback"
+        }
       ],
       "KYW.us": [
-        {"family": "iptv-org", "label": "vetted public feed"},
-        {"family": "localbtv-relay", "label": "OTA relay fallback"},
-        {"family": "moveonjoy", "label": "MoveOnJoy fallback"},
-        {"family": "official-page", "label": "official news fallback"}
+        {
+          "family": "iptv-org",
+          "label": "vetted public feed"
+        },
+        {
+          "family": "localbtv-relay",
+          "label": "OTA relay fallback"
+        },
+        {
+          "family": "moveonjoy",
+          "label": "MoveOnJoy fallback"
+        },
+        {
+          "family": "official-page",
+          "label": "official news fallback"
+        }
       ],
       "WHYY.us": [
-        {"family": "official-page", "content_kind": "full-linear", "label": "official WHYY linear feed"},
-        {"family": "iptv-org", "label": "vetted public fallback"},
-        {"family": "localbtv-relay", "label": "OTA relay fallback"},
-        {"family": "moveonjoy", "label": "MoveOnJoy fallback"}
+        {
+          "family": "official-page",
+          "content_kind": "full-linear",
+          "label": "official WHYY linear feed"
+        },
+        {
+          "family": "iptv-org",
+          "label": "vetted public fallback"
+        },
+        {
+          "family": "localbtv-relay",
+          "label": "OTA relay fallback"
+        },
+        {
+          "family": "moveonjoy",
+          "label": "MoveOnJoy fallback"
+        }
       ],
       "WPHL.us": [
-        {"family": "iptv-org", "label": "vetted public feed"},
-        {"family": "localbtv-relay", "label": "OTA relay fallback"},
-        {"family": "moveonjoy", "label": "MoveOnJoy fallback"}
+        {
+          "family": "iptv-org",
+          "label": "vetted public feed"
+        },
+        {
+          "family": "localbtv-relay",
+          "label": "OTA relay fallback"
+        },
+        {
+          "family": "moveonjoy",
+          "label": "MoveOnJoy fallback"
+        }
       ],
       "WPSG.us": [
-        {"family": "iptv-org", "label": "vetted public feed"},
-        {"family": "localbtv-relay", "label": "OTA relay fallback"},
-        {"family": "moveonjoy", "label": "MoveOnJoy fallback"}
+        {
+          "family": "iptv-org",
+          "label": "vetted public feed"
+        },
+        {
+          "family": "localbtv-relay",
+          "label": "OTA relay fallback"
+        },
+        {
+          "family": "moveonjoy",
+          "label": "MoveOnJoy fallback"
+        }
       ]
     }
   },
@@ -1053,11 +1121,74 @@
           "priority": 11,
           "philly": false,
           "content_note": "Actively maintained fallback index; exact missing IDs only."
+        },
+        {
+          "name": "Judy GoTV smart playlist",
+          "family": "github-playlist",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/judy-gotv/iptv/main/smart.m3u",
+          "priority": 10,
+          "philly": false,
+          "content_note": "Fresh playlist discovered by exact-ID search before code-search was retired; exact missing IDs only."
+        },
+        {
+          "name": "Insolence MoveOnJoy mirror",
+          "family": "github-playlist",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/InsolenceWillow/insolencetvgo/main/moveonjoy.m3u",
+          "priority": 11,
+          "philly": false,
+          "content_note": "Direct public mirror discovered during source review; exact missing IDs only."
+        },
+        {
+          "name": "Yarr Stremio MoveOnJoy mirror",
+          "family": "github-playlist",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/spookyhost1/yarr-stremio/main/src/iptv/m3u-sources/us_moveonjoy.m3u",
+          "priority": 11,
+          "philly": false,
+          "content_note": "Direct public mirror discovered during source review; exact missing IDs only."
+        },
+        {
+          "name": "Kilirushi MoveOnJoy mirror",
+          "family": "github-playlist",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/kilirushi/iptv/master/us_moveonjoy.m3u",
+          "priority": 12,
+          "philly": false,
+          "content_note": "Direct public mirror discovered during source review; exact missing IDs only."
+        },
+        {
+          "name": "GoGetta public channel index",
+          "family": "github-playlist",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/gogetta69/TMDB-To-VOD-Playlist/main/channels/m3u_formatted.dat",
+          "priority": 12,
+          "philly": false,
+          "content_note": "Credential-free public index discovered across several missing exact IDs; candidates still require both media probes."
+        },
+        {
+          "name": "GoGetta public-files mirror",
+          "family": "github-playlist",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/gogetta69/public-files/main/m3u_formatted.dat",
+          "priority": 13,
+          "philly": false,
+          "content_note": "Fresh mirror retained for source redundancy; exact missing IDs only."
+        },
+        {
+          "name": "Nachoo public channel index",
+          "family": "github-playlist",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/nachoo3/Iptv.m3u/master/test",
+          "priority": 13,
+          "philly": false,
+          "content_note": "Credential-free public index discovered during exact-ID review; candidates still require both media probes."
         }
       ]
     },
     "github_candidate_search": {
-      "enabled": true,
+      "enabled": false,
       "max_targets_per_build": 3,
       "max_queries_per_build": 6,
       "min_query_interval_seconds": 12,
@@ -1068,7 +1199,8 @@
       "min_freshness_score": 55,
       "timeout_seconds": 20,
       "byte_limit": 6000000,
-      "priority": 7
+      "priority": 7,
+      "disabled_reason": "GitHub code search returned sustained secondary-limit 429s even after reset-window retries; discoveries now feed the direct targeted-source scanner."
     },
     "iptv_org_issues": {
       "enabled": true,
