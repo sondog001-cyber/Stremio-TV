@@ -309,7 +309,7 @@ def is_favorite(channel: dict[str, Any], favorite_patterns: list[str]) -> bool:
     return any(norm(pat) and norm(pat) in hay for pat in favorite_patterns)
 
 
-def stream_priority(stream: dict[str, Any]) -> tuple[int, int, int, int, int, int, int, str]:
+def stream_priority(stream: dict[str, Any]) -> tuple[int, int, int, int, int, int, int, int, str]:
     """Lower tuple is better.
 
     Content identity remains the first guardrail, then cross-build stability
