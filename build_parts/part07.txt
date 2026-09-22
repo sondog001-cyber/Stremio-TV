@@ -10,6 +10,8 @@ s,
         write_json(output / "diagnostics" / "needs-sources.json", needs_sources)
         write_json(output / "diagnostics" / "stream-health.json", stream_health_results)
         write_json(output / "diagnostics" / "stream-stability.json", stream_stability_state)
+        write_json(output / "diagnostics" / "channel-state.json", channel_state)
+        write_json(output / "diagnostics" / "channel-changes.json", channel_changes)
         write_json(output / "diagnostics" / "identity-rejected.json", identity_rejected)
         write_json(output / "diagnostics" / "dynamic-discovery.json", discovery_results)
         write_json(output / "diagnostics" / "source-results.json", source_results)
