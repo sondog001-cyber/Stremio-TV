@@ -7,7 +7,8 @@
         used = {s.get("url") for s in selected}
         return [s for s in unique if s.get("url") not in used and predicate(s)]
 
-    for _ in range(target_sd):
+    current_sd = sum(1 for stream in selected if is_sd_stream(stream))
+    for _ in range(current_sd, target_sd):
         candidates = remaining_url(is_sd_stream)
         if not candidates:
             break
@@ -25,7 +26,13 @@
         item["slot"] = "Backup"
         selected.append(item)
 
-    return selected[:max_streams]
+    selected = sorted(selected[:max_streams], key=priority_key)
+    for stream in selected:
+        preference_rank, preference_label = _stream_preference_match(stream, preference_rules)
+        stream["preference_rank"] = preference_rank + 1 if preference_rank <= len(preference_rules) else None
+        stream["preference_label"] = preference_label
+        stream["preference_channel_id"] = channel_id
+    return selected
 
 
 def merge_channels(entries: Iterable[dict[str, Any]], favorites: list[str], max_streams: int, config: dict[str, Any]) -> list[dict[str, Any]]:
@@ -35,7 +42,8 @@ def merge_channels(entries: Iterable[dict[str, Any]], favorites: list[str], max_
 
     channels: list[dict[str, Any]] = []
     for key, streams in buckets.items():
-        unique_streams = select_streams(streams, max_streams, config)
+        channel_id = next((str(stream.get("tvg_id") or "") for stream in streams if stream.get("tvg_id")), "")
+        unique_streams = select_streams(streams, max_streams, config, channel_id=channel_id)
         if not unique_streams:
             continue
 
@@ -207,4 +215,4 @@ def match_epg_channel(channel: dict[str, Any], indexes: dict[str, Any], aliases:
                 difflib.SequenceMatcher(None, nname, close[1]).ratio() if len(close) > 1 else 0.0
             )
             epg_id = unique_one(indexes["by_name_norm"].get(best, []))
-            if epg_id and (best_score - runner_score >= 0.02 or runner_score 
+            if epg_id and (best_score - runner_score >= 0.02 or runner_score == 0.0):

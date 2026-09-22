@@ -58,13 +58,14 @@ A failed or untested candidate stays in diagnostics but is not exposed to Stremi
 For each curated channel the builder:
 
 1. de-duplicates exact URLs
-2. gives IPTV-org the highest source priority
-3. considers only candidates that passed the automated playback check
-4. tries to pick **HD 1**
-5. tries to pick **HD 2**, preferring a different source family where possible
-6. tries to pick one **SD** fallback
-7. if one of those classes is unavailable, fills the remaining slot with the best unused stream
-8. never exposes more than **3 stream choices** for a channel
+2. considers only candidates that passed the automated playback check
+3. ranks full-linear content and five-build stability before source-family preference
+4. applies an exact channel preference when configured, otherwise the default IPTV-org-first family order
+5. makes the most reliable selected stream **Primary**, even when it is SD and a newer HD stream is available
+6. fills the remaining links toward **2 HD + 1 SD**, preferring a different source family where possible
+7. never exposes more than **3 stream choices** for a channel
+
+The exact Primary/Backup decision for every built channel is written to `site/diagnostics/source-ordering.json`, including stability history, matched preference rank and the configured channel rule.
 
 The HD/SD classification is based on the **quality declared by the source playlist**. The static builder does not decode every HLS rendition, so a source label is not a promise about the actual encoder output.
 
