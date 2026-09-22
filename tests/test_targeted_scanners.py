@@ -1,4 +1,5 @@
 import json
+import pathlib
 import unittest
 import urllib.parse
 from unittest import mock
@@ -40,6 +41,18 @@ def minimal_config():
 
 
 class TargetedScannerTests(unittest.TestCase):
+    def test_production_config_uses_direct_scanners_instead_of_code_search(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        config = json.loads((root / "config.json").read_text(encoding="utf-8"))
+        discovery = config["discovery"]
+        self.assertFalse(discovery["github_candidate_search"]["enabled"])
+
+        sources = discovery["targeted_source_families"]["sources"]
+        urls = {source["url"] for source in sources}
+        self.assertIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/smart.m3u", urls)
+        self.assertIn("https://raw.githubusercontent.com/gogetta69/public-files/main/m3u_formatted.dat", urls)
+        self.assertEqual(sum(source["family"] == "github-playlist" for source in sources), 7)
+
     def setUp(self):
         build._PREVIOUS_CHANNEL_STATE_CACHE = None
         build._PUBLIC_TEXT_CACHE.clear()
