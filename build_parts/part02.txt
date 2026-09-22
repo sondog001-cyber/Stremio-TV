@@ -382,6 +382,34 @@ def _stream_preference_match(
     return len(preference_rules) + 1, "unlisted-source"
 
 
+def stream_effective_url(stream: dict[str, Any]) -> str:
+    """Return the post-redirect media URL when probing exposed one."""
+    return str(stream.get("effective_url") or stream.get("url") or "").strip()
+
+
+def stream_provider_host(stream: dict[str, Any]) -> str:
+    """Collapse CDN subdomains into one provider identity for real redundancy."""
+    url = stream_effective_url(stream)
+    try:
+        host = (urllib.parse.urlsplit(url).hostname or "").lower().rstrip(".")
+    except ValueError:
+        return ""
+    if not host:
+        return ""
+    try:
+        ipaddress.ip_address(host)
+        return host
+    except ValueError:
+        pass
+    labels = [label for label in host.split(".") if label]
+    if len(labels) <= 2:
+        return host
+    multipart_suffixes = {"co.uk", "com.au", "co.nz", "com.br", "co.jp"}
+    suffix = ".".join(labels[-2:])
+    width = 3 if suffix in multipart_suffixes and len(labels) >= 3 else 2
+    return ".".join(labels[-width:])
+
+
 def stream_priority(
     stream: dict[str, Any],
     preference_rules: list[dict[str, str]] | None = None,
@@ -435,6 +463,22 @@ def _choose_prefer_new_family(candidates: list[dict[str, Any]], selected: list[d
     return candidates[0] if candidates else None
 
 
+def _choose_backup_candidate(
+    candidates: list[dict[str, Any]],
+    selected: list[dict[str, Any]],
+    *,
+    prefer_hosts: bool,
+    prefer_families: bool,
+) -> dict[str, Any] | None:
+    pool = candidates
+    if prefer_hosts:
+        used_hosts = {stream_provider_host(item) for item in selected if stream_provider_host(item)}
+        independent = [item for item in pool if stream_provider_host(item) not in used_hosts]
+        if independent:
+            pool = independent
+    return _choose_prefer_new_family(pool, selected) if prefer_families else (pool[0] if pool else None)
+
+
 def select_streams(
     streams: list[dict[str, Any]],
     max_streams: int,
@@ -454,16 +498,19 @@ def select_streams(
     unique: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
     for s in sorted(streams, key=priority_key):
-        url = s.get("url", "")
+        url = stream_effective_url(s)
         if not url or url in seen_urls:
             continue
         seen_urls.add(url)
+        s["effective_url"] = url
+        s["provider_host"] = stream_provider_host(s)
         unique.append(s)
 
     target = config.get("stream_selection") or {}
     target_hd = min(int(target.get("target_hd", 2)), max_streams)
     target_sd = min(int(target.get("target_sd", 1)), max(0, max_streams - target_hd))
     prefer_families = bool(target.get("prefer_distinct_families", True))
+    prefer_hosts = bool(target.get("prefer_distinct_provider_hosts", True))
 
     selected: list[dict[str, Any]] = []
     if unique:
@@ -481,7 +528,12 @@ def select_streams(
         candidates = remaining(is_hd_stream)
         if not candidates:
             break
-        pick = _choose_prefer_new_family(candidates, selected) if prefer_families else candidates[0]
+        pick = _choose_backup_candidate(
+            candidates,
+            selected,
+            prefer_hosts=prefer_hosts,
+            prefer_families=prefer_families,
+        )
         item = dict(pick)
         item["slot"] = f"HD {hd_index + 1}"
         selected.append(item)

@@ -361,6 +361,15 @@ def _exact_allowlist_ids(config: dict[str, Any], scope: str = "all") -> list[str
     return ids
 
 
+def _private_connector_only_ids(config: dict[str, Any]) -> set[str]:
+    policy = (config.get("discovery") or {}).get("public_search_policy") or {}
+    return {
+        canonical_tvg_id(str(item))
+        for item in policy.get("private_connector_only_ids", [])
+        if str(item).strip()
+    }
+
+
 def _target_ids_for_source_hunt(
     config: dict[str, Any],
     existing_entries: list[dict[str, Any]],
@@ -377,6 +386,8 @@ def _target_ids_for_source_hunt(
         canonical_tvg_id(item): item
         for item in _exact_allowlist_ids(config, scope=scope)
     }
+    private_only = _private_connector_only_ids(config)
+    in_scope = {key: value for key, value in in_scope.items() if key not in private_only}
     targets: dict[str, str] = {}
     coverage_entries = canonicalize_approved_sources(existing_entries, config)
     for row in build_allowlist_coverage(coverage_entries, config):
@@ -394,7 +405,11 @@ def _target_ids_for_source_hunt(
             targets[canonical_tvg_id(pattern)] = pattern
 
     allow_order = _exact_allowlist_ids(config, scope=scope)
-    return [item for item in allow_order if canonical_tvg_id(item) in targets]
+    return [
+        item
+        for item in allow_order
+        if canonical_tvg_id(item) in targets and canonical_tvg_id(item) not in private_only
+    ]
 
 
 def _filter_entries_to_exact_targets(
@@ -1383,6 +1398,7 @@ def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) ->
                     "status": "failed",
                     "detail": "HLS URL did not return a valid playlist",
                     "http_status": status,
+                    "final_url": final_url,
                     "latency_ms": elapsed_ms,
                 }
 
@@ -1418,6 +1434,7 @@ def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) ->
                         "status": "failed",
                         "detail": "Master playlist child was invalid",
                         "http_status": child_status,
+                        "final_url": child_url,
                         "latency_ms": round((time.monotonic() - started) * 1000),
                     }
 
@@ -1439,6 +1456,7 @@ def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) ->
                 "status": "ok",
                 "detail": "Valid HLS playlist" + (" + segment" if verify_segment else ""),
                 "http_status": status,
+                "final_url": media_url,
                 "latency_ms": round((time.monotonic() - started) * 1000),
                 **measurement,
             }
@@ -1448,6 +1466,7 @@ def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) ->
                 "status": "failed",
                 "detail": "Returned HTML instead of media",
                 "http_status": status,
+                "final_url": final_url,
                 "latency_ms": elapsed_ms,
             }
 
@@ -1455,6 +1474,7 @@ def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) ->
             "status": "ok",
             "detail": "Reachable direct media URL",
             "http_status": status,
+            "final_url": final_url,
             "latency_ms": elapsed_ms,
         }
 
@@ -2227,6 +2247,8 @@ def probe_candidate_entries(
         health = results.get(key, {"status": "failed", "detail": "No probe result"})
         for entry in linked_entries:
             entry["health"] = dict(health)
+            entry["effective_url"] = str(health.get("final_url") or entry.get("url") or "")
+            entry["provider_host"] = stream_provider_host(entry)
             for field in (
                 "measured_width",
                 "measured_height",
@@ -2260,6 +2282,8 @@ def probe_candidate_entries(
             "quality_source": entry.get("quality_source"),
             "available_resolutions": entry.get("available_resolutions") or [],
             "url": entry.get("url"),
+            "effective_url": stream_effective_url(entry),
+            "provider_host": stream_provider_host(entry),
             "health": entry.get("health"),
             "stability": entry.get("stability"),
             "discovery_issue": entry.get("discovery_issue"),
@@ -2323,6 +2347,9 @@ def build_source_ordering_diagnostics(
                 "stability_samples": stability.get("samples", 0),
                 "preference_rank": stream.get("preference_rank"),
                 "preference_label": stream.get("preference_label"),
+                "provider_host": stream_provider_host(stream),
+                "independent_provider": bool(stream.get("independent_provider")),
+                "effective_url": stream_effective_url(stream),
                 "url": stream.get("url"),
             })
         rows.append({
@@ -2336,6 +2363,188 @@ def build_source_ordering_diagnostics(
             "streams": stream_rows,
         })
     return rows
+
+
+def build_host_redundancy_diagnostics(channels: list[dict[str, Any]]) -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    for channel in channels:
+        streams = channel.get("streams") or []
+        hosts = [stream_provider_host(stream) for stream in streams if stream_provider_host(stream)]
+        unique_hosts = list(dict.fromkeys(hosts))
+        rows.append({
+            "tvg_id": channel.get("tvg_id"),
+            "name": channel.get("name"),
+            "stream_count": len(streams),
+            "provider_hosts": unique_hosts,
+            "independent_provider_count": len(unique_hosts),
+            "fragile_single_provider": len(streams) > 1 and len(unique_hosts) < 2,
+            "has_independent_backup": len(unique_hosts) >= 2,
+        })
+    rows.sort(key=lambda row: str(row.get("tvg_id") or ""))
+    return {
+        "summary": {
+            "channels": len(rows),
+            "with_independent_backup": sum(1 for row in rows if row["has_independent_backup"]),
+            "fragile_single_provider": sum(1 for row in rows if row["fragile_single_provider"]),
+            "single_stream": sum(1 for row in rows if row["stream_count"] == 1),
+        },
+        "channels": rows,
+    }
+
+
+def _load_previous_source_scoreboard(config: dict[str, Any]) -> dict[str, Any]:
+    settings = config.get("source_scoreboard") or {}
+    if not settings.get("enabled", True):
+        return {}
+    state_url = str(settings.get("previous_state_url") or "").strip()
+    public_base = derive_public_base()
+    if not state_url and public_base:
+        state_url = f"{public_base}/diagnostics/source-family-scoreboard.json"
+    if not state_url:
+        return {}
+    separator = "&" if "?" in state_url else "?"
+    cache_bust = urllib.parse.quote(os.getenv("GITHUB_RUN_ID") or str(int(time.time())))
+    req = urllib.request.Request(
+        f"{state_url}{separator}build={cache_bust}",
+        headers={"User-Agent": USER_AGENT, "Accept": "application/json", "Cache-Control": "no-cache"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=int(settings.get("load_timeout_seconds", 8))) as resp:
+            payload = json.loads(resp.read(4_000_000).decode("utf-8"))
+        if isinstance(payload, dict) and isinstance(payload.get("sources"), list):
+            return payload
+    except urllib.error.HTTPError as exc:
+        if exc.code != 404:
+            log(f"WARNING: could not load prior source scoreboard: HTTP {exc.code}")
+    except Exception as exc:
+        log(f"WARNING: could not load prior source scoreboard: {str(exc)[:160]}")
+    return {}
+
+
+def build_source_family_scoreboard(
+    health_rows: list[dict[str, Any]],
+    channels: list[dict[str, Any]],
+    channel_changes: dict[str, Any],
+    discovery_results: list[dict[str, Any]],
+    config: dict[str, Any],
+    *,
+    enabled: bool = True,
+    previous: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Measure which source families produce distinct, passing, selected streams over time."""
+    settings = config.get("source_scoreboard") or {}
+    history_size = max(1, int(settings.get("history_size", 5)))
+    remove_min = max(2, int(settings.get("remove_review_min_builds", 3)))
+    prior = previous if previous is not None else (_load_previous_source_scoreboard(config) if enabled else {})
+    prior_by_key = {row.get("key"): row for row in (prior.get("sources") or []) if row.get("key")}
+    metrics: dict[str, dict[str, Any]] = {}
+
+    def source_key(family: Any, source: Any) -> str:
+        return f"{str(family or 'unknown').strip()}::{str(source or family or 'unknown').strip()}"
+
+    for row in health_rows:
+        family = row.get("family") or "unknown"
+        source = row.get("source") or family
+        key = source_key(family, source)
+        metric = metrics.setdefault(key, {
+            "key": key, "family": family, "source": source, "candidates": 0,
+            "effective_urls": set(), "passing": 0, "failed": 0, "cooldown": 0,
+            "selected_streams": 0, "selected_channels": set(), "provider_hosts": set(),
+            "discovery_events": 0, "discovered_candidates": 0,
+        })
+        metric["candidates"] += 1
+        metric["effective_urls"].add(row.get("effective_url") or row.get("url"))
+        status = (row.get("health") or {}).get("status", "not-tested")
+        if status == "ok":
+            metric["passing"] += 1
+        elif status == "failed":
+            metric["failed"] += 1
+        elif status == "cooldown":
+            metric["cooldown"] += 1
+        host = row.get("provider_host")
+        if host:
+            metric["provider_hosts"].add(host)
+
+    for channel in channels:
+        for stream in channel.get("streams") or []:
+            family = stream.get("family") or "unknown"
+            source = stream.get("source") or family
+            key = source_key(family, source)
+            metric = metrics.setdefault(key, {
+                "key": key, "family": family, "source": source, "candidates": 0,
+                "effective_urls": set(), "passing": 0, "failed": 0, "cooldown": 0,
+                "selected_streams": 0, "selected_channels": set(), "provider_hosts": set(),
+                "discovery_events": 0, "discovered_candidates": 0,
+            })
+            metric["selected_streams"] += 1
+            metric["selected_channels"].add(channel.get("tvg_id"))
+            host = stream_provider_host(stream)
+            if host:
+                metric["provider_hosts"].add(host)
+
+    for event in discovery_results:
+        family = event.get("family") or event.get("source_family")
+        source = event.get("source") or event.get("name") or family
+        if not family:
+            continue
+        key = source_key(family, source)
+        metric = metrics.setdefault(key, {
+            "key": key, "family": family, "source": source, "candidates": 0,
+            "effective_urls": set(), "passing": 0, "failed": 0, "cooldown": 0,
+            "selected_streams": 0, "selected_channels": set(), "provider_hosts": set(),
+            "discovery_events": 0, "discovered_candidates": 0,
+        })
+        metric["discovery_events"] += 1
+        metric["discovered_candidates"] += int(event.get("candidates_found", 0) or 0)
+
+    recovered = {canonical_tvg_id(row.get("tvg_id", "")) for row in channel_changes.get("recovered_this_build", [])}
+    built_at = dt.datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+    rows = []
+    for key in sorted(set(metrics) | set(prior_by_key)):
+        metric = metrics.get(key) or {
+            "key": key, "family": prior_by_key[key].get("family"), "source": prior_by_key[key].get("source"),
+            "candidates": 0, "effective_urls": set(), "passing": 0, "failed": 0, "cooldown": 0,
+            "selected_streams": 0, "selected_channels": set(), "provider_hosts": set(),
+            "discovery_events": 0, "discovered_candidates": 0,
+        }
+        selected_ids = {canonical_tvg_id(x or "") for x in metric["selected_channels"]}
+        snapshot = {
+            "built_at": built_at, "candidates": metric["candidates"],
+            "unique_effective_urls": len({x for x in metric["effective_urls"] if x}),
+            "passing": metric["passing"], "failed": metric["failed"], "cooldown": metric["cooldown"],
+            "selected_streams": metric["selected_streams"], "selected_channels": len(selected_ids),
+            "provider_hosts": len(metric["provider_hosts"]), "recovered_channels": len(selected_ids & recovered),
+        }
+        old_history = list((prior_by_key.get(key) or {}).get("history") or [])
+        history = (old_history + [snapshot])[-history_size:]
+        sampled = [item for item in history if int(item.get("candidates", 0)) > 0]
+        total_passing = sum(int(item.get("passing", 0)) for item in history)
+        total_selected = sum(int(item.get("selected_streams", 0)) for item in history)
+        if total_selected:
+            recommendation = "keep"
+        elif total_passing:
+            recommendation = "observe"
+        elif len(sampled) >= remove_min:
+            recommendation = "remove-review"
+        else:
+            recommendation = "collect-more-data"
+        rows.append({
+            "key": key, "family": metric["family"], "source": metric["source"],
+            "current": snapshot, "history": history, "recommendation": recommendation,
+            "discovery_events": metric["discovery_events"],
+            "discovered_candidates": metric["discovered_candidates"],
+        })
+    return {
+        "version": 1, "updated_at": built_at, "history_size": history_size,
+        "source_state_built_at": prior.get("updated_at"),
+        "summary": {
+            "sources": len(rows),
+            "productive": sum(1 for row in rows if row["current"]["passing"] or row["current"]["selected_streams"]),
+            "zero_yield": sum(1 for row in rows if not row["current"]["passing"] and not row["current"]["selected_streams"]),
+            "remove_review": sum(1 for row in rows if row["recommendation"] == "remove-review"),
+        },
+        "sources": rows,
+    }
 
 
 def build_missing_source_diagnostics(
@@ -2354,6 +2563,7 @@ def build_missing_source_diagnostics(
     target = config.get("stream_selection") or {}
     target_hd = int(target.get("target_hd", 2))
     target_sd = int(target.get("target_sd", 1))
+    private_only = _private_connector_only_ids(config)
 
     rows: list[dict[str, Any]] = []
     bucket_counts: dict[str, int] = defaultdict(int)
@@ -2370,7 +2580,13 @@ def build_missing_source_diagnostics(
         passing_count = int(passing.get("candidate_count", 0) or 0)
         failure_kind: str | None = None
 
-        if candidate_count == 0:
+        public_search_eligible = key not in private_only
+
+        if passing_count == 0 and not public_search_eligible:
+            bucket = "private_connector_required"
+            action = "Use the authorized HDHomeRun/provider connector; skip recurring public searches."
+            failure_kind = "private_or_authorized_access"
+        elif candidate_count == 0:
             bucket = "no_candidate"
             action = "Find an exact-ID public source."
         elif passing_count == 0:
@@ -2379,7 +2595,7 @@ def build_missing_source_diagnostics(
                 for detail in details
             )
             if statuses and all(status == "cooldown" for status in statuses):
-                bucket = "failed_probes"
+                bucket = "quarantined_or_cooldown"
                 action = "Wait for the dead-source cooldown, then review the next scheduled retry."
                 failure_kind = "dead_source_cooldown"
             elif blocked:
@@ -2417,6 +2633,7 @@ def build_missing_source_diagnostics(
             "passing_candidate_count": passing_count,
             "probe_statuses": dict(Counter(statuses)),
             "sources": candidate.get("sources") or [],
+            "public_search_eligible": public_search_eligible,
             "action": action,
         }
         if failure_kind:

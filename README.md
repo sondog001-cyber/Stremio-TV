@@ -65,10 +65,10 @@ For each curated channel the builder:
 3. ranks full-linear content and five-build stability before source-family preference
 4. applies an exact channel preference when configured, otherwise the default IPTV-org-first family order
 5. makes the most reliable selected stream **Primary**, even when it is SD and a newer HD stream is available
-6. fills the remaining links toward **2 HD + 1 SD**, preferring a different source family where possible
+6. fills the remaining links toward **2 HD + 1 SD**, preferring a different effective provider host before another mirror from the same provider
 7. never exposes more than **3 stream choices** for a channel
 
-The exact Primary/Backup decision for every built channel is written to `site/diagnostics/source-ordering.json`, including stability history, matched preference rank and the configured channel rule.
+The exact Primary/Backup decision for every built channel is written to `site/diagnostics/source-ordering.json`, including effective URL, provider host, stability history, matched preference rank and the configured channel rule. `host-redundancy.json` flags channels whose multiple links still collapse to one provider, while `source-family-scoreboard.json` records candidate, passing, selected and recovery yield over five builds so zero-yield source families can be reviewed instead of accumulating forever.
 
 The HD/SD classification prefers the **measured maximum rendition in an HLS master playlist's `RESOLUTION` attributes**. A declared playlist quality is used only when the stream does not expose measurable rendition metadata. The builder records both values so a misleading source label cannot override measured output.
 
@@ -86,7 +86,7 @@ Every build creates:
 
 `site/diagnostics/needs-sources.json`
 
-For the actionable work queue, use `site/diagnostics/missing-source-diagnostics.json`. It separates exact IDs into `no_candidate`, `failed_probes`, `runner_or_geo_blocked`, `missing_quality_metadata`, `insufficient_quality_mix`, and `complete` buckets.
+For the actionable work queue, use `site/diagnostics/missing-source-diagnostics.json`. It separates exact IDs into `no_candidate`, `failed_probes`, `quarantined_or_cooldown`, `runner_or_geo_blocked`, `private_connector_required`, `missing_quality_metadata`, `insufficient_quality_mix`, and `complete` buckets.
 
 Each entry shows:
 
@@ -215,6 +215,8 @@ The build writes:
 - `diagnostics/official-player-scans.json`
 - `diagnostics/channel-changes.json`
 - `diagnostics/stream-stability.json`
+- `diagnostics/source-family-scoreboard.json`
+- `diagnostics/host-redundancy.json`
 - `diagnostics/priority-recovery.json`
 - `diagnostics/philly-recovery.json`
 - `diagnostics/stremio-preview.json`
@@ -287,7 +289,7 @@ Current intent:
 - **KYW / CBS3** — test OTA-style linear + MoveOnJoy candidates
 - **WHYY / PBS 12** — official PBS-hosted WHYY live feed
 - **WPHL / PHL17** — test OTA-style linear candidate
-- **WPSG / Philly 57** — public discovery continues; a local OTA tuner can fill the gap through the private connector overlay
+- **WPSG / Philly 57** — excluded from repeated public missing-source searches; a local OTA tuner can fill the gap through the private connector overlay
 - **NBC Sports Philadelphia Plus** — no free linear candidate approved; authorized provider playlists can fill the gap through the private connector overlay
 
 No private usernames, passwords, subscription tokens, or credentials from third-party playlists are committed to this public repository.

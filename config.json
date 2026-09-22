@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, expiring client verification, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.26"
+    "version": "0.3.27"
   },
   "sources": {
     "playlists": [
@@ -778,6 +778,7 @@
     "target_hd": 2,
     "target_sd": 1,
     "prefer_distinct_families": true,
+    "prefer_distinct_provider_hosts": true,
     "primary_family": "iptv-org",
     "fallback_families": [
       "free-tv",
@@ -848,6 +849,13 @@
   },
   "discovery": {
     "enabled": true,
+    "public_search_policy": {
+      "private_connector_only_ids": [
+        "WPSG.us",
+        "NBCSportsPhiladelphiaPlus.us"
+      ],
+      "note": "Skip public search for channels that require an OTA tuner or authorized provider connector."
+    },
     "official_player_scan": {
       "enabled": true,
       "max_documents": 8,
@@ -2845,6 +2853,12 @@
       6,
       24
     ]
+  },
+  "source_scoreboard": {
+    "enabled": true,
+    "history_size": 5,
+    "load_timeout_seconds": 8,
+    "remove_review_min_builds": 3
   },
   "stremio_client_verification": {
     "default_ttl_hours": 168
