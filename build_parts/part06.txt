@@ -47,7 +47,7 @@
         if (config.get("curation") or {}).get("enabled"):
             log(f"Curated playlist: kept {len(entries):,} streams and filtered {len(filtered_entries):,}")
 
-        entries, stream_health_results = probe_candidate_entries(
+        entries, stream_health_results, stream_stability_state = probe_candidate_entries(
             entries,
             config,
             enabled=not bool(fixtures),
@@ -162,6 +162,14 @@
                 "families": sorted({s.get("family") for s in c["streams"] if s.get("family")}),
                 "qualities": [s.get("quality") or "Unknown" for s in c["streams"]],
                 "health": [(s.get("health") or {}).get("status", "not-tested") for s in c["streams"]],
+                "stability": [
+                    {
+                        "classification": (s.get("stability") or {}).get("classification", "Unknown"),
+                        "passes": (s.get("stability") or {}).get("passes", 0),
+                        "samples": (s.get("stability") or {}).get("samples", 0),
+                    }
+                    for s in c["streams"]
+                ],
                 "epg_id": channel_epg.get(c["id"]),
             }
             channel_rows.append(row)
@@ -197,6 +205,11 @@
                     if (row.get("health") or {}).get("status") == status
                 )
                 for status in ("ok", "failed", "not-tested")
+            },
+            "stream_stability": {
+                "history_size": stream_stability_state.get("history_size", 5),
+                "prior_state_built_at": stream_stability_state.get("source_state_built_at"),
+                "current_counts": stream_stability_state.get("current_counts", {}),
             },
             "allowlist_ids_missing_entirely": sum(1 for r in allowlist_coverage if not r["found"]),
             "allowlist_ids_without_passing_stream": sum(1 for r in healthy_allowlist_coverage if not r["found"]),
