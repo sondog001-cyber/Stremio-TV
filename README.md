@@ -228,7 +228,9 @@ Optional playlist failures do not take down the whole build. The two primary IPT
 
 GitHub exact-ID discovery uses the authenticated Actions token, gives every
 rotating channel an exact-ID search before alias fallbacks, and paces code-search
-requests below GitHub's dedicated search-rate ceiling. A bounded `Retry-After`
+requests at twelve-second intervals below GitHub's dedicated search-rate ceiling.
+Three channels rotate through each build, completing roughly one full missing-ID
+pass in ten scheduled builds. A bounded `Retry-After`/reset-header
 retry is recorded in `github-candidate-scans.json`. Repository freshness comes
 from the core repository API instead of the incomplete code-search payload.
 
