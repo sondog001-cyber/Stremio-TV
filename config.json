@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with exact-channel identity matching, cross-build 5-run stream stability scoring, expanded public/premium candidate scanning, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.19"
+    "version": "0.3.20"
   },
   "sources": {
     "playlists": [
@@ -773,7 +773,57 @@
     "target_hd": 2,
     "target_sd": 1,
     "prefer_distinct_families": true,
-    "primary_family": "iptv-org"
+    "primary_family": "iptv-org",
+    "fallback_families": [
+      "free-tv",
+      "official-page",
+      "localbtv-relay",
+      "moveonjoy",
+      "freecasthub",
+      "iptv-org-issue",
+      "aria-tv",
+      "shovo",
+      "worldiptv",
+      "tvpass",
+      "insolence",
+      "research-seed"
+    ],
+    "channel_preferences": {
+      "WPVI.us": [
+        {"family": "iptv-org", "label": "vetted public feed"},
+        {"family": "localbtv-relay", "label": "OTA relay fallback"},
+        {"family": "moveonjoy", "label": "MoveOnJoy fallback"},
+        {"family": "official-page", "label": "official news fallback"}
+      ],
+      "WCAU.us": [
+        {"family": "iptv-org", "label": "vetted public feed"},
+        {"family": "localbtv-relay", "label": "OTA relay fallback"},
+        {"family": "moveonjoy", "label": "MoveOnJoy fallback"},
+        {"family": "official-page", "label": "official news fallback"}
+      ],
+      "KYW.us": [
+        {"family": "iptv-org", "label": "vetted public feed"},
+        {"family": "localbtv-relay", "label": "OTA relay fallback"},
+        {"family": "moveonjoy", "label": "MoveOnJoy fallback"},
+        {"family": "official-page", "label": "official news fallback"}
+      ],
+      "WHYY.us": [
+        {"family": "official-page", "content_kind": "full-linear", "label": "official WHYY linear feed"},
+        {"family": "iptv-org", "label": "vetted public fallback"},
+        {"family": "localbtv-relay", "label": "OTA relay fallback"},
+        {"family": "moveonjoy", "label": "MoveOnJoy fallback"}
+      ],
+      "WPHL.us": [
+        {"family": "iptv-org", "label": "vetted public feed"},
+        {"family": "localbtv-relay", "label": "OTA relay fallback"},
+        {"family": "moveonjoy", "label": "MoveOnJoy fallback"}
+      ],
+      "WPSG.us": [
+        {"family": "iptv-org", "label": "vetted public feed"},
+        {"family": "localbtv-relay", "label": "OTA relay fallback"},
+        {"family": "moveonjoy", "label": "MoveOnJoy fallback"}
+      ]
+    }
   },
   "manual_sources_file": "manual_sources.json",
   "stream_health": {
@@ -807,7 +857,9 @@
           "format": "m3u",
           "url": "https://raw.githubusercontent.com/kilirushi/iptv/master/us_localbtv.m3u",
           "priority": 4,
-          "philly": true
+          "philly": true,
+          "content_kind": "full-linear",
+          "content_note": "Experimental over-the-air style Philadelphia affiliate relay."
         },
         {
           "name": "MoveOnJoy Philadelphia Affiliates",
@@ -815,7 +867,9 @@
           "format": "m3u",
           "url": "https://raw.githubusercontent.com/judy-gotv/iptv/main/Moveonjoy.m3u",
           "priority": 5,
-          "philly": true
+          "philly": true,
+          "content_kind": "full-linear",
+          "content_note": "Unverified full-linear affiliate mirror."
         }
       ],
       "official_pages": [

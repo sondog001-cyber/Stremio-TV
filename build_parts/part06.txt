@@ -61,6 +61,7 @@
 
         channels = merge_channels(entries, config.get("favorites", []), max_streams, config)
         label_channel_streams(channels)
+        source_ordering_rows = build_source_ordering_diagnostics(channels, config)
         log(f"Merged passing streams into {len(channels):,} channels")
 
         build_stamp = iso_z(dt.datetime.now(UTC))
@@ -242,5 +243,10 @@
                 "official_pages": sum(1 for row in discovery_results if row.get("kind") == "philly-official-page"),
                 "targets": len(next((row.get("target_ids") or [] for row in discovery_results if row.get("kind") == "philly-local-summary"), [])),
                 "candidates": int(next((row.get("candidates_found", 0) for row in discovery_results if row.get("kind") == "philly-local-summary"), 0)),
+            },
+            "preferred_source_ordering": {
+                "channels": len(source_ordering_rows),
+                "channel_specific": sum(1 for row in source_ordering_rows if row.get("preference_mode") == "channel-specific"),
+                "primary_matches_first_preference": sum(1 for row in source_ordering_rows if row.get("primary_matches_first_preference")),
             },
             "source_results": source_results,

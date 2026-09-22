@@ -39,6 +39,8 @@ Working roadmap for the next development pass.
 
 - [x] Use stability score when choosing Primary vs Backup rather than relying only on a single successful build.
 
+- [x] Apply channel-specific preferred-source ordering after content identity and stability, with explicit Primary/Backup diagnostics.
+
 - [x] Clean up optional source URLs that return permanent 404s (removed stale Buddy/Tubi paths).
 
 ## Source hunting

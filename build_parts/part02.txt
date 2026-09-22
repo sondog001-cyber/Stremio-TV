@@ -309,7 +309,65 @@ def is_favorite(channel: dict[str, Any], favorite_patterns: list[str]) -> bool:
     return any(norm(pat) and norm(pat) in hay for pat in favorite_patterns)
 
 
-def stream_priority(stream: dict[str, Any]) -> tuple[int, int, int, int, int, int, int, int, str]:
+def channel_preference_rules(config: dict[str, Any], channel_id: str) -> list[dict[str, str]]:
+    """Return exact-channel source rules, falling back to the default family order."""
+    settings = config.get("stream_selection") or {}
+    configured = settings.get("channel_preferences") or {}
+    raw_rules: Any = None
+    for configured_id, value in configured.items():
+        if canonical_tvg_id(configured_id) == canonical_tvg_id(channel_id):
+            raw_rules = value
+            break
+
+    if raw_rules is None:
+        families: list[str] = []
+        primary = str(settings.get("primary_family") or "").strip()
+        if primary:
+            families.append(primary)
+        families.extend(str(item).strip() for item in settings.get("fallback_families", []) if str(item).strip())
+        raw_rules = families
+    elif isinstance(raw_rules, dict):
+        raw_rules = raw_rules.get("sources") or []
+
+    rules: list[dict[str, str]] = []
+    for raw in raw_rules or []:
+        if isinstance(raw, str):
+            rules.append({"family": raw, "label": raw})
+        elif isinstance(raw, dict):
+            rule = {str(key): str(value) for key, value in raw.items() if value is not None}
+            if rule:
+                rule.setdefault("label", rule.get("family") or rule.get("source_contains") or "preferred")
+                rules.append(rule)
+    return rules
+
+
+def _stream_preference_match(
+    stream: dict[str, Any],
+    preference_rules: list[dict[str, str]],
+) -> tuple[int, str]:
+    if not preference_rules:
+        return 0, "stability-default"
+    for index, rule in enumerate(preference_rules):
+        family = rule.get("family")
+        content_kind = rule.get("content_kind")
+        source_contains = rule.get("source_contains")
+        url_contains = rule.get("url_contains")
+        if family and str(stream.get("family") or "").lower() != family.lower():
+            continue
+        if content_kind and str(stream.get("content_kind") or "unknown").lower() != content_kind.lower():
+            continue
+        if source_contains and source_contains.lower() not in str(stream.get("source") or "").lower():
+            continue
+        if url_contains and url_contains.lower() not in str(stream.get("url") or "").lower():
+            continue
+        return index, rule.get("label") or family or "preferred"
+    return len(preference_rules) + 1, "unlisted-source"
+
+
+def stream_priority(
+    stream: dict[str, Any],
+    preference_rules: list[dict[str, str]] | None = None,
+) -> tuple[int, int, int, int, int, int, int, int, int, str]:
     """Lower tuple is better.
 
     Content identity remains the first guardrail, then cross-build stability
@@ -331,6 +389,7 @@ def stream_priority(stream: dict[str, Any]) -> tuple[int, int, int, int, int, in
     # More successful builds break ties inside the same class.
     stability_passes_rank = -int(stability.get("passes", 0))
     stability_samples_rank = -int(stability.get("samples", 0))
+    preference_rank, _preference_label = _stream_preference_match(stream, preference_rules or [])
 
     source_rank = int(stream.get("priority", 50))
     philly_rank = 0 if stream.get("philly") else 1
@@ -341,6 +400,7 @@ def stream_priority(stream: dict[str, Any]) -> tuple[int, int, int, int, int, in
         stability_rank,
         stability_passes_rank,
         stability_samples_rank,
+        preference_rank,
         source_rank,
         philly_rank,
         -quality_height(stream),
@@ -357,15 +417,25 @@ def _choose_prefer_new_family(candidates: list[dict[str, Any]], selected: list[d
     return candidates[0] if candidates else None
 
 
-def select_streams(streams: list[dict[str, Any]], max_streams: int, config: dict[str, Any]) -> list[dict[str, Any]]:
+def select_streams(
+    streams: list[dict[str, Any]],
+    max_streams: int,
+    config: dict[str, Any],
+    channel_id: str = "",
+) -> list[dict[str, Any]]:
     """Pick at most 3 links, targeting two HD and one SD fallback.
 
     Selection is based on the quality label declared by the upstream playlist;
     it does not decode/probe every HLS rendition during the static build.
     """
+    if not channel_id:
+        channel_id = next((str(stream.get("tvg_id") or "") for stream in streams if stream.get("tvg_id")), "")
+    preference_rules = channel_preference_rules(config, channel_id)
+    priority_key = lambda stream: stream_priority(stream, preference_rules)
+
     unique: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
-    for s in sorted(streams, key=stream_priority):
+    for s in sorted(streams, key=priority_key):
         url = s.get("url", "")
         if not url or url in seen_urls:
             continue
@@ -378,16 +448,22 @@ def select_streams(streams: list[dict[str, Any]], max_streams: int, config: dict
     prefer_families = bool(target.get("prefer_distinct_families", True))
 
     selected: list[dict[str, Any]] = []
+    if unique:
+        primary = dict(unique[0])
+        primary["slot"] = "HD 1" if is_hd_stream(primary) else "SD" if is_sd_stream(primary) else "Primary"
+        selected.append(primary)
+        unique[0] = primary
 
     def remaining(predicate):
         chosen = {id(x) for x in selected}
         return [s for s in unique if id(s) not in chosen and predicate(s)]
 
-    for hd_index in range(target_hd):
+    current_hd = sum(1 for stream in selected if is_hd_stream(stream))
+    for hd_index in range(current_hd, target_hd):
         candidates = remaining(is_hd_stream)
         if not candidates:
             break
-        pick = _choose_prefer_new_family(candidates, selected) if (prefer_families and hd_index > 0) else candidates[0]
+        pick = _choose_prefer_new_family(candidates, selected) if prefer_families else candidates[0]
         item = dict(pick)
         item["slot"] = f"HD {hd_index + 1}"
         selected.append(item)

@@ -1,4 +1,3 @@
-== 0.0):
                 return epg_id, "fuzzy-name", best_score
 
     return None, "unmatched", 0.0
@@ -1502,6 +1501,45 @@ def label_channel_streams(channels: list[dict[str, Any]]) -> None:
     for channel in channels:
         for index, stream in enumerate(channel.get("streams", [])):
             stream["display_role"] = "Primary" if index == 0 else f"Backup {index}"
+
+
+def build_source_ordering_diagnostics(
+    channels: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> list[dict[str, Any]]:
+    configured = (config.get("stream_selection") or {}).get("channel_preferences") or {}
+    configured_ids = {canonical_tvg_id(item) for item in configured}
+    rows: list[dict[str, Any]] = []
+    for channel in channels:
+        tvg_id = str(channel.get("tvg_id") or "")
+        rules = channel_preference_rules(config, tvg_id)
+        stream_rows = []
+        for stream in channel.get("streams", []):
+            stability = stream.get("stability") or {}
+            stream_rows.append({
+                "role": stream.get("display_role"),
+                "source": stream.get("source"),
+                "family": stream.get("family"),
+                "quality": stream.get("quality"),
+                "content_kind": stream.get("content_kind", "unknown"),
+                "stability": stability.get("classification", "Unknown"),
+                "stability_passes": stability.get("passes", 0),
+                "stability_samples": stability.get("samples", 0),
+                "preference_rank": stream.get("preference_rank"),
+                "preference_label": stream.get("preference_label"),
+                "url": stream.get("url"),
+            })
+        rows.append({
+            "name": channel.get("name"),
+            "tvg_id": tvg_id,
+            "preference_mode": "channel-specific" if canonical_tvg_id(tvg_id) in configured_ids else "default",
+            "preference_rules": rules,
+            "primary_matches_first_preference": bool(
+                stream_rows and stream_rows[0].get("preference_rank") == 1
+            ),
+            "streams": stream_rows,
+        })
+    return rows
 
 
 def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | None = None) -> dict[str, Any]:

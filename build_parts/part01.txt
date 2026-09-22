@@ -216,6 +216,10 @@ def parse_m3u(text: str, source: dict[str, Any]) -> list[dict[str, Any]]:
                 "priority": priority,
                 "philly": is_philly,
             }
+            if source.get("content_kind"):
+                pending["content_kind"] = source["content_kind"]
+            if source.get("content_note"):
+                pending["content_note"] = source["content_note"]
             pending_headers = {}
             continue
         if pending is None:
