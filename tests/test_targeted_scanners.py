@@ -51,7 +51,9 @@ class TargetedScannerTests(unittest.TestCase):
         urls = {source["url"] for source in sources}
         self.assertIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/smart.m3u", urls)
         self.assertIn("https://raw.githubusercontent.com/gogetta69/public-files/main/m3u_formatted.dat", urls)
-        self.assertEqual(sum(source["family"] == "github-playlist" for source in sources), 7)
+        self.assertIn("https://dearbulut.github.io/iptv/playlists/best.m3u", urls)
+        self.assertIn("https://raw.githubusercontent.com/wizakorhd/iptv/main/playlist.m3u", urls)
+        self.assertEqual(sum(source["family"] == "github-playlist" for source in sources), 9)
 
     def setUp(self):
         build._PREVIOUS_CHANNEL_STATE_CACHE = None
