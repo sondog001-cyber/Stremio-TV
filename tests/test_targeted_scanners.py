@@ -515,6 +515,47 @@ class TargetedScannerTests(unittest.TestCase):
         file_row = next(row for row in rows if row["kind"] == "github-candidate-search")["files"][0]
         self.assertEqual(file_row["credential_urls_rejected"], 3)
 
+    def test_public_signed_urls_can_be_enabled_without_allowing_credentials(self):
+        self.assertTrue(build._is_clean_github_media_url(
+            "https://cdn.example.test/live.m3u8?token=public-page-value&expires=9999999999",
+            allow_public_signed_urls=True,
+        ))
+        self.assertFalse(build._is_clean_github_media_url(
+            "https://provider.example/live/account-name/secret-value/1234.ts",
+            allow_public_signed_urls=True,
+        ))
+        self.assertFalse(build._is_clean_github_media_url(
+            "https://cdn.example.test/live.m3u8?username=account&password=secret",
+            allow_public_signed_urls=True,
+        ))
+
+    def test_targeted_scanner_accepts_public_signed_url_but_rejects_account_path(self):
+        config = minimal_config()
+        config["discovery"]["public_search_policy"] = {"allow_public_signed_urls": True}
+        config["discovery"]["targeted_source_families"] = {
+            "enabled": True,
+            "sources": [{
+                "name": "Public signed list", "family": "public-signed", "format": "m3u",
+                "url": "https://example.test/list.m3u",
+            }],
+        }
+        playlist = "\n".join([
+            "#EXTM3U",
+            '#EXTINF:-1 tvg-id="FXX.us",FXX signed',
+            "https://cdn.example.test/fxx.m3u8?token=published&expires=9999999999",
+            '#EXTINF:-1 tvg-id="FXX.us",FXX account path',
+            "https://provider.example/live/account-name/secret-value/1234.ts",
+        ])
+        with mock.patch.object(build, "_load_previous_channel_state", return_value={}), mock.patch.object(
+            build, "_fetch_public_text", return_value=(playlist, "https://example.test/list.m3u")
+        ):
+            entries, rows, _targets = build.discover_targeted_source_families(config, [])
+
+        self.assertEqual(len(entries), 1)
+        self.assertIn("token=published", entries[0]["url"])
+        family_row = next(row for row in rows if row.get("kind") == "targeted-source-family")
+        self.assertEqual(family_row["credential_urls_rejected"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

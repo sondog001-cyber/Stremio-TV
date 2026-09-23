@@ -56,6 +56,8 @@ A bounded priority-recovery pass rotates through cooldown candidates for channel
 
 A failed or untested candidate stays in diagnostics but is not exposed to Stremio.
 
+Publicly published signed/tokenized HLS URLs may be tested when they are discovered in an open page or playlist without authentication. They are re-read from their source index every build and never bypass the normal two-probe health gate. Account-shaped provider paths, embedded usernames/passwords, cookies, bearer headers and private subscription credentials remain rejected even when somebody has copied them into a public file.
+
 ## Stream selection: 2 HD + 1 SD
 
 For each curated channel the builder:
