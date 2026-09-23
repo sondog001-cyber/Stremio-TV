@@ -1162,6 +1162,24 @@
           "priority": 14,
           "philly": false,
           "content_note": "Small recently active public list containing an NBC Sports Philadelphia lead; every candidate must pass both probes."
+        },
+        {
+          "name": "DearBulut best public playlist",
+          "family": "github-playlist",
+          "format": "m3u",
+          "url": "https://dearbulut.github.io/iptv/playlists/best.m3u",
+          "priority": 15,
+          "philly": false,
+          "content_note": "User-submitted broad public index with strong exact-ID coverage; retained only for missing targets and subject to credential filtering, redirect deduplication, and two media probes."
+        },
+        {
+          "name": "WizakorHD public playlist",
+          "family": "github-playlist",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/wizakorhd/iptv/main/playlist.m3u",
+          "priority": 16,
+          "philly": false,
+          "content_note": "User-submitted public fallback index; lower priority because several provider hosts overlap DearBulut, with effective-host deduplication applied before backup selection."
         }
       ]
     },
