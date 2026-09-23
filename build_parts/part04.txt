@@ -526,9 +526,21 @@ def discover_targeted_source_families(
                 scanned = len(parsed)
             matched = _filter_entries_to_exact_targets(parsed, target_ids, config)
             accepted: list[dict[str, Any]] = []
+            rejected_credential_urls = 0
             per_target: dict[str, int] = defaultdict(int)
             source_cap = max(1, int(source.get("max_candidates_per_target", default_cap)))
+            allow_signed = bool(
+                ((config.get("discovery") or {}).get("public_search_policy") or {}).get(
+                    "allow_public_signed_urls", False
+                )
+            )
             for entry in matched:
+                if not _is_clean_github_media_url(
+                    str(entry.get("url") or ""),
+                    allow_public_signed_urls=allow_signed,
+                ):
+                    rejected_credential_urls += 1
+                    continue
                 target_marker = canonical_tvg_id(entry.get("tvg_id", ""))
                 if per_target[target_marker] >= source_cap:
                     continue
@@ -545,6 +557,7 @@ def discover_targeted_source_families(
             row["final_url"] = final_url
             row["records_scanned"] = scanned
             row["matches_before_cap"] = len(matched)
+            row["credential_urls_rejected"] = rejected_credential_urls
             row["candidates_found"] = len(accepted)
             row["matched_ids"] = sorted({entry.get("tvg_id") for entry in accepted if entry.get("tvg_id")})
         except Exception as exc:
@@ -1034,7 +1047,11 @@ def _github_rate_limit_wait(exc: urllib.error.HTTPError, maximum: float) -> floa
     return min(maximum, wait + 0.25)
 
 
-def _is_clean_github_media_url(url: str) -> bool:
+def _is_clean_github_media_url(
+    url: str,
+    *,
+    allow_public_signed_urls: bool = False,
+) -> bool:
     """Reject account-shaped provider links copied into public playlists.
 
     A public GitHub file is not evidence that embedded provider credentials are
@@ -1059,13 +1076,18 @@ def _is_clean_github_media_url(url: str) -> bool:
     # Static GitHub playlists frequently copy short-lived signed player URLs.
     # They may pass once, then expire and create exactly the churn this scanner
     # is meant to reduce, so do not promote them as durable discoveries.
-    sensitive_keys = {
+    credential_keys = {
         "user", "username", "pass", "password", "pwd",
+    }
+    signed_keys = {
         "token", "access_token", "auth", "authorization", "jwt",
         "signature", "sig", "expires", "expiry", "exp", "policy",
         "key-pair-id", "hdnts", "hdnea",
     }
-    if any(key.lower() in sensitive_keys for key, _ in urllib.parse.parse_qsl(parsed.query)):
+    query_keys = {key.lower() for key, _ in urllib.parse.parse_qsl(parsed.query)}
+    if query_keys & credential_keys:
+        return False
+    if query_keys & signed_keys and not allow_public_signed_urls:
         return False
     return True
 
@@ -1222,7 +1244,15 @@ def discover_github_candidates(
                 file_row["records_scanned"] = len(parsed)
                 accepted = 0
                 for entry in matched[: int(settings.get("max_candidates_per_file", 3))]:
-                    if not _is_clean_github_media_url(str(entry.get("url") or "")):
+                    allow_signed = bool(
+                        ((config.get("discovery") or {}).get("public_search_policy") or {}).get(
+                            "allow_public_signed_urls", False
+                        )
+                    )
+                    if not _is_clean_github_media_url(
+                        str(entry.get("url") or ""),
+                        allow_public_signed_urls=allow_signed,
+                    ):
                         file_row["credential_urls_rejected"] += 1
                         continue
                     marker = (canonical_tvg_id(target_id), str(entry.get("url") or ""))

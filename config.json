@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, expiring client verification, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.27"
+    "version": "0.3.28"
   },
   "sources": {
     "playlists": [
@@ -850,6 +850,7 @@
   "discovery": {
     "enabled": true,
     "public_search_policy": {
+      "allow_public_signed_urls": true,
       "private_connector_only_ids": [
         "WPSG.us",
         "NBCSportsPhiladelphiaPlus.us"
@@ -1125,6 +1126,42 @@
           "priority": 13,
           "philly": false,
           "content_note": "Credential-free public index discovered during exact-ID review; candidates still require both media probes."
+        },
+        {
+          "name": "Sickhead MoveOnJoy public gist",
+          "family": "github-gist",
+          "format": "m3u",
+          "url": "https://gist.githubusercontent.com/Sickhead01/26b84fbccf493a27b9b7dd448d5f9c48/raw/playlist.m3u",
+          "priority": 13,
+          "philly": false,
+          "content_note": "Recently active public gist covering multiple missing exact IDs; account-shaped URLs remain rejected."
+        },
+        {
+          "name": "SourPatchKid Plus public gist",
+          "family": "github-gist",
+          "format": "m3u",
+          "url": "https://gist.githubusercontent.com/oliverhatch/3ce5228502a510728c30be787543169d/raw/tv_channels_SourPatchKid_plus.m3u",
+          "priority": 14,
+          "philly": false,
+          "content_note": "Actively maintained public index with broad missing-channel coverage; exact IDs and two-probe validation still required."
+        },
+        {
+          "name": "AquilAurum NH public gist",
+          "family": "github-gist",
+          "format": "m3u",
+          "url": "https://gist.githubusercontent.com/aquilAAurum/7faaa23113162285092774c3ee2640d3/raw/NH.m3u",
+          "priority": 14,
+          "philly": false,
+          "content_note": "Fresh public playlist lead; exact missing IDs only and credential-shaped URLs remain rejected."
+        },
+        {
+          "name": "Rush2sk8 compact public gist",
+          "family": "github-gist",
+          "format": "m3u",
+          "url": "https://gist.githubusercontent.com/rush2sk8/9553546f1b20cca85c6bc674d3ebd02e/raw/show.m3u",
+          "priority": 14,
+          "philly": false,
+          "content_note": "Small recently active public list containing an NBC Sports Philadelphia lead; every candidate must pass both probes."
         }
       ]
     },
