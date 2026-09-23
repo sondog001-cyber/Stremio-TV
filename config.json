@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, expiring client verification, Now/Next EPG, and two-probe playback validation.",
-    "version": "0.3.28"
+    "version": "0.3.29"
   },
   "sources": {
     "playlists": [
@@ -108,14 +108,6 @@
         "required": false
       },
       {
-        "name": "DistroTV (Apsattv)",
-        "family": "apsattv-distro",
-        "url": "https://www.apsattv.com/distro.m3u",
-        "philly": false,
-        "priority": 14,
-        "required": false
-      },
-      {
         "name": "VIDAA TV (Apsattv)",
         "family": "apsattv-vidaa",
         "url": "https://www.apsattv.com/vidaa.m3u",
@@ -148,14 +140,6 @@
         "required": false
       },
       {
-        "name": "Xiaomi FAST (Apsattv)",
-        "family": "apsattv-xiaomi",
-        "url": "https://www.apsattv.com/xiaomi.m3u",
-        "philly": false,
-        "priority": 16,
-        "required": false
-      },
-      {
         "name": "Whale TV Plus US (Apsattv)",
         "family": "apsattv-whaletv",
         "url": "https://www.apsattv.com/whaletvplus_us.m3u",
@@ -180,35 +164,11 @@
         "required": false
       },
       {
-        "name": "MetaX FAST (Apsattv)",
-        "family": "apsattv-metax",
-        "url": "https://www.apsattv.com/metax.m3u",
-        "philly": false,
-        "priority": 17,
-        "required": false
-      },
-      {
         "name": "Galxy.TV FAST (Apsattv)",
         "family": "apsattv-galxy",
         "url": "https://www.apsattv.com/galxytv.m3u",
         "philly": false,
         "priority": 17,
-        "required": false
-      },
-      {
-        "name": "Orka TV FAST (Apsattv)",
-        "family": "apsattv-orka",
-        "url": "https://www.apsattv.com/orka.m3u",
-        "philly": false,
-        "priority": 17,
-        "required": false
-      },
-      {
-        "name": "RW1986 Free Legal FAST",
-        "family": "rw-fast",
-        "url": "https://github.com/RW1986/IPTV/raw/main/lineup.m3u8",
-        "philly": false,
-        "priority": 18,
         "required": false
       },
       {
@@ -239,15 +199,6 @@
         "fixture": "apsattv-whaletv.m3u"
       },
       {
-        "name": "Buddy FAST Pluto TV US",
-        "family": "buddy-fast",
-        "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/main/playlists/plutotv_us.m3u",
-        "philly": false,
-        "priority": 13,
-        "required": false,
-        "fixture": "buddy-pluto-us.m3u"
-      },
-      {
         "name": "Buddy FAST Roku",
         "family": "buddy-fast",
         "url": "https://raw.githubusercontent.com/BuddyChewChew/app-m3u-generator/main/playlists/roku_all.m3u",
@@ -273,15 +224,6 @@
         "priority": 13,
         "required": false,
         "fixture": "buddy-samsung-us.m3u"
-      },
-      {
-        "name": "jromero88 US Legacy",
-        "family": "jromero-legacy",
-        "url": "https://raw.githubusercontent.com/jromero88/iptv/master/channels/us.m3u",
-        "philly": false,
-        "priority": 30,
-        "required": false,
-        "fixture": "jromero-us.m3u"
       }
     ],
     "epg": "https://vcicio.github.io/US-EPG/merged_epg.xml.gz"
@@ -796,38 +738,105 @@
     ],
     "channel_preferences": {
       "WPVI.us": [
-        {"family": "iptv-org", "label": "vetted public feed"},
-        {"family": "localbtv-relay", "label": "OTA relay fallback"},
-        {"family": "moveonjoy", "label": "MoveOnJoy fallback"},
-        {"family": "official-page", "label": "official news fallback"}
+        {
+          "family": "iptv-org",
+          "label": "vetted public feed"
+        },
+        {
+          "family": "localbtv-relay",
+          "label": "OTA relay fallback"
+        },
+        {
+          "family": "moveonjoy",
+          "label": "MoveOnJoy fallback"
+        },
+        {
+          "family": "official-page",
+          "label": "official news fallback"
+        }
       ],
       "WCAU.us": [
-        {"family": "iptv-org", "label": "vetted public feed"},
-        {"family": "localbtv-relay", "label": "OTA relay fallback"},
-        {"family": "moveonjoy", "label": "MoveOnJoy fallback"},
-        {"family": "official-page", "label": "official news fallback"}
+        {
+          "family": "iptv-org",
+          "label": "vetted public feed"
+        },
+        {
+          "family": "localbtv-relay",
+          "label": "OTA relay fallback"
+        },
+        {
+          "family": "moveonjoy",
+          "label": "MoveOnJoy fallback"
+        },
+        {
+          "family": "official-page",
+          "label": "official news fallback"
+        }
       ],
       "KYW.us": [
-        {"family": "iptv-org", "label": "vetted public feed"},
-        {"family": "localbtv-relay", "label": "OTA relay fallback"},
-        {"family": "moveonjoy", "label": "MoveOnJoy fallback"},
-        {"family": "official-page", "label": "official news fallback"}
+        {
+          "family": "iptv-org",
+          "label": "vetted public feed"
+        },
+        {
+          "family": "localbtv-relay",
+          "label": "OTA relay fallback"
+        },
+        {
+          "family": "moveonjoy",
+          "label": "MoveOnJoy fallback"
+        },
+        {
+          "family": "official-page",
+          "label": "official news fallback"
+        }
       ],
       "WHYY.us": [
-        {"family": "official-page", "content_kind": "full-linear", "label": "official WHYY linear feed"},
-        {"family": "iptv-org", "label": "vetted public fallback"},
-        {"family": "localbtv-relay", "label": "OTA relay fallback"},
-        {"family": "moveonjoy", "label": "MoveOnJoy fallback"}
+        {
+          "family": "official-page",
+          "content_kind": "full-linear",
+          "label": "official WHYY linear feed"
+        },
+        {
+          "family": "iptv-org",
+          "label": "vetted public fallback"
+        },
+        {
+          "family": "localbtv-relay",
+          "label": "OTA relay fallback"
+        },
+        {
+          "family": "moveonjoy",
+          "label": "MoveOnJoy fallback"
+        }
       ],
       "WPHL.us": [
-        {"family": "iptv-org", "label": "vetted public feed"},
-        {"family": "localbtv-relay", "label": "OTA relay fallback"},
-        {"family": "moveonjoy", "label": "MoveOnJoy fallback"}
+        {
+          "family": "iptv-org",
+          "label": "vetted public feed"
+        },
+        {
+          "family": "localbtv-relay",
+          "label": "OTA relay fallback"
+        },
+        {
+          "family": "moveonjoy",
+          "label": "MoveOnJoy fallback"
+        }
       ],
       "WPSG.us": [
-        {"family": "iptv-org", "label": "vetted public feed"},
-        {"family": "localbtv-relay", "label": "OTA relay fallback"},
-        {"family": "moveonjoy", "label": "MoveOnJoy fallback"}
+        {
+          "family": "iptv-org",
+          "label": "vetted public feed"
+        },
+        {
+          "family": "localbtv-relay",
+          "label": "OTA relay fallback"
+        },
+        {
+          "family": "moveonjoy",
+          "label": "MoveOnJoy fallback"
+        }
       ]
     }
   },
@@ -1006,22 +1015,6 @@
           "philly": false
         },
         {
-          "name": "MoveOnJoy fork",
-          "family": "moveonjoy",
-          "format": "m3u",
-          "url": "https://raw.githubusercontent.com/judy-gotv/iptv/main/Moveonjoy.m3u",
-          "priority": 5,
-          "philly": false
-        },
-        {
-          "name": "TVPass-like fork",
-          "family": "tvpass",
-          "format": "m3u",
-          "url": "https://raw.githubusercontent.com/judy-gotv/iptv/main/TVPass.m3u",
-          "priority": 10,
-          "philly": false
-        },
-        {
           "name": "FMHY-adjacent FreeCastHub cache",
           "family": "freecasthub",
           "format": "m3u",
@@ -1038,15 +1031,6 @@
           "philly": false
         },
         {
-          "name": "CeresLabX fresh US TV",
-          "family": "ceres-us-tv",
-          "format": "m3u",
-          "url": "https://raw.githubusercontent.com/CeresLabX/us-tv/main/full_playlist.m3u",
-          "priority": 9,
-          "philly": false,
-          "content_note": "Fresh public US playlist scanned only for exact missing IDs; every retained URL still requires two successful media probes."
-        },
-        {
           "name": "OpenStream TVPass mirror",
           "family": "openstream",
           "format": "m3u",
@@ -1054,60 +1038,6 @@
           "priority": 11,
           "philly": false,
           "content_note": "Actively maintained fallback index; exact missing IDs only."
-        },
-        {
-          "name": "OpenStream MoveOnJoy mirror",
-          "family": "openstream",
-          "format": "m3u",
-          "url": "https://raw.githubusercontent.com/SajadTroy/openstream/main/streams/us_moveonjoy.m3u",
-          "priority": 11,
-          "philly": false,
-          "content_note": "Actively maintained fallback index; exact missing IDs only."
-        },
-        {
-          "name": "Judy GoTV smart playlist",
-          "family": "github-playlist",
-          "format": "m3u",
-          "url": "https://raw.githubusercontent.com/judy-gotv/iptv/main/smart.m3u",
-          "priority": 10,
-          "philly": false,
-          "content_note": "Fresh playlist discovered by exact-ID search before code-search was retired; exact missing IDs only."
-        },
-        {
-          "name": "Insolence MoveOnJoy mirror",
-          "family": "github-playlist",
-          "format": "m3u",
-          "url": "https://raw.githubusercontent.com/InsolenceWillow/insolencetvgo/main/moveonjoy.m3u",
-          "priority": 11,
-          "philly": false,
-          "content_note": "Direct public mirror discovered during source review; exact missing IDs only."
-        },
-        {
-          "name": "Yarr Stremio MoveOnJoy mirror",
-          "family": "github-playlist",
-          "format": "m3u",
-          "url": "https://raw.githubusercontent.com/spookyhost1/yarr-stremio/main/src/iptv/m3u-sources/us_moveonjoy.m3u",
-          "priority": 11,
-          "philly": false,
-          "content_note": "Direct public mirror discovered during source review; exact missing IDs only."
-        },
-        {
-          "name": "Kilirushi MoveOnJoy mirror",
-          "family": "github-playlist",
-          "format": "m3u",
-          "url": "https://raw.githubusercontent.com/kilirushi/iptv/master/us_moveonjoy.m3u",
-          "priority": 12,
-          "philly": false,
-          "content_note": "Direct public mirror discovered during source review; exact missing IDs only."
-        },
-        {
-          "name": "GoGetta public channel index",
-          "family": "github-playlist",
-          "format": "m3u",
-          "url": "https://raw.githubusercontent.com/gogetta69/TMDB-To-VOD-Playlist/main/channels/m3u_formatted.dat",
-          "priority": 12,
-          "philly": false,
-          "content_note": "Credential-free public index discovered across several missing exact IDs; candidates still require both media probes."
         },
         {
           "name": "GoGetta public-files mirror",
@@ -1119,24 +1049,6 @@
           "content_note": "Fresh mirror retained for source redundancy; exact missing IDs only."
         },
         {
-          "name": "Nachoo public channel index",
-          "family": "github-playlist",
-          "format": "m3u",
-          "url": "https://raw.githubusercontent.com/nachoo3/Iptv.m3u/master/test",
-          "priority": 13,
-          "philly": false,
-          "content_note": "Credential-free public index discovered during exact-ID review; candidates still require both media probes."
-        },
-        {
-          "name": "Sickhead MoveOnJoy public gist",
-          "family": "github-gist",
-          "format": "m3u",
-          "url": "https://gist.githubusercontent.com/Sickhead01/26b84fbccf493a27b9b7dd448d5f9c48/raw/playlist.m3u",
-          "priority": 13,
-          "philly": false,
-          "content_note": "Recently active public gist covering multiple missing exact IDs; account-shaped URLs remain rejected."
-        },
-        {
           "name": "SourPatchKid Plus public gist",
           "family": "github-gist",
           "format": "m3u",
@@ -1146,15 +1058,6 @@
           "content_note": "Actively maintained public index with broad missing-channel coverage; exact IDs and two-probe validation still required."
         },
         {
-          "name": "AquilAurum NH public gist",
-          "family": "github-gist",
-          "format": "m3u",
-          "url": "https://gist.githubusercontent.com/aquilAAurum/7faaa23113162285092774c3ee2640d3/raw/NH.m3u",
-          "priority": 14,
-          "philly": false,
-          "content_note": "Fresh public playlist lead; exact missing IDs only and credential-shaped URLs remain rejected."
-        },
-        {
           "name": "Rush2sk8 compact public gist",
           "family": "github-gist",
           "format": "m3u",
@@ -1162,6 +1065,24 @@
           "priority": 14,
           "philly": false,
           "content_note": "Small recently active public list containing an NBC Sports Philadelphia lead; every candidate must pass both probes."
+        },
+        {
+          "name": "DearBulut best public playlist",
+          "family": "github-playlist",
+          "format": "m3u",
+          "url": "https://dearbulut.github.io/iptv/playlists/best.m3u",
+          "priority": 15,
+          "philly": false,
+          "content_note": "User-submitted broad public index with strong exact-ID coverage; retained only for missing targets and subject to credential filtering, redirect deduplication, and two media probes."
+        },
+        {
+          "name": "WizakorHD public playlist",
+          "family": "github-playlist",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/wizakorhd/iptv/main/playlist.m3u",
+          "priority": 16,
+          "philly": false,
+          "content_note": "User-submitted public fallback index; lower priority because several provider hosts overlap DearBulut, with effective-host deduplication applied before backup selection."
         }
       ]
     },
