@@ -1,8 +1,8 @@
             skip += page_size
 
-        final_skip = ((len(detailed) + page_size - 1) // page_size) * page_size
-        if final_skip == 0:
-            final_skip = page_size
+        # EPG pagination follows the same exact-count rule as normal catalogs:
+        # after a short final page Stremio requests skip=<total channels>.
+        final_skip = len(detailed)
         write_json(catalog_dir / f"date={day}&skip={final_skip}.json", {"metasDetailed": []})
         write_json(catalog_dir / f"skip={final_skip}&date={day}.json", {"metasDetailed": []})
 
