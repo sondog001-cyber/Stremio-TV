@@ -241,6 +241,65 @@ def enforce_exact_identity(
     return kept, rejected
 
 
+def apply_stream_quarantine(
+    entries: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Remove streams with confirmed playback defects before health probing.
+
+    HTTP/media reachability cannot detect every decoder-visible defect.  This
+    list is intentionally exact and channel-scoped so one bad endpoint can be
+    suppressed without blacklisting an entire source family or host.
+    """
+    rules = (config.get("curation") or {}).get("stream_quarantine") or []
+    if not rules:
+        return entries, []
+
+    normalized_rules: list[dict[str, Any]] = []
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        url = str(rule.get("url") or "").strip()
+        if not url:
+            continue
+        tvg_id = str(rule.get("tvg_id") or "").strip()
+        normalized_rules.append({
+            **rule,
+            "url": url,
+            "tvg_id": tvg_id,
+            "_canonical_tvg_id": canonical_tvg_id(tvg_id) if tvg_id else "",
+        })
+
+    kept: list[dict[str, Any]] = []
+    quarantined: list[dict[str, Any]] = []
+    for entry in entries:
+        entry_url = str(entry.get("url") or "").strip()
+        entry_id = canonical_tvg_id(str(entry.get("tvg_id") or ""))
+        matched = next((
+            rule for rule in normalized_rules
+            if entry_url == rule["url"]
+            and (not rule["_canonical_tvg_id"] or entry_id == rule["_canonical_tvg_id"])
+        ), None)
+        if matched is None:
+            kept.append(entry)
+            continue
+
+        quarantined.append({
+            "name": entry.get("name"),
+            "tvg_id": entry.get("tvg_id"),
+            "source": entry.get("source"),
+            "family": entry.get("family"),
+            "url": entry_url,
+            "reason": matched.get("reason") or "Manual playback-defect quarantine",
+            "observed_at": matched.get("observed_at"),
+            "evidence": matched.get("evidence"),
+        })
+
+    if quarantined:
+        log(f"Playback-defect quarantine: removed {len(quarantined):,} candidate stream(s)")
+    return kept, quarantined
+
+
 def build_allowlist_coverage(entries: list[dict[str, Any]], config: dict[str, Any]) -> list[dict[str, Any]]:
     """Report whether each exact tvg-id allow-list entry exists in any source.
 

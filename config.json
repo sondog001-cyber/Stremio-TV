@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, expiring client verification, native Live TV EPG, and two-probe playback validation.",
-    "version": "0.4.2"
+    "version": "0.4.3"
   },
   "sources": {
     "playlists": [
@@ -714,7 +714,16 @@
           "PHL17+"
         ]
       }
-    }
+    },
+    "stream_quarantine": [
+      {
+        "tvg_id": "HGTV.us",
+        "url": "http://themyst.icu:826/SourPatchKid/nlnE4DVQUs/102183",
+        "reason": "User-confirmed playback defect: each ~3-second snippet repeats once before the stream advances.",
+        "observed_at": "2026-09-23",
+        "evidence": "Manual Stremio playback verification"
+      }
+    ]
   },
   "stream_selection": {
     "target_hd": 2,
@@ -2458,6 +2467,32 @@
         "content_kind": "full-linear",
         "content_note": "Historical public HLS candidate surfaced while exhausting FMHY-adjacent mirrors; only exposed if it still passes exact identity plus both current playback probes.",
         "research_url": "https://github.com/bitsbb01/iptvmu3/blob/master/USA.m3u"
+      },
+      {
+        "name": "HGTV East",
+        "tvg_id": "HGTV.us",
+        "url": "http://4.30.180.36:8420/hgtv/index.m3u8?token=test",
+        "source": "Streamtest recent HGTV East lead",
+        "source_type": "public-third-party",
+        "priority": 7,
+        "philly": false,
+        "group": "Home & Lifestyle",
+        "content_kind": "full-linear",
+        "content_note": "Fresh public HGTV East HLS lead observed in September 2026; exact-ID candidate and exposed only after builder health/continuity probes pass.",
+        "research_url": "https://streamtest.in/logs/page/12?filter=true&is_public=true"
+      },
+      {
+        "name": "HGTV East",
+        "tvg_id": "HGTV.us",
+        "url": "https://tvsen7.aynascope.net/hgtv/index.m3u8",
+        "source": "AynaScope public HGTV East lead",
+        "source_type": "public-third-party",
+        "priority": 8,
+        "philly": false,
+        "group": "Home & Lifestyle",
+        "content_kind": "full-linear",
+        "content_note": "Recent public HGTV East HLS lead with a valid H.264/AAC probe; exact-ID candidate and exposed only after builder health/continuity probes pass.",
+        "research_url": "https://streamtest.in/logs/https-tvsen7-aynascope-net-hgtv-index-m3u8"
       }
     ],
     "research_directories": [
