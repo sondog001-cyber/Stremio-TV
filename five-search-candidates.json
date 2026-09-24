@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "created_at": "2026-09-24",
+  "candidates": [
+    {
+      "tvg_id": "HGTV.us",
+      "name": "HGTV",
+      "url": "http://170.254.18.106/HGTV/index.m3u8",
+      "source": "IPTV-org issue #15899",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "HGTV.us",
+      "name": "HGTV",
+      "url": "http://livex.pop-app.live/s4n/poplive/ch323/playlist.m3u8",
+      "source": "IPTV-org issue #16050",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "HGTV.us",
+      "name": "HGTV",
+      "url": "http://gtv01.airlinktt.co/live/smil:HGTV.smil/playlist.m3u8",
+      "source": "GitHub exact channel playlist hit",
+      "evidence": "channel+playlist"
+    },
+    {
+      "tvg_id": "DiscoveryChannel.us",
+      "name": "Discovery Channel",
+      "url": "http://170.254.18.106/DISCOVERY/index.m3u8",
+      "source": "IPTV-org issue #15894",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "Reelz.us",
+      "name": "Reelz",
+      "url": "http://40.160.24.55/REELZ/index.m3u8",
+      "source": "IPTV-org issue #42986",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "Reelz.us",
+      "name": "Reelz",
+      "url": "http://206.212.244.63/144/index.m3u8",
+      "source": "IPTV-org issue #42680",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "Reelz.us",
+      "name": "Reelz",
+      "url": "http://23.237.104.106:8080/USA_REELZ/index.m3u8",
+      "source": "IPTV-org issue #39918",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "StarzEncoreSpanish.us",
+      "name": "Starz Encore Spanish East",
+      "url": "http://168.228.44.241:9998/play/a0e1/index.m3u8",
+      "source": "IPTV-org issue #48699",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "StarzEncoreSpanish.us",
+      "name": "Starz Encore Spanish East",
+      "url": "https://sra72yz.s.gy/STARZ_ENCORE_ESPANOL_EAST_HD",
+      "source": "IPTV-org issue #46884",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "TVLand.us",
+      "name": "TV Land East",
+      "url": "http://40.160.24.55/TV_LAND/index.m3u8",
+      "source": "IPTV-org issue #42978",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "TVLand.us",
+      "name": "TV Land East",
+      "url": "http://185.246.209.113/TVLandHD/index.m3u8",
+      "source": "IPTV-org issue #40419",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "ComedyCentral.us",
+      "name": "Comedy Central East",
+      "url": "http://4.30.180.36:8420/comedycentral/index.m3u8?token=test",
+      "source": "IPTV-org issue #51009",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "ComedyCentral.us",
+      "name": "Comedy Central East",
+      "url": "https://tvsen3.aynaott.com/5fUWDMxZ/index.m3u8",
+      "source": "IPTV-org issue #49032",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "NFLNetwork.us",
+      "name": "NFL Network",
+      "url": "https://messi.damitv.st/papi/ts/nflnetwork-usa/playlist.m3u8",
+      "source": "IPTV-org issue #47314",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "NFLNetwork.us",
+      "name": "NFL Network",
+      "url": "https://tvsen6.aynaott.com/nfl/index.m3u8",
+      "source": "IPTV-org issue #51852",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "NFLNetwork.us",
+      "name": "NFL Network",
+      "url": "http://23.237.104.106:8080/USA_NFL_NETWORK/index.m3u8",
+      "source": "GitHub exact channel playlist hit",
+      "evidence": "exact-id code"
+    },
+    {
+      "tvg_id": "NewsNation.us",
+      "name": "NewsNation",
+      "url": "http://40.160.24.58/NEWSNATION/index.m3u8",
+      "source": "IPTV-org issue #44170",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "NewsNation.us",
+      "name": "NewsNation",
+      "url": "http://206.212.244.63/712/index.m3u8",
+      "source": "IPTV-org issue #42666",
+      "evidence": "exact-id issue"
+    },
+    {
+      "tvg_id": "TravelChannel.us",
+      "name": "Travel Channel East",
+      "url": "http://74.48.44.156:1234/stream/asd/425/master.m3u8",
+      "source": "GitHub exact tvg-id playlist hit",
+      "evidence": "exact-id code"
+    }
+  ]
+}
