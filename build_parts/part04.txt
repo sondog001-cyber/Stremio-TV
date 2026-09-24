@@ -3007,6 +3007,18 @@ def stream_object(
     return obj
 
 
+RESOURCE_CACHE_HINTS = {
+    "cacheMaxAge": 300,
+    "staleRevalidate": 1800,
+    "staleError": 604800,
+}
+
+
+def cached_resource(payload: dict[str, Any]) -> dict[str, Any]:
+    """Attach Stremio addon-protocol cache hints to a resource response."""
+    return {**payload, **RESOURCE_CACHE_HINTS}
+
+
 def write_paginated_catalog(
     base_dir: Path,
     catalog_id: str,
@@ -3018,7 +3030,7 @@ def write_paginated_catalog(
     catalog_dir.mkdir(parents=True, exist_ok=True)
     previews = [channel_preview(c) for c in channels]
 
-    first = {"metas": previews[:page_size]}
+    first = cached_resource({"metas": previews[:page_size]})
     # Keep the plain endpoint for debugging/compatibility. For discover-only
     # catalogs the manifest requires genre=All, so Stremio's Board/Home will
     # not request this endpoint.
@@ -3032,7 +3044,7 @@ def write_paginated_catalog(
 
     skip = page_size
     while skip < len(previews):
-        page = {"metas": previews[skip : skip + page_size]}
+        page = cached_resource({"metas": previews[skip : skip + page_size]})
         write_json(catalog_dir / f"skip={skip}.json", page)
         if discover_only:
             write_json(catalog_dir / f"genre=All&skip={skip}.json", page)
@@ -3043,7 +3055,7 @@ def write_paginated_catalog(
     # The terminal empty page therefore belongs at the exact item count,
     # not at the next page-size boundary (for example 111, not 200).
     final_skip = len(previews)
-    empty = {"metas": []}
+    empty = cached_resource({"metas": []})
     write_json(catalog_dir / f"skip={final_skip}.json", empty)
     if discover_only:
         write_json(catalog_dir / f"genre=All&skip={final_skip}.json", empty)
@@ -3062,12 +3074,12 @@ def write_epg_pages(
     for day in sorted(dates):
         detailed = [channel_meta(c, schedules.get(c["id"], {}).get(day, [])) for c in channels]
         first = detailed[:page_size]
-        write_json(catalog_dir / f"date={day}.json", {"metasDetailed": first})
-        write_json(catalog_dir / f"date={day}&skip=0.json", {"metasDetailed": first})
-        write_json(catalog_dir / f"skip=0&date={day}.json", {"metasDetailed": first})
+        write_json(catalog_dir / f"date={day}.json", cached_resource({"metasDetailed": first}))
+        write_json(catalog_dir / f"date={day}&skip=0.json", cached_resource({"metasDetailed": first}))
+        write_json(catalog_dir / f"skip=0&date={day}.json", cached_resource({"metasDetailed": first}))
 
         skip = page_size
         while skip < len(detailed):
             page = detailed[skip : skip + page_size]
-            write_json(catalog_dir / f"date={day}&skip={skip}.json", {"metasDetailed": page})
-            write_json(catalog_dir / f"skip={skip}&date={day}.json", {"metasDetailed": page})
+            write_json(catalog_dir / f"date={day}&skip={skip}.json", cached_resource({"metasDetailed": page}))
+            write_json(catalog_dir / f"skip={skip}&date={day}.json", cached_resource({"metasDetailed": page}))

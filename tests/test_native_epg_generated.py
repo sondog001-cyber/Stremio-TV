@@ -40,7 +40,10 @@ class NativeEpgGeneratedOutputTests(unittest.TestCase):
 
             self.assertEqual(len(first["metas"]), 100)
             self.assertEqual(len(second["metas"]), 11)
-            self.assertEqual(terminal, {"metas": []})
+            self.assertEqual(terminal["metas"], [])
+            self.assertEqual(terminal["cacheMaxAge"], 300)
+            self.assertEqual(terminal["staleRevalidate"], 1800)
+            self.assertEqual(terminal["staleError"], 604800)
             self.assertFalse((output / "catalog" / "tv" / "channels" / "skip=200.json").exists())
 
     def test_generated_epg_pages_include_videos_midnight_overlap_and_exact_terminal_skip(self):
@@ -79,7 +82,10 @@ class NativeEpgGeneratedOutputTests(unittest.TestCase):
 
             self.assertEqual(len(day_one["metasDetailed"]), 100)
             self.assertEqual(len(second_page["metasDetailed"]), 11)
-            self.assertEqual(terminal, {"metasDetailed": []})
+            self.assertEqual(terminal["metasDetailed"], [])
+            self.assertEqual(terminal["cacheMaxAge"], 300)
+            self.assertEqual(terminal["staleRevalidate"], 1800)
+            self.assertEqual(terminal["staleError"], 604800)
             self.assertFalse((catalog_dir / "date=2026-09-23&skip=200.json").exists())
 
             first_day_channel = day_one["metasDetailed"][0]
