@@ -152,6 +152,13 @@
             f"EPG matched {len(matches):,}/{len(channels):,} channels; "
             f"unavailable={len(epg_unavailable):,}, unmatched={len(unmatched):,}"
         )
+        logo_normalization = normalize_channel_logos(
+            output,
+            channels,
+            public_base,
+            config,
+            enabled=not bool(fixtures),
+        )
         schedules, dates = build_program_index(epg_path, epg_to_channels)
 
         # Main EPG catalog + normal channel list.
@@ -296,6 +303,7 @@
                 for status in ("ok", "failed", "cooldown", "not-tested")
             },
             "quality_measurements": quality_measurements["summary"],
+            "channel_logos": logo_normalization.get("summary", {}),
             "missing_source_buckets": missing_source_diagnostics["summary"],
             "host_redundancy": host_redundancy["summary"],
             "source_family_scoreboard": source_family_scoreboard["summary"],
