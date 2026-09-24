@@ -61,8 +61,10 @@ class BuildIdentityTests(unittest.TestCase):
         }
         meta = build.channel_meta(channel)
         self.assertEqual(meta["stremioTvBuild"]["build_id"], info["build_id"])
-        self.assertIn(info["build_id"], meta["description"])
-        self.assertIn(info["built_at"], meta["description"])
+        self.assertNotIn(info["build_id"], meta["description"])
+        self.assertNotIn(info["built_at"], meta["description"])
+        self.assertEqual(meta["stremioTvDiagnostics"]["source_count"], 1)
+        self.assertEqual(meta["stremioTvDiagnostics"]["epg_status"], "unmatched")
 
         stream = {
             "url": "https://example.test/live.m3u8",
