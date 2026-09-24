@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, expiring client verification, native Live TV EPG, and two-probe playback validation.",
-    "version": "0.4.4"
+    "version": "0.4.5"
   },
   "sources": {
     "playlists": [
@@ -462,7 +462,11 @@
       "jromero-legacy",
       "ceres-us-tv",
       "openstream",
-      "github-playlist"
+      "github-playlist",
+      "daddylive",
+      "tv247",
+      "usair",
+      "thetvapp"
     ],
     "canonical_id_aliases": {
       "MSNBC.us": "MSNOW.us",
@@ -754,7 +758,11 @@
       "worldiptv",
       "tvpass",
       "insolence",
-      "research-seed"
+      "research-seed",
+      "daddylive",
+      "tv247",
+      "usair",
+      "thetvapp"
     ],
     "channel_preferences": {
       "WPVI.us": [
@@ -1112,6 +1120,42 @@
           "priority": 17,
           "philly": false,
           "content_note": "Public multi-provider US index used only for currently missing exact IDs; candidates still require credential filtering plus both playback/continuity probes."
+        },
+        {
+          "name": "DaddyLive current public US list",
+          "family": "daddylive",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/nightah/daddylive/main/daddylive-channels-kodi.m3u8",
+          "priority": 12,
+          "philly": false,
+          "content_note": "Fresh public exact-ID list updated frequently; Kodi-style Origin/Referer/User-Agent headers are parsed and each candidate must pass both playback/continuity probes."
+        },
+        {
+          "name": "arquerido TV247 current US mirrors",
+          "family": "tv247",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/arquerido/mych/main/TV247.m3u8",
+          "priority": 12,
+          "philly": false,
+          "content_note": "Fresh exact-ID TV247 mirror list; dynamic HLS endpoints are rediscovered every build and never trusted without validation."
+        },
+        {
+          "name": "arquerido USAIR public redirect feeds",
+          "family": "usair",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/arquerido/mych/main/USAIR.m3u",
+          "priority": 12,
+          "philly": false,
+          "content_note": "Exact-ID public HD/SD redirect feed index; redirects are resolved during health checks and must pass continuity validation."
+        },
+        {
+          "name": "TheTVApp direct public HLS list",
+          "family": "thetvapp",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/aphrodite747/iptv-scraper/main/thetvapp.m3u8",
+          "priority": 13,
+          "philly": false,
+          "content_note": "Public direct HLS list with exact US feed IDs and playback Origin/Referer headers; no login credentials accepted."
         }
       ]
     },
