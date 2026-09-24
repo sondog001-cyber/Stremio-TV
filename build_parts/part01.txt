@@ -255,6 +255,9 @@ def parse_m3u(text: str, source: dict[str, Any]) -> list[dict[str, Any]]:
         if line.startswith("#EXTVLCOPT:http-referrer=") or line.startswith("#EXTVLCOPT:http-referer="):
             pending_headers["Referer"] = line.split("=", 1)[1].strip()
             continue
+        if line.startswith("#EXTVLCOPT:http-origin="):
+            pending_headers["Origin"] = line.split("=", 1)[1].strip()
+            continue
         if line.startswith("#EXTHTTP:"):
             try:
                 obj = json.loads(line.split(":", 1)[1].strip())
@@ -269,10 +272,25 @@ def parse_m3u(text: str, source: dict[str, Any]) -> list[dict[str, Any]]:
         if line.startswith("#"):
             continue
 
-        if re.match(r"^(?:https?|rtmp|rtmps|ftp)://", line, re.I):
+        candidate_url = line
+        inline_headers: dict[str, str] = {}
+        if "|" in candidate_url and re.match(r"^https?://", candidate_url, re.I):
+            candidate_url, header_blob = candidate_url.split("|", 1)
+            for key, value in urllib.parse.parse_qsl(header_blob, keep_blank_values=True):
+                normalized_key = key.strip().lower()
+                if normalized_key == "user-agent":
+                    inline_headers["User-Agent"] = value
+                elif normalized_key in {"referer", "referrer"}:
+                    inline_headers["Referer"] = value
+                elif normalized_key == "origin":
+                    inline_headers["Origin"] = value
+
+        if re.match(r"^(?:https?|rtmp|rtmps|ftp)://", candidate_url, re.I):
             item = dict(pending)
-            item["url"] = line
-            item["headers"] = dict(pending_headers)
+            item["url"] = candidate_url
+            headers = dict(pending_headers)
+            headers.update(inline_headers)
+            item["headers"] = headers
             entries.append(item)
         pending = None
         pending_headers = {}
