@@ -10,6 +10,7 @@
         write_json(output / "diagnostics" / "channels.json", channel_rows)
         write_json(output / "diagnostics" / "needs-sources.json", needs_sources)
         write_json(output / "diagnostics" / "quality-measurements.json", quality_measurements)
+        write_json(output / "diagnostics" / "logo-normalization.json", logo_normalization)
         write_json(output / "diagnostics" / "missing-source-diagnostics.json", missing_source_diagnostics)
         write_json(output / "diagnostics" / "philly-recovery.json", philly_recovery)
         write_json(output / "diagnostics" / "stremio-preview.json", {
