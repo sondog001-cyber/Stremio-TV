@@ -1,0 +1,45 @@
+name: Mega Hunt 50 Stream Families
+
+on:
+  push:
+    branches: [mega-hunt-50-families]
+    paths:
+      - "mega_hunt.py"
+      - "mega-hunt-sources.json"
+      - "build.py"
+      - "assemble_build.py"
+      - "build_parts/**"
+      - "config.json"
+      - "aliases.json"
+      - "requirements.txt"
+      - ".github/workflows/mega-hunt.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Assemble builder
+        run: python assemble_build.py
+      - name: Compile
+        run: python -m py_compile build.py mega_hunt.py
+      - name: Run 50-family hunt
+        run: python mega_hunt.py
+      - name: Upload mega-hunt diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: mega-hunt-50-results
+          path: mega-hunt-output
+          retention-days: 14
