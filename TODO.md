@@ -11,7 +11,7 @@ Working roadmap for the next development pass.
   - Avoid duplicated text such as `IPTV-org` appearing in both the title and description.
   - Keep names readable on desktop/TV layouts without relying on Stremio widening the panel.
 
-- [ ] **Normalize every channel icon/poster**
+- [x] **Normalize every channel icon/poster**
   - Generate a consistent square local asset for each channel during the build.
   - Center the original network logo on a fixed-size canvas with consistent padding.
   - Preserve aspect ratio; never stretch or crop the logo.
