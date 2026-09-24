@@ -1,0 +1,35 @@
+name: Validate Stremio TV PR
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "build.py"
+      - "assemble_build.py"
+      - "build_parts/**"
+      - "tests/**"
+      - "config.json"
+      - "aliases.json"
+      - "manual_sources.json"
+      - "research-sources.json"
+      - ".github/workflows/pr-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Assemble builder
+        run: python assemble_build.py
+      - name: Compile builder
+        run: python -m py_compile build.py
+      - name: Run builder tests
+        run: python -m unittest discover -s tests -v

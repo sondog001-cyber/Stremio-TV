@@ -5,7 +5,7 @@ A self-updating, Philadelphia-focused live-TV addon for Stremio. It combines a c
 ## Features
 
 - Philadelphia broadcast affiliates and selected national channels
-- Now/Next programme information from XMLTV
+- Native Stremio Live TV EPG generated from XMLTV, including scheduled programme metadata
 - Favorites and category catalogs
 - Up to three playback choices per channel
 - Measured HLS resolution rather than source-label quality alone

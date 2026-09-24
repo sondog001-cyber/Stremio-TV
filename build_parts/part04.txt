@@ -2942,6 +2942,9 @@ def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | Non
     if channel.get("logo"):
         meta["poster"] = channel["logo"]
         meta["background"] = channel["logo"]
+    if channel.get("epg_matched"):
+        meta["behaviorHints"]["hasScheduledVideos"] = True
+        meta["videos"] = programmes
     if build_id:
         meta["stremioTvBuild"] = {
             "build_id": build_id,
@@ -3036,10 +3039,10 @@ def write_paginated_catalog(
             write_json(catalog_dir / f"skip={skip}&genre=All.json", page)
         skip += page_size
 
-    # Stremio continues until it receives an empty page.
-    final_skip = ((len(previews) + page_size - 1) // page_size) * page_size
-    if final_skip == 0:
-        final_skip = page_size
+    # Stremio advances skip by the number of items actually received.
+    # The terminal empty page therefore belongs at the exact item count,
+    # not at the next page-size boundary (for example 111, not 200).
+    final_skip = len(previews)
     empty = {"metas": []}
     write_json(catalog_dir / f"skip={final_skip}.json", empty)
     if discover_only:
