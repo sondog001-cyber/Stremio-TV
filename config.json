@@ -622,6 +622,10 @@
         "FOX 29",
         "FOX29",
         "WTXF"
+      ],
+      "HGTV.us": [
+        "HGTV",
+        "HGTV East"
       ]
     },
     "identity_rules": {
@@ -1099,6 +1103,15 @@
           "priority": 16,
           "philly": false,
           "content_note": "User-submitted public fallback index; lower priority because several provider hosts overlap DearBulut, with effective-host deduplication applied before backup selection."
+        },
+        {
+          "name": "IvanMinier public US multi-source index",
+          "family": "github-playlist",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/ivanminier/Playlists/main/playlist.m3u",
+          "priority": 17,
+          "philly": false,
+          "content_note": "Public multi-provider US index used only for currently missing exact IDs; candidates still require credential filtering plus both playback/continuity probes."
         }
       ]
     },
