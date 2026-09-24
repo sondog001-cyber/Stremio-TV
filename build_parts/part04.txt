@@ -1487,12 +1487,22 @@ def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) ->
                         "latency_ms": round((time.monotonic() - started) * 1000),
                     }
 
+            segments = [
+                line.strip()
+                for line in media_text.splitlines()
+                if line.strip() and not line.startswith("#")
+            ]
+            media_sequence_match = re.search(
+                r"^#EXT-X-MEDIA-SEQUENCE:\s*(\d+)\s*$",
+                media_text,
+                re.I | re.M,
+            )
+            media_sequence = int(media_sequence_match.group(1)) if media_sequence_match else None
+            hls_is_live = "#EXT-X-ENDLIST" not in media_text.upper()
+            tail_material = "\n".join(segments[-3:]).encode("utf-8") if segments else b""
+            hls_tail_sha256 = hashlib.sha256(tail_material).hexdigest() if tail_material else None
+
             if verify_segment:
-                segments = [
-                    line.strip()
-                    for line in media_text.splitlines()
-                    if line.strip() and not line.startswith("#")
-                ]
                 # Reusing the same URI with EXT-X-BYTERANGE is valid HLS, so
                 # only apply URI-repeat detection to ordinary segment lists.
                 repeated = None
@@ -1524,6 +1534,10 @@ def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) ->
                 "http_status": status,
                 "final_url": media_url,
                 "latency_ms": round((time.monotonic() - started) * 1000),
+                "hls_is_live": hls_is_live,
+                "hls_media_sequence": media_sequence,
+                "hls_tail_sha256": hls_tail_sha256,
+                "hls_segment_count": len(segments),
                 **measurement,
             }
 
@@ -2284,6 +2298,34 @@ def probe_candidate_entries(
                 continue
             second_health = second_results.get(key, {"status": "failed", "detail": "No second probe result"})
             if second_health.get("status") == "ok":
+                first_tail = first_health.get("hls_tail_sha256")
+                second_tail = second_health.get("hls_tail_sha256")
+                first_sequence = first_health.get("hls_media_sequence")
+                second_sequence = second_health.get("hls_media_sequence")
+                stalled_live_hls = bool(
+                    first_health.get("hls_is_live")
+                    and second_health.get("hls_is_live")
+                    and first_tail
+                    and second_tail
+                    and first_tail == second_tail
+                    and (
+                        first_sequence is None
+                        or second_sequence is None
+                        or first_sequence == second_sequence
+                    )
+                )
+                if stalled_live_hls:
+                    results[key] = {
+                        **second_health,
+                        "status": "failed",
+                        "detail": "Live HLS window did not advance between probes",
+                        "continuity_failure": "stalled-live-hls-window",
+                        "probe_1": first_health,
+                        "probe_2": second_health,
+                        "stable": False,
+                    }
+                    continue
+
                 first_sample = first_health.get("media_sample_sha256")
                 second_sample = second_health.get("media_sample_sha256")
                 frozen_direct_media = bool(
