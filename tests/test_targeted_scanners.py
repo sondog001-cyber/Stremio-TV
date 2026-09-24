@@ -53,9 +53,35 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertIn("https://dearbulut.github.io/iptv/playlists/best.m3u", urls)
         self.assertIn("https://raw.githubusercontent.com/wizakorhd/iptv/main/playlist.m3u", urls)
         self.assertIn("https://raw.githubusercontent.com/ivanminier/Playlists/main/playlist.m3u", urls)
+        self.assertIn("https://raw.githubusercontent.com/nightah/daddylive/main/daddylive-channels-kodi.m3u8", urls)
+        self.assertIn("https://raw.githubusercontent.com/arquerido/mych/main/TV247.m3u8", urls)
+        self.assertIn("https://raw.githubusercontent.com/arquerido/mych/main/USAIR.m3u", urls)
+        self.assertIn("https://raw.githubusercontent.com/aphrodite747/iptv-scraper/main/thetvapp.m3u8", urls)
         self.assertNotIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/smart.m3u", urls)
         self.assertNotIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/TVPass.m3u", urls)
         self.assertEqual(sum(source["family"] == "github-playlist" for source in sources), 4)
+
+    def test_m3u_parser_preserves_origin_referrer_and_kodi_inline_headers(self):
+        text = "\n".join(
+            [
+                '#EXTINF:-1 tvg-id="HGTV.USA.-.Eastern.Feed.us",HGTV',
+                '#EXTVLCOPT:http-origin=https://jxoxkplay.xyz',
+                '#EXTVLCOPT:http-referrer=https://jxoxkplay.xyz/',
+                '#EXTVLCOPT:http-user-agent=Mozilla/5.0 Test',
+                'https://example.test/hgtv.m3u8|Origin=https%3A%2F%2Foverride.example&Referer=https%3A%2F%2Foverride.example%2F&User-Agent=Kodi%2F21',
+            ]
+        )
+
+        rows = build.parse_m3u(
+            text,
+            {"name": "Header test", "family": "daddylive", "priority": 1},
+        )
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["url"], "https://example.test/hgtv.m3u8")
+        self.assertEqual(rows[0]["headers"]["Origin"], "https://override.example")
+        self.assertEqual(rows[0]["headers"]["Referer"], "https://override.example/")
+        self.assertEqual(rows[0]["headers"]["User-Agent"], "Kodi/21")
 
     def setUp(self):
         build._PREVIOUS_CHANNEL_STATE_CACHE = None
