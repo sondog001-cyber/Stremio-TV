@@ -1,0 +1,928 @@
+{
+  "version": 1,
+  "created_at": "2026-09-24",
+  "purpose": "One-time mega hunt across 50 distinct public GitHub source families for missing/weak curated channels.",
+  "targets": [
+    "WPVI.us",
+    "WCAU.us",
+    "KYW.us",
+    "WPHL.us",
+    "WPSG.us",
+    "NewsNation.us",
+    "NFLNetwork.us",
+    "NBCSportsPhiladelphiaPlus.us",
+    "ComedyCentral.us",
+    "TVLand.us",
+    "OWN.us",
+    "Pop.us",
+    "HGTV.us",
+    "MagnoliaNetwork.us",
+    "TravelChannel.us",
+    "DiscoveryChannel.us",
+    "StarzEncoreSpanish.us",
+    "Reelz.us"
+  ],
+  "sources": [
+    {
+      "name": "Mega Hunt 01 — gogetta69/TMDB-To-VOD-Playlist",
+      "family": "mega-gogetta69-tmdb-to-vod-playlist",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/gogetta69/TMDB-To-VOD-Playlist/c2e6065cf45418e302405e827192db3a8ba984c1/channels/m3u_formatted.dat",
+      "repository": "gogetta69/TMDB-To-VOD-Playlist",
+      "path": "channels/m3u_formatted.dat",
+      "commit": "c2e6065cf45418e302405e827192db3a8ba984c1",
+      "target_evidence": [
+        "HGTV.us",
+        "DiscoveryChannel.us",
+        "ComedyCentral.us",
+        "MagnoliaNetwork.us",
+        "TravelChannel.us",
+        "NFLNetwork.us",
+        "NewsNation.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 40,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 02 — BuddyChewChew/My-Streams",
+      "family": "mega-buddychewchew-my-streams",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/BuddyChewChew/My-Streams/535e9028fd4e161623d30b494d01ed79870bd87a/Backup/dami-tv.m3u",
+      "repository": "BuddyChewChew/My-Streams",
+      "path": "Backup/dami-tv.m3u",
+      "commit": "535e9028fd4e161623d30b494d01ed79870bd87a",
+      "target_evidence": [
+        "HGTV.us",
+        "MagnoliaNetwork.us",
+        "TravelChannel.us",
+        "NFLNetwork.us",
+        "Reelz.us",
+        "WPVI.us",
+        "WCAU.us"
+      ],
+      "priority": 41,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 03 — iptvmate/iptvchannels",
+      "family": "mega-iptvmate-iptvchannels",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/iptvmate/iptvchannels/d3500398e14e288d2383422ed209772744917c43/iptvmate.net_22.m3u8",
+      "repository": "iptvmate/iptvchannels",
+      "path": "iptvmate.net_22.m3u8",
+      "commit": "d3500398e14e288d2383422ed209772744917c43",
+      "target_evidence": [
+        "HGTV.us",
+        "TVLand.us",
+        "TravelChannel.us",
+        "NFLNetwork.us",
+        "Reelz.us",
+        "Pop.us",
+        "WCAU.us"
+      ],
+      "priority": 42,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 04 — kilirushi/iptv",
+      "family": "mega-kilirushi-iptv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/kilirushi/iptv/f8765b54e7b66080201e07d168418e302c672c7d/us_localbtv.m3u",
+      "repository": "kilirushi/iptv",
+      "path": "us_localbtv.m3u",
+      "commit": "f8765b54e7b66080201e07d168418e302c672c7d",
+      "target_evidence": [
+        "TVLand.us",
+        "NFLNetwork.us",
+        "NewsNation.us",
+        "Reelz.us",
+        "WPVI.us",
+        "WCAU.us"
+      ],
+      "priority": 43,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 05 — olivergiangvu/IPTV",
+      "family": "mega-olivergiangvu-iptv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/olivergiangvu/IPTV/a32c8674c89b4d4f63c4326e5d6c98f571bc368f/updated_usa_tv.m3u8",
+      "repository": "olivergiangvu/IPTV",
+      "path": "updated_usa_tv.m3u8",
+      "commit": "a32c8674c89b4d4f63c4326e5d6c98f571bc368f",
+      "target_evidence": [
+        "TVLand.us",
+        "MagnoliaNetwork.us",
+        "NFLNetwork.us",
+        "NewsNation.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 44,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 06 — PyC7aM/IPTV",
+      "family": "mega-pyc7am-iptv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/PyC7aM/IPTV/a6ad78d4d8303165e76d4c289b15a1f49c215640/USTV.m3u8",
+      "repository": "PyC7aM/IPTV",
+      "path": "USTV.m3u8",
+      "commit": "a6ad78d4d8303165e76d4c289b15a1f49c215640",
+      "target_evidence": [
+        "TVLand.us",
+        "MagnoliaNetwork.us",
+        "TravelChannel.us",
+        "NFLNetwork.us",
+        "NewsNation.us",
+        "Reelz.us"
+      ],
+      "priority": 45,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 07 — Checkershome/USALocalM3U",
+      "family": "mega-checkershome-usalocalm3u",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/Checkershome/USALocalM3U/b881c77dabe293dbb7d44f9f5057a7ba408ef037/hilaytv.M3U8",
+      "repository": "Checkershome/USALocalM3U",
+      "path": "hilaytv.M3U8",
+      "commit": "b881c77dabe293dbb7d44f9f5057a7ba408ef037",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "TravelChannel.us",
+        "NewsNation.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 46,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 08 — Eddison242/roku-iptv-browser",
+      "family": "mega-eddison242-roku-iptv-browser",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/Eddison242/roku-iptv-browser/8655fa3c170372436f2c6b2f8b2e4a9b13433d91/assets/playlists/base.m3u8",
+      "repository": "Eddison242/roku-iptv-browser",
+      "path": "assets/playlists/base.m3u8",
+      "commit": "8655fa3c170372436f2c6b2f8b2e4a9b13433d91",
+      "target_evidence": [
+        "TVLand.us",
+        "NFLNetwork.us",
+        "NewsNation.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 47,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 09 — Josh9456/IPTV-m3u",
+      "family": "mega-josh9456-iptv-m3u",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/Josh9456/IPTV-m3u/20b61192470c9d0043d3816e17b3775826e046d4/all_channels/tivimate_playlist.m3u8",
+      "repository": "Josh9456/IPTV-m3u",
+      "path": "all_channels/tivimate_playlist.m3u8",
+      "commit": "20b61192470c9d0043d3816e17b3775826e046d4",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "NFLNetwork.us",
+        "NewsNation.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 48,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 10 — MarkMCFC/TMDB-To-VOD-Playlist-main",
+      "family": "mega-markmcfc-tmdb-to-vod-playlist-main",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/MarkMCFC/TMDB-To-VOD-Playlist-main/4fdc533107177dd4b6009a836cfd47ff031e8e63/channels/m3u_formatted.dat",
+      "repository": "MarkMCFC/TMDB-To-VOD-Playlist-main",
+      "path": "channels/m3u_formatted.dat",
+      "commit": "4fdc533107177dd4b6009a836cfd47ff031e8e63",
+      "target_evidence": [
+        "HGTV.us",
+        "MagnoliaNetwork.us",
+        "NFLNetwork.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 49,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 11 — yIsus-mEx/AF1CIONADOS",
+      "family": "mega-yisus-mex-af1cionados",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/yIsus-mEx/AF1CIONADOS/85e6cd8864da2804519dba09deafbf2aee8f2018/zDADDY.LIVE.m3u8",
+      "repository": "yIsus-mEx/AF1CIONADOS",
+      "path": "zDADDY.LIVE.m3u8",
+      "commit": "85e6cd8864da2804519dba09deafbf2aee8f2018",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "NFLNetwork.us",
+        "NewsNation.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 50,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 12 — yuanwangokk-1/TV-BOX",
+      "family": "mega-yuanwangokk-1-tv-box",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/yuanwangokk-1/TV-BOX/a8597c8acfb88e015d47cd970f9855f702560602/%E7%BA%AF%E7%A6%8F%E5%88%A9/live/2.txt",
+      "repository": "yuanwangokk-1/TV-BOX",
+      "path": "纯福利/live/2.txt",
+      "commit": "a8597c8acfb88e015d47cd970f9855f702560602",
+      "target_evidence": [
+        "DiscoveryChannel.us",
+        "ComedyCentral.us",
+        "TVLand.us",
+        "TravelChannel.us",
+        "Pop.us"
+      ],
+      "priority": 51,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 13 — bagol-adrn/IPTV-m3u_ddy",
+      "family": "mega-bagol-adrn-iptv-m3u-ddy",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/bagol-adrn/IPTV-m3u_ddy/d953657a57473871bbeeff3ca048b9a14028dd9f/all_channels/playlist.m3u8",
+      "repository": "bagol-adrn/IPTV-m3u_ddy",
+      "path": "all_channels/playlist.m3u8",
+      "commit": "d953657a57473871bbeeff3ca048b9a14028dd9f",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "NewsNation.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 52,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 14 — banamine/Liberty-Express-",
+      "family": "mega-banamine-liberty-express",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/banamine/Liberty-Express-/c5906d9827c4b1bef01694d07e61cae3c43c2d15/Sample%20Playlists/Flux.m3u8",
+      "repository": "banamine/Liberty-Express-",
+      "path": "Sample Playlists/Flux.m3u8",
+      "commit": "c5906d9827c4b1bef01694d07e61cae3c43c2d15",
+      "target_evidence": [
+        "TVLand.us",
+        "TravelChannel.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 53,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 15 — bennschmidt/example-m3u",
+      "family": "mega-bennschmidt-example-m3u",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/bennschmidt/example-m3u/1a8cae280411cb0d309047505e247939a3810b34/playlist.m3u8",
+      "repository": "bennschmidt/example-m3u",
+      "path": "playlist.m3u8",
+      "commit": "1a8cae280411cb0d309047505e247939a3810b34",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "TravelChannel.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 54,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 16 — dineshkn-dev/hyper-tv",
+      "family": "mega-dineshkn-dev-hyper-tv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/dineshkn-dev/hyper-tv/edd3c1874b9e8baace30aae8dbbe3abc8d55163e/data/playlist.m3u8",
+      "repository": "dineshkn-dev/hyper-tv",
+      "path": "data/playlist.m3u8",
+      "commit": "edd3c1874b9e8baace30aae8dbbe3abc8d55163e",
+      "target_evidence": [
+        "TVLand.us",
+        "NewsNation.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 55,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 17 — doms9/iptv",
+      "family": "mega-doms9-iptv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/doms9/iptv/00000d9c0424632645789101ca63cd57449298a4/M3U8/TV.m3u8",
+      "repository": "doms9/iptv",
+      "path": "M3U8/TV.m3u8",
+      "commit": "00000d9c0424632645789101ca63cd57449298a4",
+      "target_evidence": [
+        "TVLand.us",
+        "NewsNation.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 56,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 18 — iptv-org/iptv",
+      "family": "mega-iptv-org-iptv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/iptv-org/iptv/f924df57f31dc75e89cf24eb998ac1dca01316b2/streams/de.m3u",
+      "repository": "iptv-org/iptv",
+      "path": "streams/de.m3u",
+      "commit": "f924df57f31dc75e89cf24eb998ac1dca01316b2",
+      "target_evidence": [
+        "TVLand.us",
+        "MagnoliaNetwork.us",
+        "NewsNation.us",
+        "Reelz.us"
+      ],
+      "priority": 57,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 19 — LongHongVan/MyKodi",
+      "family": "mega-longhongvan-mykodi",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/LongHongVan/MyKodi/5fa30a764b1a7b24cd1f8ff763dbfcde872e1ab4/iptvpro_new_logo.m3u",
+      "repository": "LongHongVan/MyKodi",
+      "path": "iptvpro_new_logo.m3u",
+      "commit": "5fa30a764b1a7b24cd1f8ff763dbfcde872e1ab4",
+      "target_evidence": [
+        "HGTV.us",
+        "DiscoveryChannel.us",
+        "NFLNetwork.us",
+        "WCAU.us"
+      ],
+      "priority": 58,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 20 — Rubayet123/BDLive",
+      "family": "mega-rubayet123-bdlive",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/Rubayet123/BDLive/8fbfba39566a5d13be502a01221571ee022798bd/Backup/vlc_playlist.m3u8",
+      "repository": "Rubayet123/BDLive",
+      "path": "Backup/vlc_playlist.m3u8",
+      "commit": "8fbfba39566a5d13be502a01221571ee022798bd",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "TravelChannel.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 59,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 21 — spliff123/tv",
+      "family": "mega-spliff123-tv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/spliff123/tv/fa254db71d28cdc78457f3472a19ee0f3b677a39/tv_main.m3u8",
+      "repository": "spliff123/tv",
+      "path": "tv_main.m3u8",
+      "commit": "fa254db71d28cdc78457f3472a19ee0f3b677a39",
+      "target_evidence": [
+        "TVLand.us",
+        "MagnoliaNetwork.us",
+        "TravelChannel.us",
+        "NewsNation.us"
+      ],
+      "priority": 60,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 22 — thedeveloperlad/links_channels",
+      "family": "mega-thedeveloperlad-links-channels",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/thedeveloperlad/links_channels/192518cb9bffbf4f0c69dab559062b5bd2b1af66/latinotv_hd.m3u8",
+      "repository": "thedeveloperlad/links_channels",
+      "path": "latinotv_hd.m3u8",
+      "commit": "192518cb9bffbf4f0c69dab559062b5bd2b1af66",
+      "target_evidence": [
+        "TVLand.us",
+        "NFLNetwork.us",
+        "Pop.us",
+        "WCAU.us"
+      ],
+      "priority": 61,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 23 — cokro6/tv",
+      "family": "mega-cokro6-tv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/cokro6/tv/f057fa3bf3f00b0d1a23e45fdc9225c385b5de69/testlig.m3u8",
+      "repository": "cokro6/tv",
+      "path": "testlig.m3u8",
+      "commit": "f057fa3bf3f00b0d1a23e45fdc9225c385b5de69",
+      "target_evidence": [
+        "TVLand.us",
+        "NewsNation.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 62,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 24 — farhad-iptv/jagobd",
+      "family": "mega-farhad-iptv-jagobd",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/farhad-iptv/jagobd/0f520f7146e29ff0411b4a2e5a9fcd9390ade25d/daddy2.m3u8",
+      "repository": "farhad-iptv/jagobd",
+      "path": "daddy2.m3u8",
+      "commit": "0f520f7146e29ff0411b4a2e5a9fcd9390ade25d",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "TravelChannel.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 63,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 25 — felixiptv/stream",
+      "family": "mega-felixiptv-stream",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/felixiptv/stream/63c431120ab8650d030e5ade94b899309738e3e4/daddylive.m3u8",
+      "repository": "felixiptv/stream",
+      "path": "daddylive.m3u8",
+      "commit": "63c431120ab8650d030e5ade94b899309738e3e4",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "TravelChannel.us",
+        "Reelz.us",
+        "Pop.us"
+      ],
+      "priority": 64,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 26 — imdhiru/bloginstall-iptv",
+      "family": "mega-imdhiru-bloginstall-iptv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/imdhiru/bloginstall-iptv/7760211d04083fc38a8717b1d42a1a60ba5cd331/Sports.m3u8",
+      "repository": "imdhiru/bloginstall-iptv",
+      "path": "Sports.m3u8",
+      "commit": "7760211d04083fc38a8717b1d42a1a60ba5cd331",
+      "target_evidence": [
+        "TVLand.us",
+        "TravelChannel.us",
+        "NFLNetwork.us",
+        "NewsNation.us"
+      ],
+      "priority": 65,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 27 — Koplaktv/Buattv",
+      "family": "mega-koplaktv-buattv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/Koplaktv/Buattv/27e9a44f1d56927e07bc1542dc47109ceed2de9f/contoh.m3u8",
+      "repository": "Koplaktv/Buattv",
+      "path": "contoh.m3u8",
+      "commit": "27e9a44f1d56927e07bc1542dc47109ceed2de9f",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "TravelChannel.us",
+        "NewsNation.us",
+        "Pop.us"
+      ],
+      "priority": 66,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 28 — lucastan97/fm",
+      "family": "mega-lucastan97-fm",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/lucastan97/fm/f0cb58e8b6962aae76c1234c6782f2d3b1a2cde4/lib/us.m3u8",
+      "repository": "lucastan97/fm",
+      "path": "lib/us.m3u8",
+      "commit": "f0cb58e8b6962aae76c1234c6782f2d3b1a2cde4",
+      "target_evidence": [
+        "HGTV.us",
+        "NFLNetwork.us",
+        "NewsNation.us",
+        "Reelz.us"
+      ],
+      "priority": 67,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 29 — maximmur/iptvlist",
+      "family": "mega-maximmur-iptvlist",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/maximmur/iptvlist/dd3b30fb57631a418fc830ffa879d9b4a6b31ac5/films_vid.m3u8",
+      "repository": "maximmur/iptvlist",
+      "path": "films_vid.m3u8",
+      "commit": "dd3b30fb57631a418fc830ffa879d9b4a6b31ac5",
+      "target_evidence": [
+        "TVLand.us",
+        "NewsNation.us",
+        "Pop.us",
+        "WPVI.us"
+      ],
+      "priority": 68,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 30 — mberloga/mberloga.github.io",
+      "family": "mega-mberloga-mberloga-github-io",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/mberloga/mberloga.github.io/6e14c80fc94711f57fbc444743f25713147454f9/assets/pl/US_moveonjoy_com.m3u8",
+      "repository": "mberloga/mberloga.github.io",
+      "path": "assets/pl/US_moveonjoy_com.m3u8",
+      "commit": "6e14c80fc94711f57fbc444743f25713147454f9",
+      "target_evidence": [
+        "HGTV.us",
+        "TravelChannel.us",
+        "NewsNation.us",
+        "Reelz.us"
+      ],
+      "priority": 69,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 31 — Metroid2023/DaddyLiveHD",
+      "family": "mega-metroid2023-daddylivehd",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/Metroid2023/DaddyLiveHD/4aae34f1a21f58501ad2b0d4ba3d1ba92365c9f4/dlive.m3u8",
+      "repository": "Metroid2023/DaddyLiveHD",
+      "path": "dlive.m3u8",
+      "commit": "4aae34f1a21f58501ad2b0d4ba3d1ba92365c9f4",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "NFLNetwork.us",
+        "NewsNation.us",
+        "Reelz.us"
+      ],
+      "priority": 70,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 32 — flossy07/FlossyIPTV1",
+      "family": "mega-flossy07-flossyiptv1",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/flossy07/FlossyIPTV1/ffdb0ae8f299251f8a1c5fe9bcf53f18ee0191f7/m3u8/USAIPTV.txt",
+      "repository": "flossy07/FlossyIPTV1",
+      "path": "m3u8/USAIPTV.txt",
+      "commit": "ffdb0ae8f299251f8a1c5fe9bcf53f18ee0191f7",
+      "target_evidence": [
+        "DiscoveryChannel.us",
+        "TVLand.us",
+        "TravelChannel.us",
+        "NFLNetwork.us"
+      ],
+      "priority": 71,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 33 — grabbaf/CsbaCBPT",
+      "family": "mega-grabbaf-csbacbpt",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/grabbaf/CsbaCBPT/2ed65080ceeed30c1f51ffd786bcea1284ba6f0a/tv247.m3u8",
+      "repository": "grabbaf/CsbaCBPT",
+      "path": "tv247.m3u8",
+      "commit": "2ed65080ceeed30c1f51ffd786bcea1284ba6f0a",
+      "target_evidence": [
+        "NFLNetwork.us",
+        "NewsNation.us",
+        "Reelz.us"
+      ],
+      "priority": 72,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 34 — jordiriusm/jordiriusm",
+      "family": "mega-jordiriusm-jordiriusm",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/jordiriusm/jordiriusm/7e2df9c5264d3f2af2ee700320169abb64834ab0/quickusa.m3u8",
+      "repository": "jordiriusm/jordiriusm",
+      "path": "quickusa.m3u8",
+      "commit": "7e2df9c5264d3f2af2ee700320169abb64834ab0",
+      "target_evidence": [
+        "TVLand.us",
+        "NFLNetwork.us",
+        "WCAU.us"
+      ],
+      "priority": 73,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 35 — judy-gotv/iptv",
+      "family": "mega-judy-gotv-iptv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/judy-gotv/iptv/e0b214f4714a7204f98b614f98ae589993ca34eb/LGTV-Schedule.m3u",
+      "repository": "judy-gotv/iptv",
+      "path": "LGTV-Schedule.m3u",
+      "commit": "e0b214f4714a7204f98b614f98ae589993ca34eb",
+      "target_evidence": [
+        "TVLand.us",
+        "NewsNation.us",
+        "Reelz.us"
+      ],
+      "priority": 74,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 36 — MarkMCFC/NewDadProxy",
+      "family": "mega-markmcfc-newdadproxy",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/MarkMCFC/NewDadProxy/7511edabfe5166ecb88152e210db2fd8e27437c1/channel.m3u8",
+      "repository": "MarkMCFC/NewDadProxy",
+      "path": "channel.m3u8",
+      "commit": "7511edabfe5166ecb88152e210db2fd8e27437c1",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "NewsNation.us",
+        "Pop.us"
+      ],
+      "priority": 75,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 37 — PrattoySaha/IPTV",
+      "family": "mega-prattoysaha-iptv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/PrattoySaha/IPTV/670ffe6818857befadbec939e1b65219de2322aa/BDIX%20TV.m3u8",
+      "repository": "PrattoySaha/IPTV",
+      "path": "BDIX TV.m3u8",
+      "commit": "670ffe6818857befadbec939e1b65219de2322aa",
+      "target_evidence": [
+        "TVLand.us",
+        "TravelChannel.us",
+        "NFLNetwork.us"
+      ],
+      "priority": 76,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 38 — premiumcu/gear",
+      "family": "mega-premiumcu-gear",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/premiumcu/gear/953a1ae35fc6bdfb2563f7f9c8cd278458926739/tv247.m3u8",
+      "repository": "premiumcu/gear",
+      "path": "tv247.m3u8",
+      "commit": "953a1ae35fc6bdfb2563f7f9c8cd278458926739",
+      "target_evidence": [
+        "NFLNetwork.us",
+        "NewsNation.us",
+        "Reelz.us"
+      ],
+      "priority": 77,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 39 — ryuzein/Pandawa-Eazy-Tools",
+      "family": "mega-ryuzein-pandawa-eazy-tools",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/ryuzein/Pandawa-Eazy-Tools/316289d6b7c59943cb2e5ee91bac55460790e85d/IPTV/mx.m3u",
+      "repository": "ryuzein/Pandawa-Eazy-Tools",
+      "path": "IPTV/mx.m3u",
+      "commit": "316289d6b7c59943cb2e5ee91bac55460790e85d",
+      "target_evidence": [
+        "Pop.us",
+        "WPVI.us",
+        "WCAU.us"
+      ],
+      "priority": 78,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 40 — sesukyothole/My-Stuff",
+      "family": "mega-sesukyothole-my-stuff",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/sesukyothole/My-Stuff/ead00631e424494dc9f74c41eb50ac1e2388c311/tivimate_playlist.m3u8",
+      "repository": "sesukyothole/My-Stuff",
+      "path": "tivimate_playlist.m3u8",
+      "commit": "ead00631e424494dc9f74c41eb50ac1e2388c311",
+      "target_evidence": [
+        "TVLand.us",
+        "MagnoliaNetwork.us",
+        "WCAU.us"
+      ],
+      "priority": 79,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 41 — SgGedong/kpr",
+      "family": "mega-sggedong-kpr",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/SgGedong/kpr/b510ace00da9d0476a673b8d669cf768e7852206/TheTV.m3u8",
+      "repository": "SgGedong/kpr",
+      "path": "TheTV.m3u8",
+      "commit": "b510ace00da9d0476a673b8d669cf768e7852206",
+      "target_evidence": [
+        "TravelChannel.us",
+        "NFLNetwork.us",
+        "Reelz.us"
+      ],
+      "priority": 80,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 42 — xCrazed/ddlproxy",
+      "family": "mega-xcrazed-ddlproxy",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/xCrazed/ddlproxy/0027d2ed570384439f9eb2cdb23a98d5bd1f6f36/daddylive-channels-kodi.m3u8",
+      "repository": "xCrazed/ddlproxy",
+      "path": "daddylive-channels-kodi.m3u8",
+      "commit": "0027d2ed570384439f9eb2cdb23a98d5bd1f6f36",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "NewsNation.us",
+        "Pop.us"
+      ],
+      "priority": 81,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 43 — ahan443/FAST-IPTV",
+      "family": "mega-ahan443-fast-iptv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/ahan443/FAST-IPTV/bc6c9840b4ba27791d834338c52b8f66a9adce67/bkju_m3u.m3u8",
+      "repository": "ahan443/FAST-IPTV",
+      "path": "bkju_m3u.m3u8",
+      "commit": "bc6c9840b4ba27791d834338c52b8f66a9adce67",
+      "target_evidence": [
+        "NFLNetwork.us",
+        "NewsNation.us",
+        "Reelz.us"
+      ],
+      "priority": 82,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 44 — GaryLee1980/mini",
+      "family": "mega-garylee1980-mini",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/GaryLee1980/mini/90921a34ec124fe64dcd101481ee010989c9b392/de.m3u8",
+      "repository": "GaryLee1980/mini",
+      "path": "de.m3u8",
+      "commit": "90921a34ec124fe64dcd101481ee010989c9b392",
+      "target_evidence": [
+        "TVLand.us",
+        "NewsNation.us",
+        "Pop.us"
+      ],
+      "priority": 83,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 45 — KemjerryTB/IPTV",
+      "family": "mega-kemjerrytb-iptv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/KemjerryTB/IPTV/2aca2c4df74d48db33baa114dce75f5a8a91bdaf/Tivimate/DaddyLive/index.m3u8",
+      "repository": "KemjerryTB/IPTV",
+      "path": "Tivimate/DaddyLive/index.m3u8",
+      "commit": "2aca2c4df74d48db33baa114dce75f5a8a91bdaf",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "NewsNation.us",
+        "Reelz.us"
+      ],
+      "priority": 84,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 46 — leoingit/iptv",
+      "family": "mega-leoingit-iptv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/leoingit/iptv/42f317cdb7535d9489a73dadb96444c61e5ad44f/channel.txt",
+      "repository": "leoingit/iptv",
+      "path": "channel.txt",
+      "commit": "42f317cdb7535d9489a73dadb96444c61e5ad44f",
+      "target_evidence": [
+        "HGTV.us",
+        "DiscoveryChannel.us",
+        "ComedyCentral.us"
+      ],
+      "priority": 85,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 47 — ahtbd/ahtuh.in",
+      "family": "mega-ahtbd-ahtuh-in",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/ahtbd/ahtuh.in/f35e7c63abe50995f726e55d1141396c5d99bde0/T%20Play/insolencetvgo-main/moveonjoy.m3u",
+      "repository": "ahtbd/ahtuh.in",
+      "path": "T Play/insolencetvgo-main/moveonjoy.m3u",
+      "commit": "f35e7c63abe50995f726e55d1141396c5d99bde0",
+      "target_evidence": [
+        "HGTV.us",
+        "TVLand.us"
+      ],
+      "priority": 86,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 48 — arkina1234-undenified/IPTV",
+      "family": "mega-arkina1234-undenified-iptv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/arkina1234-undenified/IPTV/bb20bd5ce57f5c96b41ae73b8a7033ec36e09edd/stream.m3u",
+      "repository": "arkina1234-undenified/IPTV",
+      "path": "stream.m3u",
+      "commit": "bb20bd5ce57f5c96b41ae73b8a7033ec36e09edd",
+      "target_evidence": [
+        "MagnoliaNetwork.us",
+        "WCAU.us"
+      ],
+      "priority": 87,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 49 — bamagenius/iptvusaminium",
+      "family": "mega-bamagenius-iptvusaminium",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/bamagenius/iptvusaminium/c335992c1a2b511379df3435649c558f886518d0/iptvusa.m3u8",
+      "repository": "bamagenius/iptvusaminium",
+      "path": "iptvusa.m3u8",
+      "commit": "c335992c1a2b511379df3435649c558f886518d0",
+      "target_evidence": [
+        "TVLand.us",
+        "TravelChannel.us"
+      ],
+      "priority": 88,
+      "philly": false,
+      "max_candidates_per_target": 2
+    },
+    {
+      "name": "Mega Hunt 50 — blakestrick/iptv",
+      "family": "mega-blakestrick-iptv",
+      "format": "m3u",
+      "url": "https://raw.githubusercontent.com/blakestrick/iptv/bb9b1073fd8d4d0d8b99de6607aed1f5c073d728/thetvapp.m3u8",
+      "repository": "blakestrick/iptv",
+      "path": "thetvapp.m3u8",
+      "commit": "bb9b1073fd8d4d0d8b99de6607aed1f5c073d728",
+      "target_evidence": [
+        "TVLand.us",
+        "MagnoliaNetwork.us"
+      ],
+      "priority": 89,
+      "philly": false,
+      "max_candidates_per_target": 2
+    }
+  ]
+}
