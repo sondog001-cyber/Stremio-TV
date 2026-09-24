@@ -183,7 +183,10 @@
             dedup = {p["id"]: p for p in nearby}
             nearby = sorted(dedup.values(), key=lambda p: p["startTime"])
             meta = channel_meta(ch, nearby)
-            write_json(output / "meta" / "tv" / f"{ch['id']}.json", {"meta": meta})
+            write_json(
+                output / "meta" / "tv" / f"{ch['id']}.json",
+                cached_resource({"meta": meta}),
+            )
             streams = [stream_object(s, i + 1, build_info) for i, s in enumerate(ch["streams"])]
             write_json(
                 output / "stream" / "tv" / f"{ch['id']}.json",
