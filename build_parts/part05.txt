@@ -102,6 +102,186 @@ def derive_public_base() -> str:
     return ""
 
 
+def _canonical_logo_url(url: str) -> str:
+    """Turn common GitHub blob image links into directly downloadable assets."""
+    value = str(url or "").strip()
+    match = re.match(
+        r"^https://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.*?)(?:\?.*)?$",
+        value,
+        re.I,
+    )
+    if match:
+        owner, repository, revision, path = match.groups()
+        return f"https://raw.githubusercontent.com/{owner}/{repository}/{revision}/{path}"
+    return value
+
+
+def _fallback_logo_label(name: str) -> str:
+    tokens = re.findall(r"[A-Za-z0-9]+", str(name or ""))
+    if len(tokens) >= 2:
+        return "".join(token[0] for token in tokens[:4]).upper()
+    if tokens:
+        return tokens[0][:4].upper()
+    return "TV"
+
+
+def normalize_channel_logos(
+    site: Path,
+    channels: list[dict[str, Any]],
+    public_base: str,
+    config: dict[str, Any],
+    *,
+    enabled: bool = True,
+) -> dict[str, Any]:
+    """Cache every channel logo as a consistently padded local square PNG."""
+    settings = config.get("logo_normalization") or {}
+    enabled = enabled and bool(settings.get("enabled", True))
+    canvas_size = max(128, int(settings.get("canvas_size", 512)))
+    max_logo_size = max(64, min(canvas_size, int(settings.get("max_logo_size", 384))))
+    timeout = max(1, int(settings.get("timeout_seconds", 8)))
+    byte_limit = max(64_000, int(settings.get("byte_limit", 5_000_000)))
+    rows: list[dict[str, Any]] = []
+
+    if not enabled:
+        return {
+            "version": 1,
+            "enabled": False,
+            "summary": {
+                "channels": len(channels),
+                "normalized": 0,
+                "fallback": 0,
+                "failed": 0,
+            },
+            "channels": [],
+        }
+
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except Exception as exc:
+        log(f"WARNING: Pillow unavailable; channel-logo normalization skipped: {exc}")
+        return {
+            "version": 1,
+            "enabled": False,
+            "error": f"Pillow unavailable: {exc}",
+            "summary": {
+                "channels": len(channels),
+                "normalized": 0,
+                "fallback": 0,
+                "failed": len(channels),
+            },
+            "channels": [],
+        }
+
+    asset_dir = site / "assets" / "channel-logos"
+    asset_dir.mkdir(parents=True, exist_ok=True)
+
+    def make_fallback(name: str):
+        canvas = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(canvas)
+        pad = max(20, canvas_size // 8)
+        draw.rounded_rectangle(
+            (pad, pad, canvas_size - pad, canvas_size - pad),
+            radius=max(18, canvas_size // 12),
+            fill=(28, 31, 43, 255),
+            outline=(255, 255, 255, 72),
+            width=max(2, canvas_size // 128),
+        )
+        label = _fallback_logo_label(name)
+        font_size = max(28, int(canvas_size * (0.22 if len(label) <= 3 else 0.16)))
+        try:
+            font = ImageFont.truetype("DejaVuSans-Bold.ttf", font_size)
+        except Exception:
+            font = ImageFont.load_default()
+        box = draw.textbbox((0, 0), label, font=font)
+        width = box[2] - box[0]
+        height = box[3] - box[1]
+        draw.text(
+            ((canvas_size - width) / 2, (canvas_size - height) / 2 - box[1]),
+            label,
+            font=font,
+            fill=(245, 247, 250, 255),
+        )
+        return canvas
+
+    for channel in channels:
+        source_url = _canonical_logo_url(str(channel.get("logo") or ""))
+        destination = asset_dir / f"{channel['id']}.png"
+        status = "fallback"
+        error = None
+        original_size = None
+        try:
+            if source_url and re.match(r"^https?://", source_url, re.I):
+                req = urllib.request.Request(
+                    source_url,
+                    headers={
+                        "User-Agent": USER_AGENT,
+                        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+                        "Accept-Encoding": "identity",
+                    },
+                )
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    data = resp.read(byte_limit + 1)
+                if len(data) > byte_limit:
+                    raise ValueError(f"logo exceeded {byte_limit} byte limit")
+                with Image.open(io.BytesIO(data)) as image:
+                    image.load()
+                    original_size = list(image.size)
+                    logo = image.convert("RGBA")
+                    alpha_box = logo.getchannel("A").getbbox()
+                    if alpha_box:
+                        logo = logo.crop(alpha_box)
+                    logo.thumbnail((max_logo_size, max_logo_size), Image.Resampling.LANCZOS)
+                    canvas = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
+                    x = (canvas_size - logo.width) // 2
+                    y = (canvas_size - logo.height) // 2
+                    canvas.alpha_composite(logo, (x, y))
+                    canvas.save(destination, format="PNG", optimize=True)
+                    status = "normalized"
+            else:
+                make_fallback(channel.get("name", "TV")).save(destination, format="PNG", optimize=True)
+        except Exception as exc:
+            error = str(exc)[:240]
+            make_fallback(channel.get("name", "TV")).save(destination, format="PNG", optimize=True)
+            status = "fallback"
+
+        local_path = f"assets/channel-logos/{channel['id']}.png"
+        local_url = f"{public_base}/{local_path}" if public_base else local_path
+        channel["logo_source"] = source_url
+        if public_base:
+            channel["logo"] = local_url
+        rows.append({
+            "id": channel.get("id"),
+            "tvg_id": channel.get("tvg_id"),
+            "name": channel.get("name"),
+            "source_url": source_url or None,
+            "local_url": local_url,
+            "status": status,
+            "original_size": original_size,
+            "canvas_size": [canvas_size, canvas_size],
+            "max_logo_size": max_logo_size,
+            "error": error,
+        })
+
+    summary = {
+        "channels": len(rows),
+        "normalized": sum(1 for row in rows if row["status"] == "normalized"),
+        "fallback": sum(1 for row in rows if row["status"] == "fallback"),
+        "failed": sum(1 for row in rows if not (asset_dir / f"{row['id']}.png").exists()),
+    }
+    log(
+        "Channel logos: "
+        f"normalized={summary['normalized']:,}, "
+        f"fallback={summary['fallback']:,}, "
+        f"failed={summary['failed']:,}"
+    )
+    return {
+        "version": 1,
+        "enabled": True,
+        "summary": summary,
+        "channels": rows,
+    }
+
+
 def write_landing_page(site: Path, config: dict[str, Any], status: dict[str, Any]) -> None:
     addon_name = html.escape(config["addon"]["name"])
     count = status["channels"]
