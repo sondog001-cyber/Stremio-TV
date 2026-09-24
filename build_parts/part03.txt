@@ -90,7 +90,7 @@ def merge_channels(entries: Iterable[dict[str, Any]], favorites: list[str], max_
             "key": key,
             "name": name,
             "tvg_id": tvg_id,
-            "logo": next((s.get("logo") for s in unique_streams if s.get("logo")), ""),
+            "logo": metadata.get("logo") or next((s.get("logo") for s in unique_streams if s.get("logo")), ""),
             "group": next((s.get("group") for s in unique_streams if s.get("group")), ""),
             "philly": any(bool(s.get("philly")) for s in unique_streams),
             "streams": unique_streams,

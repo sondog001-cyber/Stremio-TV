@@ -24,6 +24,61 @@ class PlaybackContinuityTests(unittest.TestCase):
         segments = ["seg-100.ts", "seg-101.ts", "seg-102.ts", "seg-103.ts"]
         self.assertIsNone(build._repeated_hls_segment_sequence(segments))
 
+    def test_stalled_live_hls_window_fails_second_probe(self):
+        entry = {
+            "name": "HGTV",
+            "tvg_id": "HGTV.us",
+            "source": "Test HLS feed",
+            "family": "test",
+            "url": "https://example.test/live.m3u8",
+            "headers": {},
+        }
+        config = {
+            "stream_health": {
+                "enabled": True,
+                "require_passed_only": True,
+                "timeout_seconds": 1,
+                "max_workers": 1,
+                "verify_segment_for_all_candidates": True,
+                "double_probe": True,
+                "second_probe_delay_seconds": 0,
+                "priority_recovery": {"enabled": False},
+            },
+            "stream_stability": {
+                "enabled": True,
+                "history_size": 5,
+                "retention_builds": 20,
+                "dead_source_cooldown_hours": [1, 6, 24],
+            },
+            "favorites": [],
+        }
+        probe_result = {
+            "status": "ok",
+            "detail": "Valid HLS playlist + segment",
+            "http_status": 200,
+            "final_url": "https://example.test/media.m3u8",
+            "latency_ms": 10,
+            "hls_is_live": True,
+            "hls_media_sequence": 100,
+            "hls_tail_sha256": "same-tail",
+            "hls_segment_count": 6,
+        }
+
+        with (
+            mock.patch.object(build, "_probe_stream", return_value=probe_result),
+            mock.patch.object(build, "_load_previous_stream_stability", return_value={}),
+            mock.patch.object(build, "_load_previous_channel_state", return_value={}),
+            mock.patch.object(build.time, "sleep", return_value=None),
+        ):
+            healthy, rows, _state = build.probe_candidate_entries([entry], config)
+
+        self.assertEqual(healthy, [])
+        self.assertEqual(rows[0]["health"]["status"], "failed")
+        self.assertEqual(
+            rows[0]["health"]["continuity_failure"],
+            "stalled-live-hls-window",
+        )
+
     def test_identical_direct_media_samples_fail_second_probe(self):
         entry = {
             "name": "HGTV",

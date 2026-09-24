@@ -6,6 +6,7 @@ A self-updating, Philadelphia-focused live-TV addon for Stremio. It combines a c
 
 - Philadelphia broadcast affiliates and selected national channels
 - Native Stremio Live TV EPG generated from XMLTV, including scheduled programme metadata
+- Locally cached, normalized square channel logos with consistent padding and fallbacks
 - Favorites and category catalogs
 - Up to three playback choices per channel
 - Measured HLS resolution rather than source-label quality alone
@@ -19,7 +20,7 @@ The addon does not host, proxy, or restream video. It returns validated upstream
 
 ## Stream policy
 
-Only allow-listed channels are considered. Before publication, every candidate must pass the configured health checks. HLS streams must expose a valid playlist and readable media segment; failed and untested candidates remain diagnostic-only.
+Only allow-listed channels are considered. Before publication, every candidate must pass the configured health checks. HLS streams must expose a valid playlist and readable media segment; live HLS windows must also advance between stability probes. Confirmed decoder-visible playback defects can be exact-URL quarantined even when ordinary reachability checks pass. Failed and untested candidates remain diagnostic-only.
 
 Streams are classified across recent builds:
 

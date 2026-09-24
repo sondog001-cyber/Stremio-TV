@@ -9,7 +9,7 @@ The builder:
 - generates normal category/favorites catalogs
 - writes a static GitHub Pages site under ./site
 
-Runtime dependencies: Python standard library only.
+Runtime dependencies: Python standard library + Pillow (channel-logo normalization).
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ import gzip
 import hashlib
 import html
 import ipaddress
+import io
 import json
 import os
 import re
