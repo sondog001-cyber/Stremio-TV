@@ -2872,72 +2872,46 @@ def build_quality_measurements(
 
 def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     programmes = sorted(programmes or [], key=lambda p: p.get("startTime", ""))
-    now = dt.datetime.now(UTC)
 
-    current: dict[str, Any] | None = None
-    upcoming: dict[str, Any] | None = None
-    for programme in programmes:
-        try:
-            p_start = dt.datetime.fromisoformat(programme["startTime"].replace("Z", "+00:00"))
-            p_end = dt.datetime.fromisoformat(programme["endTime"].replace("Z", "+00:00"))
-        except (KeyError, ValueError):
-            continue
-        if p_start <= now < p_end:
-            current = programme
-            continue
-        if p_start >= now and upcoming is None:
-            upcoming = programme
-
-    description_lines: list[str] = []
-    if current:
-        description_lines.append(
-            f"NOW: {current.get('title', 'Untitled')} • "
-            f"{_display_time(current['startTime'])}–{_display_time(current['endTime'])}"
-        )
-    if upcoming:
-        label = "NEXT" if current else "UP NEXT"
-        description_lines.append(
-            f"{label}: {upcoming.get('title', 'Untitled')} • "
-            f"{_display_time(upcoming['startTime'])}–{_display_time(upcoming['endTime'])}"
-        )
-    if not current and not upcoming and channel.get("epg_matched"):
-        description_lines.append("LIVE • No current guide data")
-    elif channel.get("epg_status") == "unavailable":
-        description_lines.append("LIVE • No exact listing in the guide source")
-    elif not channel.get("epg_matched"):
-        description_lines.append("LIVE • Guide match pending")
-
-    info_bits = []
+    # Native Stremio Live TV renders current/next programme data from videos.
+    # Keep the visible channel description clean and reserve operational details
+    # for structured diagnostics and playback-option metadata.
+    description_bits: list[str] = []
     if channel.get("philly"):
-        info_bits.append("Philadelphia")
-    info_bits.append(channel.get("category", "Live TV"))
-    info_bits.append(
-        f"{len(channel.get('streams', []))} source"
-        + ("s" if len(channel.get("streams", [])) != 1 else "")
-    )
-    description_lines.append(" • ".join(info_bits))
+        description_bits.append("Philadelphia")
+    service_type = channel.get("service_type")
+    category = channel.get("category", "Live TV")
+    if service_type:
+        description_bits.append(service_type)
+    else:
+        description_bits.append(category)
+
+    # De-duplicate while preserving order.
+    description = " • ".join(dict.fromkeys(bit for bit in description_bits if bit))
 
     version = channel.get("build_version")
     built_at = channel.get("built_at")
     build_id = channel.get("build_id")
-    if version or built_at or build_id:
-        build_bits = []
-        if version:
-            build_bits.append(f"v{version}")
-        if build_id:
-            build_bits.append(f"build {build_id}")
-        if built_at:
-            build_bits.append(built_at)
-        description_lines.append(" • ".join(build_bits))
 
     meta: dict[str, Any] = {
         "id": channel["id"],
         "type": "tv",
         "name": channel["name"],
-        "description": "\n".join(description_lines),
-        "genres": [channel.get("category", "Live TV")],
+        "description": description,
+        "genres": [category],
         "posterShape": "square",
         "behaviorHints": {"isLive": True},
+        "stremioTvDiagnostics": {
+            "epg_status": channel.get(
+                "epg_status",
+                "matched" if channel.get("epg_matched") else "unmatched",
+            ),
+            "epg_matched": bool(channel.get("epg_matched")),
+            "source_count": len(channel.get("streams", [])),
+            "category": category,
+            "service_type": service_type,
+            "philly": bool(channel.get("philly")),
+        },
     }
     if channel.get("logo"):
         meta["poster"] = channel["logo"]
@@ -2953,7 +2927,6 @@ def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | Non
             "source_revision": channel.get("build_revision"),
         }
     return meta
-
 
 def stream_object(
     stream: dict[str, Any],
