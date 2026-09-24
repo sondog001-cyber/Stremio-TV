@@ -2942,6 +2942,9 @@ def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | Non
     if channel.get("logo"):
         meta["poster"] = channel["logo"]
         meta["background"] = channel["logo"]
+    if channel.get("epg_matched"):
+        meta["behaviorHints"]["hasScheduledVideos"] = True
+        meta["videos"] = programmes
     if build_id:
         meta["stremioTvBuild"] = {
             "build_id": build_id,
