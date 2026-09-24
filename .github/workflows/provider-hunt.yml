@@ -1,0 +1,44 @@
+name: Provider Hunt 50 Distinct Families
+
+on:
+  push:
+    branches: [provider-hunt-50-families]
+    paths:
+      - "provider_hunt.py"
+      - "provider-hunt-sources.json"
+      - "build.py"
+      - "assemble_build.py"
+      - "build_parts/**"
+      - "config.json"
+      - "requirements.txt"
+      - ".github/workflows/provider-hunt.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Assemble builder
+        run: python assemble_build.py
+      - name: Compile
+        run: python -m py_compile build.py provider_hunt.py
+      - name: Run provider-diverse hunt
+        run: python provider_hunt.py
+      - name: Upload hunt diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: provider-hunt-50-results
+          path: provider-hunt-output
+          retention-days: 14
