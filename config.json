@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, expiring client verification, native Live TV EPG, and two-probe playback validation.",
-    "version": "0.4.0"
+    "version": "0.4.1"
   },
   "sources": {
     "playlists": [
