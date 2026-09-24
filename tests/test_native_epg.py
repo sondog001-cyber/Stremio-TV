@@ -55,6 +55,11 @@ class NativeEpgTests(unittest.TestCase):
         self.assertTrue(meta["behaviorHints"]["isLive"])
         self.assertTrue(meta["behaviorHints"]["hasScheduledVideos"])
         self.assertEqual(meta["videos"], programmes)
+        self.assertNotIn("NOW:", meta["description"])
+        self.assertNotIn("NEXT:", meta["description"])
+        self.assertNotIn("Test Programme", meta["description"])
+        self.assertEqual(meta["stremioTvDiagnostics"]["epg_status"], "matched")
+        self.assertEqual(meta["stremioTvDiagnostics"]["source_count"], 1)
 
     def test_unmatched_channel_does_not_claim_scheduled_videos(self):
         channel = {
