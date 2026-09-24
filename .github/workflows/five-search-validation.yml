@@ -1,0 +1,36 @@
+name: Validate Five Search Candidates
+
+on:
+  push:
+    branches: [five-search-validation]
+    paths:
+      - "five_search_probe.py"
+      - "five-search-candidates.json"
+      - "build.py"
+      - "assemble_build.py"
+      - "build_parts/**"
+      - "requirements.txt"
+      - ".github/workflows/five-search-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements.txt
+      - run: python assemble_build.py
+      - run: python -m py_compile build.py five_search_probe.py
+      - run: python five_search_probe.py
+      - if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: five-search-results
+          path: five-search-results
+          retention-days: 14
