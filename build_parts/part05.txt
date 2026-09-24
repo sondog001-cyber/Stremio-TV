@@ -51,7 +51,10 @@ def build_manifest(
             "type": "tv",
             "id": "channels",
             "name": "Stremio TV",
-            "extra": [{"name": "skip"}],
+            "extra": [
+                {"name": "skip"},
+                {"name": "date"},
+            ],
         }
     ]
     for cat in config.get("catalogs", []):
@@ -78,6 +81,7 @@ def build_manifest(
         "catalogs": catalogs,
         "behaviorHints": {
             "p2p": False,
+            "epgProvider": True,
         },
     }
     if build_info:
