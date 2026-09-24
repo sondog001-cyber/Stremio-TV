@@ -98,7 +98,41 @@ def main() -> int:
             row["target_matches"] = len(matched)
             row["host_matches"] = len(host_matched)
 
-            for entry in host_matched[:3]:
+            usable_entries = list(host_matched[:3])
+
+            # GitHub code-search evidence often uses channel names/aliases
+            # without a canonical tvg-id. When the source file does not yield
+            # an exact-id row, keep the specific URL we found beside the
+            # channel label as a research-only identity candidate. It still
+            # must pass credential filtering and both playback probes before
+            # it can be considered useful.
+            if not usable_entries:
+                evidence_url = str(item.get("candidate_url") or "").strip()
+                if evidence_url and host_of(evidence_url) == expected_host:
+                    usable_entries.append({
+                        "name": target,
+                        "name_raw": target,
+                        "tvg_id": target,
+                        "logo": "",
+                        "group": "Provider Hunt",
+                        "language": "English",
+                        "country": "US",
+                        "source": f"Provider Hunt — {expected_host}",
+                        "family": item.get("family"),
+                        "priority": 60 + int(item.get("index") or 0),
+                        "philly": target in {"WPVI.us", "WCAU.us", "KYW.us", "WPHL.us", "WPSG.us"},
+                        "url": evidence_url,
+                        "headers": {},
+                        "identity_evidence": {
+                            "kind": "github-code-search-adjacent-label",
+                            "repository": item.get("repository"),
+                            "path": item.get("path"),
+                            "target": target,
+                        },
+                    })
+                    row["used_search_evidence_fallback"] = True
+
+            for entry in usable_entries:
                 url = str(entry.get("url") or "")
                 if not build._is_clean_github_media_url(
                     url,
