@@ -287,6 +287,149 @@ class PlaybackContinuityTests(unittest.TestCase):
         self.assertEqual(probe.call_count, 2)
         self.assertEqual(sleep.call_count, 4)
 
+    def test_direct_media_decoder_rejects_short_stream(self):
+        settings = {
+            "enabled": True,
+            "duration_seconds": 12,
+            "min_decoded_seconds": 10,
+            "fps": 2,
+            "timeout_seconds": 20,
+            "detect_repeated_clips": True,
+        }
+        output = "\n".join(
+            f"0, {index}, {index}, 1, 1, {index + 1:032x}"
+            for index in range(8)
+        )
+        completed = mock.Mock(stdout=output, stderr="Stream ends prematurely", returncode=0)
+        with (
+            mock.patch.object(build.shutil, "which", return_value="/usr/bin/ffmpeg"),
+            mock.patch.object(build.subprocess, "run", return_value=completed),
+        ):
+            result = build._validate_direct_media_survival(
+                {"url": "http://example.test/live", "headers": {}},
+                settings,
+            )
+
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["continuity_failure"], "direct-media-short-decode")
+        self.assertEqual(result["direct_media_survival"]["decoded_seconds"], 4.0)
+        self.assertFalse(result["direct_media_survival"]["passed"])
+
+    def test_direct_media_decoder_accepts_ten_seconds_of_video(self):
+        settings = {
+            "enabled": True,
+            "duration_seconds": 12,
+            "min_decoded_seconds": 10,
+            "fps": 2,
+            "timeout_seconds": 20,
+            "detect_repeated_clips": True,
+        }
+        output = "\n".join(
+            f"0, {index}, {index}, 1, 1, {index + 1:032x}"
+            for index in range(24)
+        )
+        completed = mock.Mock(stdout=output, stderr="", returncode=0)
+        with (
+            mock.patch.object(build.shutil, "which", return_value="/usr/bin/ffmpeg"),
+            mock.patch.object(build.subprocess, "run", return_value=completed),
+        ):
+            result = build._validate_direct_media_survival(
+                {"url": "http://example.test/live", "headers": {}},
+                settings,
+            )
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["direct_media_survival"]["decoded_seconds"], 12.0)
+        self.assertTrue(result["direct_media_survival"]["passed"])
+
+    def test_direct_media_decoder_detects_replayed_clip(self):
+        settings = {
+            "enabled": True,
+            "duration_seconds": 12,
+            "min_decoded_seconds": 10,
+            "fps": 2,
+            "timeout_seconds": 20,
+            "detect_repeated_clips": True,
+            "repeat_min_seconds": 2,
+            "repeat_max_seconds": 4,
+        }
+        clip = [f"{index + 1:032x}" for index in range(4)]
+        hashes = clip + clip + [f"{index + 10:032x}" for index in range(20)]
+        output = "\n".join(
+            f"0, {index}, {index}, 1, 1, {digest}"
+            for index, digest in enumerate(hashes)
+        )
+        completed = mock.Mock(stdout=output, stderr="", returncode=0)
+        with (
+            mock.patch.object(build.shutil, "which", return_value="/usr/bin/ffmpeg"),
+            mock.patch.object(build.subprocess, "run", return_value=completed),
+        ):
+            result = build._validate_direct_media_survival(
+                {"url": "http://example.test/live", "headers": {}},
+                settings,
+            )
+
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["continuity_failure"], "direct-media-repeated-clip")
+        self.assertEqual(result["direct_media_survival"]["repeat"]["clip_seconds"], 2.0)
+
+    def test_direct_decoder_gate_marks_candidate_failed_before_stability_scoring(self):
+        entry = {
+            "name": "NBC Sports Philadelphia",
+            "tvg_id": "NBCSportsPhiladelphia.us",
+            "source": "Test direct feed",
+            "family": "test",
+            "url": "http://example.test/live",
+            "headers": {},
+        }
+        config = {
+            "stream_health": {
+                "enabled": True,
+                "require_passed_only": True,
+                "timeout_seconds": 1,
+                "max_workers": 1,
+                "verify_segment_for_all_candidates": True,
+                "double_probe": False,
+                "direct_media_survival": {"enabled": True, "max_workers": 1},
+                "priority_recovery": {"enabled": False},
+            },
+            "stream_stability": {
+                "enabled": True,
+                "history_size": 5,
+                "retention_builds": 20,
+                "dead_source_cooldown_hours": [1, 6, 24],
+            },
+            "favorites": [],
+        }
+        probe_result = {
+            "status": "ok",
+            "detail": "Reachable direct media URL",
+            "http_status": 200,
+            "final_url": "http://example.test/live",
+            "media_sample_sha256": "abc123",
+            "media_sample_bytes": 65536,
+        }
+        gate_result = {
+            "status": "failed",
+            "detail": "Direct media decoded only 3.0s; requires 10s",
+            "continuity_failure": "direct-media-short-decode",
+            "direct_media_survival": {
+                "decoded_seconds": 3.0,
+                "passed": False,
+            },
+        }
+        with (
+            mock.patch.object(build, "_probe_stream", return_value=probe_result),
+            mock.patch.object(build, "_validate_direct_media_survival", return_value=gate_result),
+            mock.patch.object(build, "_load_previous_stream_stability", return_value={}),
+            mock.patch.object(build, "_load_previous_channel_state", return_value={}),
+        ):
+            healthy, rows, state = build.probe_candidate_entries([entry], config)
+
+        self.assertEqual(healthy, [])
+        self.assertEqual(rows[0]["health"]["continuity_failure"], "direct-media-short-decode")
+        key = build._stream_stability_key(entry)
+        self.assertEqual(state["streams"][key]["last_result"], "fail")
     def test_identical_direct_media_samples_fail_second_probe(self):
         entry = {
             "name": "HGTV",
