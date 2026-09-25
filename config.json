@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with exact identity, persistent recovery hunting, native Live TV EPG, HLS continuity validation, and decoded direct-media survival gating.",
-    "version": "0.5.0"
+    "description": "Curated Philadelphia-area live TV with exact identity, persistent recovery hunting, native Live TV EPG, HLS continuity checks, and 2-of-3 decoded direct-media validation.",
+    "version": "0.5.1"
   },
   "sources": {
     "playlists": [
@@ -887,7 +887,13 @@
           "label": "MoveOnJoy fallback"
         }
       ]
-    }
+    },
+    "primary_deprioritized_source_contains": [
+      "SourPatchKid"
+    ],
+    "primary_deprioritized_url_contains": [
+      "/SourPatchKid/"
+    ]
   },
   "manual_sources_file": "manual_sources.json",
   "stream_health": {
@@ -923,7 +929,9 @@
       "timeout_seconds": 20,
       "detect_repeated_clips": true,
       "repeat_min_seconds": 2,
-      "repeat_max_seconds": 4
+      "repeat_max_seconds": 4,
+      "attempts": 3,
+      "required_passes": 2
     }
   },
   "discovery": {

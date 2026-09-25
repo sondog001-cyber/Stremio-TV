@@ -538,6 +538,33 @@ def _choose_backup_candidate(
     return _choose_prefer_new_family(pool, selected) if prefer_families else (pool[0] if pool else None)
 
 
+def _primary_deprioritized(stream: dict[str, Any], config: dict[str, Any]) -> bool:
+    """Keep known-flaky source families out of Primary when alternatives exist."""
+    settings = config.get("stream_selection") or {}
+    source_needles = [
+        str(value).strip().lower()
+        for value in settings.get("primary_deprioritized_source_contains", [])
+        if str(value).strip()
+    ]
+    url_needles = [
+        str(value).strip().lower()
+        for value in settings.get("primary_deprioritized_url_contains", [])
+        if str(value).strip()
+    ]
+    source_text = " ".join([
+        str(stream.get("source") or ""),
+        str(stream.get("family") or ""),
+    ]).lower()
+    url_text = " ".join([
+        str(stream.get("url") or ""),
+        stream_effective_url(stream),
+    ]).lower()
+    return (
+        any(needle in source_text for needle in source_needles)
+        or any(needle in url_text for needle in url_needles)
+    )
+
+
 def select_streams(
     streams: list[dict[str, Any]],
     max_streams: int,
@@ -563,6 +590,7 @@ def select_streams(
         seen_urls.add(url)
         s["effective_url"] = url
         s["provider_host"] = stream_provider_host(s)
+        s["primary_deprioritized"] = _primary_deprioritized(s, config)
         unique.append(s)
 
     target = config.get("stream_selection") or {}
@@ -573,10 +601,18 @@ def select_streams(
 
     selected: list[dict[str, Any]] = []
     if unique:
-        primary = dict(unique[0])
+        primary_index = next(
+            (
+                index
+                for index, candidate in enumerate(unique)
+                if not candidate.get("primary_deprioritized")
+            ),
+            0,
+        )
+        primary = dict(unique[primary_index])
         primary["slot"] = "HD 1" if is_hd_stream(primary) else "SD" if is_sd_stream(primary) else "Primary"
         selected.append(primary)
-        unique[0] = primary
+        unique[primary_index] = primary
 
     def remaining(predicate):
         chosen = {id(x) for x in selected}

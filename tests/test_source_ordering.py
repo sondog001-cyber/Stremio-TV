@@ -93,6 +93,53 @@ class SourceOrderingTests(unittest.TestCase):
         self.assertEqual([item["family"] for item in selected], ["iptv-org", "shovo"])
         self.assertTrue(selected[1]["independent_provider"])
 
+    def test_sourpatchkid_is_not_primary_when_an_alternative_exists(self):
+        config = config_with_preferences([])
+        config["stream_selection"]["primary_deprioritized_source_contains"] = [
+            "SourPatchKid"
+        ]
+        streams = [
+            {
+                **stream(
+                    "github-gist",
+                    "http://themyst.icu:826/SourPatchKid/test/1",
+                    priority=0,
+                ),
+                "source": "SourPatchKid Plus public gist",
+            },
+            stream(
+                "free-tv",
+                "https://independent.example/live.m3u8",
+                priority=20,
+            ),
+        ]
+
+        selected = build.select_streams(streams, 2, config, channel_id="ESPN.us")
+
+        self.assertEqual(selected[0]["family"], "free-tv")
+        self.assertFalse(selected[0]["primary_deprioritized"])
+        self.assertEqual(selected[1]["source"], "SourPatchKid Plus public gist")
+        self.assertTrue(selected[1]["primary_deprioritized"])
+
+    def test_sourpatchkid_can_be_primary_when_it_is_the_only_passing_source(self):
+        config = config_with_preferences([])
+        config["stream_selection"]["primary_deprioritized_source_contains"] = [
+            "SourPatchKid"
+        ]
+        only = {
+            **stream(
+                "github-gist",
+                "http://themyst.icu:826/SourPatchKid/test/1",
+            ),
+            "source": "SourPatchKid Plus public gist",
+        }
+
+        selected = build.select_streams([only], 3, config, channel_id="ESPN.us")
+
+        self.assertEqual(len(selected), 1)
+        self.assertEqual(selected[0]["source"], "SourPatchKid Plus public gist")
+        self.assertTrue(selected[0]["primary_deprioritized"])
+
     def test_redirected_duplicates_collapse_by_effective_url(self):
         config = config_with_preferences(["iptv-org", "free-tv", "shovo"])
         streams = [

@@ -85,9 +85,21 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertEqual(gate["duration_seconds"], 12)
         self.assertEqual(gate["min_decoded_seconds"], 10)
         self.assertEqual(gate["fps"], 2)
+        self.assertEqual(gate["attempts"], 3)
+        self.assertEqual(gate["required_passes"], 2)
         self.assertTrue(gate["detect_repeated_clips"])
         self.assertEqual(gate["repeat_min_seconds"], 2)
         self.assertEqual(gate["repeat_max_seconds"], 4)
+
+        selection = config["stream_selection"]
+        self.assertIn(
+            "SourPatchKid",
+            selection["primary_deprioritized_source_contains"],
+        )
+        self.assertIn(
+            "/SourPatchKid/",
+            selection["primary_deprioritized_url_contains"],
+        )
 
     def test_production_config_retires_dead_historical_seeds_and_retests_current_exact_ids(self):
         root = pathlib.Path(__file__).resolve().parents[1]
