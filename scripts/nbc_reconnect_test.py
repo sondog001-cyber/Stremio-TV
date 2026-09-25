@@ -2,7 +2,7 @@
 import hashlib, json, re, subprocess, time, urllib.request
 
 PREVIEW="https://sondog001-cyber.github.io/Stremio-TV/diagnostics/stremio-preview.json"
-CHANNEL="NBC Sports Philadelphia"
+CHANNEL="NewsNation"
 UA="StremioTV-NBC-ReconnectTest/1.0"
 
 def fetch_json(url):
@@ -37,7 +37,7 @@ for row in preview.get("channels",[]):
             }
         break
 if not item:
-    raise SystemExit("NBC Sports Philadelphia primary not found")
+    raise SystemExit("NewsNation primary not found")
 
 attempts=[]
 for attempt in range(1,7):
@@ -92,7 +92,7 @@ payload={
         "prefix_matches_to_attempt_1":prefix_matches,
     }
 }
-with open("nbc-reconnect-test.json","w",encoding="utf-8") as f:
+with open("newsnation-reconnect-test.json","w",encoding="utf-8") as f:
     json.dump(payload,f,indent=2)
 print(json.dumps(payload["summary"],indent=2))
 for a in attempts:
