@@ -209,6 +209,84 @@ class PlaybackContinuityTests(unittest.TestCase):
         self.assertTrue(health["burn_in"]["passed"])
         self.assertIn("Passed 60s burn-in (5 probes)", health["detail"])
 
+    def test_established_stable_url_uses_two_probe_validation_not_burn_in(self):
+        entry = {
+            "name": "CNN",
+            "tvg_id": "CNN.us",
+            "source": "Established source",
+            "family": "test",
+            "url": "https://example.test/cnn.m3u8",
+            "headers": {},
+        }
+        config = {
+            "stream_health": {
+                "enabled": True,
+                "require_passed_only": True,
+                "timeout_seconds": 1,
+                "max_workers": 1,
+                "verify_segment_for_all_candidates": True,
+                "double_probe": True,
+                "second_probe_delay_seconds": 60,
+                "burn_in": {
+                    "enabled": True,
+                    "scope": "promotion-only",
+                    "duration_seconds": 60,
+                    "interval_seconds": 15,
+                    "established_classifications": ["Stable", "Backup"],
+                },
+                "priority_recovery": {"enabled": False},
+            },
+            "stream_stability": {
+                "enabled": True,
+                "history_size": 5,
+                "retention_builds": 20,
+                "dead_source_cooldown_hours": [1, 6, 24],
+            },
+            "favorites": [],
+        }
+        stable_key = build._stream_stability_key(entry)
+        previous = {
+            "streams": {
+                stable_key: {
+                    "classification": "Stable",
+                    "history": [True, True, True, True, True],
+                    "consecutive_failures": 0,
+                    "last_result": "pass",
+                }
+            }
+        }
+        probe_1 = {
+            "status": "ok",
+            "detail": "Valid HLS playlist + segment",
+            "http_status": 200,
+            "final_url": "https://example.test/cnn-media.m3u8",
+            "hls_is_live": True,
+            "hls_media_sequence": 100,
+            "hls_tail_sha256": "tail-100",
+        }
+        probe_2 = {
+            **probe_1,
+            "hls_media_sequence": 104,
+            "hls_tail_sha256": "tail-104",
+        }
+
+        with (
+            mock.patch.object(build, "_probe_stream", side_effect=[probe_1, probe_2]) as probe,
+            mock.patch.object(build, "_load_previous_stream_stability", return_value=previous),
+            mock.patch.object(build, "_load_previous_channel_state", return_value={}),
+            mock.patch.object(build.time, "sleep", return_value=None) as sleep,
+        ):
+            healthy, rows, _state = build.probe_candidate_entries([entry], config)
+
+        self.assertEqual(len(healthy), 1)
+        health = rows[0]["health"]
+        self.assertEqual(health["status"], "ok")
+        self.assertEqual(health["validation_mode"], "established-two-probe")
+        self.assertEqual(health["prior_classification"], "Stable")
+        self.assertNotIn("burn_in", health)
+        self.assertEqual(probe.call_count, 2)
+        self.assertEqual(sleep.call_count, 4)
+
     def test_identical_direct_media_samples_fail_second_probe(self):
         entry = {
             "name": "HGTV",
