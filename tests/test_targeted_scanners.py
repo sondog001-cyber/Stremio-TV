@@ -61,6 +61,36 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertNotIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/TVPass.m3u", urls)
         self.assertEqual(sum(source["family"] == "github-playlist" for source in sources), 4)
 
+    def test_production_config_retests_clean_historical_exact_ids_only(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        config = json.loads((root / "config.json").read_text(encoding="utf-8"))
+        seed_urls = {
+            seed["url"]
+            for seed in config["discovery"]["seed_candidates"]
+        }
+
+        expected = {
+            "http://170.254.18.106/HGTV/index.m3u8",
+            "http://livex.pop-app.live/s4n/poplive/ch323/playlist.m3u8",
+            "http://23.237.104.106:8080/USA_REELZ/index.m3u8",
+            "http://168.228.44.241:9998/play/a0e1/index.m3u8",
+            "https://sra72yz.s.gy/STARZ_ENCORE_ESPANOL_EAST_HD",
+            "https://tvsen3.aynaott.com/5fUWDMxZ/index.m3u8",
+            "https://tvsen6.aynaott.com/nfl/index.m3u8",
+        }
+        self.assertTrue(expected.issubset(seed_urls))
+
+        rejected_historical_urls = {
+            "http://40.160.24.55/REELZ/index.m3u8",
+            "http://40.160.24.55/TV_LAND/index.m3u8",
+            "http://40.160.24.58/NEWSNATION/index.m3u8",
+            "http://206.212.244.63/144/index.m3u8",
+            "http://206.212.244.63/712/index.m3u8",
+            "http://185.246.209.113/TVLandHD/index.m3u8",
+            "https://messi.damitv.st/papi/ts/nflnetwork-usa/playlist.m3u8",
+        }
+        self.assertTrue(rejected_historical_urls.isdisjoint(seed_urls))
+
     def test_m3u_parser_preserves_origin_referrer_and_kodi_inline_headers(self):
         text = "\n".join(
             [

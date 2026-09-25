@@ -13,6 +13,7 @@ A self-updating, Philadelphia-focused live-TV addon for Stremio. It combines a c
 - Cross-build stream stability scoring and retry cooldowns
 - Effective-URL deduplication and independent-provider backup preference
 - Exact channel-identity validation
+- Five-probe, 60-second candidate burn-in before publication
 - Automated missing-channel, source-yield, and redundancy diagnostics
 - Scheduled GitHub Pages deployment with no application server
 
@@ -20,7 +21,7 @@ The addon does not host, proxy, or restream video. It returns validated upstream
 
 ## Stream policy
 
-Only allow-listed channels are considered. Before publication, every candidate must pass the configured health checks. HLS streams must expose a valid playlist and readable media segment; live HLS windows must also advance between stability probes. Confirmed decoder-visible playback defects can be exact-URL quarantined even when ordinary reachability checks pass. Failed and untested candidates remain diagnostic-only.
+Only allow-listed channels are considered. Before publication, every candidate must pass the configured health checks. Production candidates are sampled at 0, 15, 30, 45, and 60 seconds; any failed intermediate probe rejects the candidate. HLS streams must expose a valid playlist and readable media segment, and the live HLS window must advance across the validation window. Confirmed decoder-visible playback defects can be exact-URL quarantined even when ordinary reachability checks pass. Failed and untested candidates remain diagnostic-only.
 
 Streams are classified across recent builds:
 
