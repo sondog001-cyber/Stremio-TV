@@ -2205,8 +2205,17 @@ def probe_candidate_entries(
     second_probe_delay = int(settings.get("second_probe_delay_seconds", 60))
     burn_in_settings = settings.get("burn_in") or {}
     burn_in_enabled = bool(burn_in_settings.get("enabled", False))
+    burn_in_scope = str(burn_in_settings.get("scope", "promotion-only")).strip().lower()
     burn_in_duration = max(1, int(burn_in_settings.get("duration_seconds", 60)))
     burn_in_interval = max(1, int(burn_in_settings.get("interval_seconds", 15)))
+    established_classifications = {
+        str(value).strip()
+        for value in burn_in_settings.get(
+            "established_classifications",
+            ["Stable", "Backup"],
+        )
+        if str(value).strip()
+    }
 
     rows: list[dict[str, Any]] = []
     previous_stability: dict[str, Any] = {}
@@ -2287,6 +2296,10 @@ def probe_candidate_entries(
         key: jobs[key]
         for key, health in results.items()
         if health.get("status") == "ok"
+    }
+    first_probe_health = {
+        key: dict(results[key])
+        for key in first_pass
     }
 
     def finalize_continuity(
@@ -2369,9 +2382,41 @@ def probe_candidate_entries(
         }
 
     if burn_in_enabled and first_pass:
-        checks_after_first = max(1, (burn_in_duration + burn_in_interval - 1) // burn_in_interval)
+        previous_streams = previous_stability.get("streams") or {}
+        burn_in_pass: dict[
+            tuple[str, tuple[tuple[str, str], ...]],
+            dict[str, Any],
+        ] = {}
+        established_pass: dict[
+            tuple[str, tuple[tuple[str, str], ...]],
+            dict[str, Any],
+        ] = {}
+        prior_classification: dict[
+            tuple[str, tuple[tuple[str, str], ...]],
+            str | None,
+        ] = {}
+
+        for key, entry in first_pass.items():
+            old = previous_streams.get(_stream_stability_key(entry))
+            old = old if isinstance(old, dict) else {}
+            old_class = str(old.get("classification") or "").strip() or None
+            prior_classification[key] = old_class
+            established = bool(
+                old_class
+                and old_class in established_classifications
+                and burn_in_scope != "all"
+            )
+            if established:
+                established_pass[key] = entry
+            else:
+                burn_in_pass[key] = entry
+
+        checks_after_first = max(
+            1,
+            (burn_in_duration + burn_in_interval - 1) // burn_in_interval,
+        )
         planned_elapsed = checks_after_first * burn_in_interval
-        active = dict(first_pass)
+        active = dict(burn_in_pass)
         samples_by_key: dict[
             tuple[str, tuple[tuple[str, str], ...]],
             list[dict[str, Any]],
@@ -2380,16 +2425,28 @@ def probe_candidate_entries(
             for key in active
         }
         log(
-            f"Health burn-in: {len(active):,} candidates passed probe 1; "
-            f"{checks_after_first} more probe(s) every {burn_in_interval}s "
+            "Health validation split: "
+            f"{len(first_pass):,} passed probe 1; "
+            f"burn-in={len(burn_in_pass):,}, "
+            f"established-two-probe={len(established_pass):,}; "
+            f"{checks_after_first} interval(s) every {burn_in_interval}s "
             f"across ~{planned_elapsed}s"
         )
 
         for probe_index in range(2, checks_after_first + 2):
-            if not active:
+            is_final_probe = probe_index == checks_after_first + 1
+            batch = dict(active)
+            if is_final_probe and double_probe:
+                batch.update(established_pass)
+            if not batch:
+                if double_probe and established_pass and not is_final_probe:
+                    time.sleep(burn_in_interval)
+                    continue
                 break
+
             time.sleep(burn_in_interval)
-            next_results = run_probe_batch(active)
+            next_results = run_probe_batch(batch)
+
             for key in list(active):
                 health = next_results.get(
                     key,
@@ -2409,11 +2466,14 @@ def probe_candidate_entries(
                         f"{health.get('detail', 'unknown')}"
                     ),
                     "continuity_failure": "burn-in-probe-failed",
+                    "validation_mode": "promotion-burn-in",
+                    "prior_classification": prior_classification.get(key),
                     "probe_1": samples_by_key[key][0],
                     "probe_2": health,
                     "stable": False,
                     "burn_in": {
                         "enabled": True,
+                        "scope": burn_in_scope,
                         "duration_seconds": burn_in_duration,
                         "interval_seconds": burn_in_interval,
                         "planned_probes": checks_after_first + 1,
@@ -2425,10 +2485,31 @@ def probe_candidate_entries(
                 }
                 del active[key]
 
+            if is_final_probe and double_probe:
+                for key, entry in established_pass.items():
+                    first_health = first_probe_health[key]
+                    final_health = next_results.get(
+                        key,
+                        {"status": "failed", "detail": "No established final probe result"},
+                    )
+                    result = finalize_continuity(
+                        first_health,
+                        final_health,
+                        "Passed established-stream two-probe validation",
+                        failure_detail=(
+                            "Established final probe failed after probe 1 passed: "
+                            f"{final_health.get('detail', 'unknown')}"
+                        ),
+                    )
+                    result["validation_mode"] = "established-two-probe"
+                    result["prior_classification"] = prior_classification.get(key)
+                    results[key] = result
+
         for key in active:
             samples = samples_by_key[key]
             burn_in = {
                 "enabled": True,
+                "scope": burn_in_scope,
                 "duration_seconds": burn_in_duration,
                 "interval_seconds": burn_in_interval,
                 "planned_probes": checks_after_first + 1,
@@ -2437,18 +2518,21 @@ def probe_candidate_entries(
                 "failed_probe": None,
                 "passed": True,
             }
-            results[key] = finalize_continuity(
+            result = finalize_continuity(
                 samples[0],
                 samples[-1],
-                f"Passed {planned_elapsed}s burn-in ({len(samples)} probes)",
+                f"Passed {planned_elapsed}s burn-in ({len(samples)} probes) before promotion",
                 failure_detail=(
                     f"Final burn-in probe failed after probe 1 passed: "
                     f"{samples[-1].get('detail', 'unknown')}"
                 ),
                 burn_in=burn_in,
             )
-            if results[key].get("status") != "ok":
-                results[key]["burn_in"]["passed"] = False
+            result["validation_mode"] = "promotion-burn-in"
+            result["prior_classification"] = prior_classification.get(key)
+            if result.get("status") != "ok":
+                result["burn_in"]["passed"] = False
+            results[key] = result
 
     elif double_probe and first_pass:
         log(

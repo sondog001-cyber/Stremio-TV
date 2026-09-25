@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, expiring client verification, native Live TV EPG, and 60-second multi-probe playback validation.",
-    "version": "0.4.6"
+    "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, expiring client verification, native Live TV EPG, and promotion-gated 60-second playback validation.",
+    "version": "0.4.7"
   },
   "sources": {
     "playlists": [
@@ -886,7 +886,12 @@
     "burn_in": {
       "enabled": true,
       "duration_seconds": 60,
-      "interval_seconds": 15
+      "interval_seconds": 15,
+      "scope": "promotion-only",
+      "established_classifications": [
+        "Stable",
+        "Backup"
+      ]
     }
   },
   "discovery": {
