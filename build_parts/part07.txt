@@ -17,6 +17,7 @@
             "build": build_info,
             "channels": stremio_preview_rows,
         })
+        write_json(output / "diagnostics" / "daddylive-resolver.json", daddylive_resolver_report)
         write_json(output / "diagnostics" / "primary-playback-qa.json", primary_playback_qa)
         write_json(output / "diagnostics" / "stream-health.json", stream_health_results)
         write_json(output / "diagnostics" / "stream-stability.json", stream_stability_state)
