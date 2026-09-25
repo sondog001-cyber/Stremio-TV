@@ -323,6 +323,11 @@
                     for row in stream_health_results
                     if (row.get("health") or {}).get("continuity_failure") == "direct-media-short-decode"
                 ),
+                "insufficient_survival": sum(
+                    1
+                    for row in stream_health_results
+                    if (row.get("health") or {}).get("continuity_failure") == "direct-media-insufficient-survival"
+                ),
                 "repeated_clip": sum(
                     1
                     for row in stream_health_results
