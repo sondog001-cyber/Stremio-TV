@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with exact identity, persistent recovery hunting, native Live TV EPG, HLS continuity checks, and 2-of-3 decoded direct-media validation.",
-    "version": "0.5.1"
+    "description": "Curated Philadelphia-area live TV with native EPG, HLS continuity checks, 2-of-3 direct-media validation, and final decoded Primary playback QA.",
+    "version": "0.5.2"
   },
   "sources": {
     "playlists": [
@@ -758,6 +758,20 @@
         "reason": "User-confirmed playback defect: stream starts normally then stalls/dies after a few seconds; upstream later refused connections.",
         "observed_at": "2026-09-23",
         "evidence": "Manual Stremio playback verification plus follow-up connection refusal"
+      },
+      {
+        "tvg_id": "CinemaxClassics.us@East",
+        "url": "http://23.237.104.106:8080/USA_5STARMAX/index.m3u8",
+        "reason": "Decoded Primary QA timed out twice with zero video frames; quarantine exact URL pending replacement.",
+        "observed_at": "2026-09-25",
+        "evidence": "v0.5.1 full decoded-frame sweep + 30s focused retry"
+      },
+      {
+        "tvg_id": "StarzComedy.us@East",
+        "url": "http://23.237.104.106:8080/USA_STARZ_COMEDY/index.m3u8",
+        "reason": "Decoded Primary QA timed out twice with zero video frames; quarantine exact URL pending replacement.",
+        "observed_at": "2026-09-25",
+        "evidence": "v0.5.1 full decoded-frame sweep + 30s focused retry"
       }
     ]
   },
@@ -932,6 +946,17 @@
       "repeat_max_seconds": 4,
       "attempts": 3,
       "required_passes": 2
+    },
+    "primary_playback_qa": {
+      "enabled": true,
+      "duration_seconds": 10,
+      "min_decoded_seconds": 8,
+      "fps": 2,
+      "max_workers": 10,
+      "timeout_seconds": 18,
+      "detect_repeated_clips": true,
+      "repeat_min_seconds": 2,
+      "repeat_max_seconds": 4
     }
   },
   "discovery": {
@@ -1206,9 +1231,54 @@
           "priority": 13,
           "philly": false,
           "content_note": "Public direct HLS list with exact US feed IDs and playback Origin/Referer headers; no login credentials accepted."
+        },
+        {
+          "name": "Insolence MoveOnJoy dedicated US index",
+          "family": "moveonjoy",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/InsolenceWillow/insolencetvgo/main/moveonjoy.m3u",
+          "priority": 10,
+          "philly": false,
+          "content_note": "Dedicated current MoveOnJoy index added for prioritized missing IDs; exact IDs only and all playback gates still apply."
+        },
+        {
+          "name": "Yarr-Stremio TVPass US index",
+          "family": "tvpass",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/spookyhost1/yarr-stremio/main/src/iptv/m3u-sources/us_tvpass.m3u",
+          "priority": 12,
+          "philly": false,
+          "content_note": "Independent maintained TVPass index discovered in exact-ID search; only prioritized missing IDs are retained."
         }
       ],
-      "hunt_unstable_channels": true
+      "hunt_unstable_channels": true,
+      "priority_target_ids": [
+        "CBSSportsNetwork.us",
+        "DiscoveryChannel.us",
+        "FXMovieChannel.us",
+        "FXX.us",
+        "FoxSports2.us",
+        "InvestigationDiscovery.us",
+        "MLBNetwork.us",
+        "NBCSportsPhiladelphia.us",
+        "SmithsonianChannel.us",
+        "SundanceTV.us",
+        "TLC.us",
+        "WeatherChannel.us"
+      ],
+      "secondary_target_ids": [
+        "HGTV.us",
+        "MagnoliaNetwork.us",
+        "OWN.us",
+        "Reelz.us",
+        "StarzEncoreSpanish.us",
+        "TVLand.us",
+        "TravelChannel.us",
+        "KYW.us",
+        "WCAU.us",
+        "WPHL.us",
+        "WPVI.us"
+      ]
     },
     "github_candidate_search": {
       "enabled": false,
