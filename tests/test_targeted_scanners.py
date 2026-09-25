@@ -59,6 +59,9 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertIn("https://raw.githubusercontent.com/aphrodite747/iptv-scraper/main/thetvapp.m3u8", urls)
         self.assertIn("https://raw.githubusercontent.com/InsolenceWillow/insolencetvgo/main/moveonjoy.m3u", urls)
         self.assertIn("https://raw.githubusercontent.com/spookyhost1/yarr-stremio/main/src/iptv/m3u-sources/us_tvpass.m3u", urls)
+        self.assertIn("https://raw.githubusercontent.com/arquerido/mych/main/NEX.m3u8", urls)
+        self.assertIn("https://raw.githubusercontent.com/arquerido/mych/main/MOVE.m3u8", urls)
+        self.assertIn("https://raw.githubusercontent.com/arquerido/mych/main/TAZZTV.m3u", urls)
         self.assertNotIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/smart.m3u", urls)
         self.assertNotIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/TVPass.m3u", urls)
         self.assertEqual(sum(source["family"] == "github-playlist" for source in sources), 4)
@@ -109,6 +112,38 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertEqual(primary_qa["min_decoded_seconds"], 8)
         self.assertEqual(primary_qa["fps"], 2)
         self.assertTrue(primary_qa["detect_repeated_clips"])
+
+    def test_production_recovery_aliases_cover_common_us_feed_ids(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        config = json.loads((root / "config.json").read_text(encoding="utf-8"))
+        aliases = config["curation"]["canonical_id_aliases"]
+
+        expected = {
+            "CBS.Sports.Network.USA.us": "CBSSportsNetwork.us",
+            "Discovery.Channel.(US).-.Eastern.Feed.us": "DiscoveryChannel.us",
+            "FX.Networks.East.Coast.us": "FX.us",
+            "FX.Movie.Channel.us": "FXMovieChannel.us",
+            "FXX.USA.-.Eastern.us": "FXX.us",
+            "Fox.Sports.2.us": "FoxSports2.us",
+            "HGTV.USA.-.Eastern.Feed.us": "HGTV.us",
+            "Investigation.Discovery.USA.-.Eastern.us": "InvestigationDiscovery.us",
+            "MLB.Network.us": "MLBNetwork.us",
+            "NBC.Sports.Philadelphia.HDTV.(NBCSPAHD).us": "NBCSportsPhiladelphia.us",
+            "National.Geographic.US.-.Eastern.us": "NationalGeographic.us",
+            "Oprah.Winfrey.Network.USA.Eastern.us": "OWN.us",
+            "Paramount.Network.USA.-.Eastern.Feed.us": "ParamountNetwork.us",
+            "ReelzChannel.us": "Reelz.us",
+            "Smithsonian.Channel.USA.HD.us": "SmithsonianChannel.us",
+            "Starz.Comedy.HD.-.Eastern.us": "StarzComedy.us",
+            "SundanceTV.USA.-.East.us": "SundanceTV.us",
+            "TLC.USA.-.Eastern.us": "TLC.us",
+            "The.Weather.Channel.us": "WeatherChannel.us",
+            "Travel.US.-.East.us": "TravelChannel.us",
+            "TV.Land.-.Eastern.us": "TVLand.us",
+            "Magnolia.-.East.us": "MagnoliaNetwork.us",
+        }
+        for source_id, target_id in expected.items():
+            self.assertEqual(aliases[source_id], target_id)
 
     def test_production_missing_channel_hunt_prioritizes_runner_blocked_then_cooldown(self):
         root = pathlib.Path(__file__).resolve().parents[1]
