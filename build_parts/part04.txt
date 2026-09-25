@@ -3598,7 +3598,7 @@ def build_source_family_scoreboard(
 
 def _runner_or_geo_blocked_health(health: dict[str, Any]) -> bool:
     """Return True when the builder failure looks egress/geo/access related."""
-    if not isinstance(health, dict) or health.get("status") in {"ok", "cooldown"}:
+    if not isinstance(health, dict) or health.get("status") == "ok":
         return False
     try:
         status_code = int(health.get("http_status"))
