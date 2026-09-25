@@ -408,28 +408,30 @@ def _target_ids_for_source_hunt(
     # current candidate URLs has established Stable/Backup history. A one-build
     # recovery is not enough evidence to stop looking for an independent or
     # more durable replacement.
-    previous_stability = _load_previous_stream_stability(config)
-    previous_streams = previous_stability.get("streams") or {}
-    if previous_streams:
-        established_classes = {"Stable", "Backup"}
-        by_channel: dict[str, list[dict[str, Any]]] = defaultdict(list)
-        for entry in coverage_entries:
-            marker = canonical_tvg_id(str(entry.get("tvg_id") or ""))
-            if marker in in_scope:
-                by_channel[marker].append(entry)
+    hunt_settings = (config.get("discovery") or {}).get("targeted_source_families") or {}
+    if bool(hunt_settings.get("hunt_unstable_channels", False)):
+        previous_stability = _load_previous_stream_stability(config)
+        previous_streams = previous_stability.get("streams") or {}
+        if previous_streams:
+            established_classes = {"Stable", "Backup"}
+            by_channel: dict[str, list[dict[str, Any]]] = defaultdict(list)
+            for entry in coverage_entries:
+                marker = canonical_tvg_id(str(entry.get("tvg_id") or ""))
+                if marker in in_scope:
+                    by_channel[marker].append(entry)
 
-        for marker, pattern in in_scope.items():
-            entries_for_channel = by_channel.get(marker) or []
-            if not entries_for_channel:
-                continue
-            has_established = False
-            for entry in entries_for_channel:
-                old = previous_streams.get(_stream_stability_key(entry))
-                if isinstance(old, dict) and old.get("classification") in established_classes:
-                    has_established = True
-                    break
-            if not has_established:
-                targets[marker] = pattern
+            for marker, pattern in in_scope.items():
+                entries_for_channel = by_channel.get(marker) or []
+                if not entries_for_channel:
+                    continue
+                has_established = False
+                for entry in entries_for_channel:
+                    old = previous_streams.get(_stream_stability_key(entry))
+                    if isinstance(old, dict) and old.get("classification") in established_classes:
+                        has_established = True
+                        break
+                if not has_established:
+                    targets[marker] = pattern
 
     allow_order = _exact_allowlist_ids(config, scope=scope)
     return [
