@@ -14,6 +14,7 @@ A self-updating, Philadelphia-focused live-TV addon for Stremio. It combines a c
 - Effective-URL deduplication and independent-provider backup preference
 - Exact channel-identity validation
 - Five-probe, 60-second burn-in for new/unproven candidates before promotion
+- FFmpeg decoder survival gate for direct MPEG-TS/media streams
 - Automated missing-channel, source-yield, and redundancy diagnostics
 - Scheduled GitHub Pages deployment with no application server
 
@@ -21,7 +22,7 @@ The addon does not host, proxy, or restream video. It returns validated upstream
 
 ## Stream policy
 
-Only allow-listed channels are considered. Before publication, every candidate must pass the configured health checks. New, Quarantine, and Dead candidates are sampled at 0, 15, 30, 45, and 60 seconds before promotion; any failed intermediate probe rejects them. Previously established Stable or Backup URLs keep the lower-churn two-probe continuity check across the same validation window. HLS streams must expose a valid playlist and readable media segment, and live HLS windows must advance across the validation window. Confirmed decoder-visible playback defects can be exact-URL quarantined even when ordinary reachability checks pass. Failed and untested candidates remain diagnostic-only.
+Only allow-listed channels are considered. Before publication, every candidate must pass the configured health checks. New, Quarantine, and Dead candidates are sampled at 0, 15, 30, 45, and 60 seconds before promotion; any failed intermediate probe rejects them. Previously established Stable or Backup URLs keep the lower-churn two-probe continuity check across the same validation window. HLS streams must expose a valid playlist and readable media segment, and live HLS windows must advance across the validation window. Direct non-HLS media must also sustain at least 10 seconds of decoded video during a 12-second FFmpeg check; short-lived feeds and immediately replayed 2–4 second clips fail before stability scoring or selection. Confirmed decoder-visible playback defects can be exact-URL quarantined even when ordinary reachability checks pass. Failed and untested candidates remain diagnostic-only.
 
 Streams are classified across recent builds:
 
