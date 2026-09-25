@@ -75,7 +75,7 @@ class TargetedScannerTests(unittest.TestCase):
             {"Stable", "Backup"},
         )
 
-    def test_production_config_retests_clean_historical_exact_ids_only(self):
+    def test_production_config_retires_dead_historical_seeds_and_retests_current_exact_ids(self):
         root = pathlib.Path(__file__).resolve().parents[1]
         config = json.loads((root / "config.json").read_text(encoding="utf-8"))
         seed_urls = {
@@ -83,7 +83,13 @@ class TargetedScannerTests(unittest.TestCase):
             for seed in config["discovery"]["seed_candidates"]
         }
 
-        expected = {
+        current_exact = {
+            "http://tvsen7.aynascope.net/teennick/index.m3u8",
+            "http://168.228.44.241:9998/play/a0e0/index.m3u8",
+        }
+        self.assertTrue(current_exact.issubset(seed_urls))
+
+        retired_or_rejected = {
             "http://170.254.18.106/HGTV/index.m3u8",
             "http://livex.pop-app.live/s4n/poplive/ch323/playlist.m3u8",
             "http://23.237.104.106:8080/USA_REELZ/index.m3u8",
@@ -91,10 +97,6 @@ class TargetedScannerTests(unittest.TestCase):
             "https://sra72yz.s.gy/STARZ_ENCORE_ESPANOL_EAST_HD",
             "https://tvsen3.aynaott.com/5fUWDMxZ/index.m3u8",
             "https://tvsen6.aynaott.com/nfl/index.m3u8",
-        }
-        self.assertTrue(expected.issubset(seed_urls))
-
-        rejected_historical_urls = {
             "http://40.160.24.55/REELZ/index.m3u8",
             "http://40.160.24.55/TV_LAND/index.m3u8",
             "http://40.160.24.58/NEWSNATION/index.m3u8",
@@ -103,7 +105,17 @@ class TargetedScannerTests(unittest.TestCase):
             "http://185.246.209.113/TVLandHD/index.m3u8",
             "https://messi.damitv.st/papi/ts/nflnetwork-usa/playlist.m3u8",
         }
-        self.assertTrue(rejected_historical_urls.isdisjoint(seed_urls))
+        self.assertTrue(retired_or_rejected.isdisjoint(seed_urls))
+
+        id_aliases = config["curation"]["canonical_id_aliases"]
+        self.assertEqual(id_aliases["TeenNick.-.Eastern.us"], "TeenNick.us")
+        self.assertEqual(id_aliases["TeenNick.(East).(TNCK).us"], "TeenNick.us")
+        self.assertEqual(id_aliases["Starz.Edge.-.Eastern.us"], "StarzEdge.us")
+        self.assertEqual(id_aliases["CW57WPSG.us"], "WPSG.us")
+        self.assertEqual(
+            id_aliases["NBC.Sports.Philadelphia.Plus.us2"],
+            "NBCSportsPhiladelphiaPlus.us",
+        )
 
     def test_m3u_parser_preserves_origin_referrer_and_kodi_inline_headers(self):
         text = "\n".join(
@@ -218,6 +230,73 @@ class TargetedScannerTests(unittest.TestCase):
 
         self.assertEqual(normalized[0]["tvg_id"], "BloombergTV.us")
         self.assertEqual(normalized[0]["source_tvg_id"], "BloombergTelevision.us")
+
+    def test_missing_channel_variant_ids_normalize_only_via_explicit_aliases(self):
+        config = minimal_config()
+        config["curation"]["national_allow"].extend([
+            "TeenNick.us",
+            "StarzEdge.us",
+            "NBCSportsPhiladelphiaPlus.us",
+        ])
+        config["curation"]["philly_allow"].append("WPSG.us")
+        config["curation"]["canonical_id_aliases"] = {
+            "TeenNick.-.Eastern.us": "TeenNick.us",
+            "TeenNick.(East).(TNCK).us": "TeenNick.us",
+            "Starz.Edge.-.Eastern.us": "StarzEdge.us",
+            "CW57WPSG.us": "WPSG.us",
+            "NBC.Sports.Philadelphia.Plus.us2": "NBCSportsPhiladelphiaPlus.us",
+        }
+        entries = [
+            {
+                "name": "TeenNick",
+                "tvg_id": "TeenNick.-.Eastern.us",
+                "url": "https://example.test/teennick.m3u8",
+                "source": "Trusted playlist",
+                "family": "daddylive",
+            },
+            {
+                "name": "Starz Edge",
+                "tvg_id": "Starz.Edge.-.Eastern.us",
+                "url": "https://example.test/starz-edge.m3u8",
+                "source": "Trusted playlist",
+                "family": "tv247",
+            },
+            {
+                "name": "CW57 WPSG",
+                "tvg_id": "CW57WPSG.us",
+                "url": "https://example.test/wpsg.m3u8",
+                "source": "Trusted playlist",
+                "family": "iptv-org",
+            },
+            {
+                "name": "NBCSN Philadelphia Plus",
+                "tvg_id": "NBC.Sports.Philadelphia.Plus.us2",
+                "url": "https://example.test/nbcsn-plus.m3u8",
+                "source": "Trusted playlist",
+                "family": "iptv-org",
+            },
+        ]
+
+        normalized = build.canonicalize_approved_sources(entries, config)
+
+        self.assertEqual(
+            [row["tvg_id"] for row in normalized],
+            [
+                "TeenNick.us",
+                "StarzEdge.us",
+                "WPSG.us",
+                "NBCSportsPhiladelphiaPlus.us",
+            ],
+        )
+        self.assertEqual(
+            [row["source_tvg_id"] for row in normalized],
+            [
+                "TeenNick.-.Eastern.us",
+                "Starz.Edge.-.Eastern.us",
+                "CW57WPSG.us",
+                "NBC.Sports.Philadelphia.Plus.us2",
+            ],
+        )
 
     def test_local_and_national_target_sets_are_disjoint(self):
         config = minimal_config()
