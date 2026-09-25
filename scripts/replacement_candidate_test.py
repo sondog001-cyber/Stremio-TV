@@ -2,22 +2,22 @@
 import json, subprocess, time, concurrent.futures
 
 candidates = [
-    {"channel":"CBS Sports Network","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly96ZWtvbmV3Lm5ld2tzby5ydS96ZWtvL3ByZW1pdW0zMDgvbW9uby5tM3U4.m3u8"},
-    {"channel":"Discovery Channel","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly96ZWtvbmV3Lm5ld2tzby5ydS96ZWtvL3ByZW1pdW0zMTMvbW9uby5tM3U4.m3u8"},
-    {"channel":"FXX","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly9kZHk2bmV3Lm5ld2tzby5ydS9kZHk2L3ByZW1pdW0yOTgvbW9uby5tM3U4.m3u8"},
-    {"channel":"Fox Sports 2","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly96ZWtvbmV3Lm5ld2tzby5ydS96ZWtvL3ByZW1pdW03NTgvbW9uby5tM3U4.m3u8"},
-    {"channel":"HGTV","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly96ZWtvbmV3Lm5ld2tzby5ydS96ZWtvL3ByZW1pdW0zODIvbW9uby5tM3U4.m3u8"},
-    {"channel":"Investigation Discovery","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly93aW5kbmV3Lm5ld2tzby5ydS93aW5kL3ByZW1pdW0zMjQvbW9uby5tM3U4.m3u8"},
-    {"channel":"MLB Network","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly93aW5kbmV3Lm5ld2tzby5ydS93aW5kL3ByZW1pdW0zOTkvbW9uby5tM3U4.m3u8"},
-    {"channel":"Magnolia Network","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly9kZHk2bmV3Lm5ld2tzby5ydS9kZHk2L3ByZW1pdW0yOTkvbW9uby5tM3U4.m3u8"},
-    {"channel":"NBC Sports Philadelphia","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly96ZWtvbmV3Lm5ld2tzby5ydS96ZWtvL3ByZW1pdW03NzcvbW9uby5tM3U4.m3u8"},
-    {"channel":"OWN","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly93aW5kbmV3Lm5ld2tzby5ydS93aW5kL3ByZW1pdW0zMzEvbW9uby5tM3U4.m3u8"},
-    {"channel":"Reelz","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly96ZWtvbmV3Lm5ld2tzby5ydS96ZWtvL3ByZW1pdW0yOTMvbW9uby5tM3U4.m3u8"},
-    {"channel":"Smithsonian Channel","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly9kb2trbzFuZXcubmV3a3NvLnJ1L2Rva2tvMS9wcmVtaXVtNjAzL21vbm8ubTN1OA==.m3u8"},
-    {"channel":"SundanceTV","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly9kb2trbzFuZXcubmV3a3NvLnJ1L2Rva2tvMS9wcmVtaXVtNjU4L21vbm8ubTN1OA==.m3u8"},
-    {"channel":"TLC","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly93aW5kbmV3Lm5ld2tzby5ydS93aW5kL3ByZW1pdW0zMzcvbW9uby5tM3U4.m3u8"},
-    {"channel":"Weather Channel","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly96ZWtvbmV3Lm5ld2tzby5ydS96ZWtvL3ByZW1pdW0zOTQvbW9uby5tM3U4.m3u8"},
-    {"channel":"Travel Channel","url":"https://arquerido-piggy.hf.space/watch/aHR0cHM6Ly93aW5kbmV3Lm5ld2tzby5ydS93aW5kL3ByZW1pdW0zNDAvbW9uby5tM3U4.m3u8"},
+    {"channel":"CBS Sports Network","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-308.php"},
+    {"channel":"Discovery Channel","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-313.php"},
+    {"channel":"FXX","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-298.php"},
+    {"channel":"Fox Sports 2","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-758.php"},
+    {"channel":"HGTV","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-382.php"},
+    {"channel":"Investigation Discovery","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-324.php"},
+    {"channel":"Magnolia Network","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-299.php"},
+    {"channel":"MLB Network","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-399.php"},
+    {"channel":"NBC Sports Philadelphia","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-777.php"},
+    {"channel":"OWN","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-331.php"},
+    {"channel":"Reelz","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-293.php"},
+    {"channel":"Smithsonian Channel","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-603.php"},
+    {"channel":"SundanceTV","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-658.php"},
+    {"channel":"TLC","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-337.php"},
+    {"channel":"Travel Channel","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-340.php"},
+    {"channel":"Weather Channel","url":"http://scafroglia93-ua.hf.space/proxy/m3u?url=https%3A%2F%2Fthedaddy.click%2Fstream%2Fstream-394.php"}
 ]
 def check(item):
     started=time.time()
