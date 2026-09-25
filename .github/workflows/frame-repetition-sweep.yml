@@ -22,8 +22,11 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - name: Verify FFmpeg
-        run: ffmpeg -version | head -n 1
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version
       - name: Decode every published primary channel and detect repeated clips
         run: |
           python scripts/frame_repetition_sweep.py \
