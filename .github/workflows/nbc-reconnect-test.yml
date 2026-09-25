@@ -1,4 +1,4 @@
-name: NBC reconnect fingerprint test
+name: NewsNation reconnect fingerprint test
 
 on:
   push:
@@ -26,13 +26,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-      - name: Reconnect to NBC primary six times
+      - name: Reconnect to NewsNation primary six times
         run: python scripts/nbc_reconnect_test.py
       - name: Upload result
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: nbc-reconnect-test
-          path: nbc-reconnect-test.json
+          name: newsnation-reconnect-test
+          path: newsnation-reconnect-test.json
           if-no-files-found: error
           retention-days: 7
