@@ -70,6 +70,7 @@
         if (config.get("curation") or {}).get("enabled"):
             log(f"Curated playlist: kept {len(entries):,} streams and filtered {len(filtered_entries):,}")
 
+        probed_entries = list(entries)
         entries, stream_health_results, stream_stability_state = probe_candidate_entries(
             entries,
             config,
@@ -84,6 +85,11 @@
             enabled=not bool(fixtures),
         )
         label_channel_streams(channels)
+        local_test_channels, local_test_report = build_local_test_channels(
+            probed_entries,
+            channels,
+            config,
+        )
 
         published_entries = [
             stream
@@ -121,6 +127,11 @@
         build_info["channels"] = len(channels)
         build_info["total_streams"] = sum(len(channel.get("streams", [])) for channel in channels)
         for ch in channels:
+            ch["build_version"] = build_info["version"]
+            ch["built_at"] = build_stamp
+            ch["build_id"] = build_info["build_id"]
+            ch["build_revision"] = build_info.get("source_revision")
+        for ch in local_test_channels:
             ch["build_version"] = build_info["version"]
             ch["built_at"] = build_stamp
             ch["build_id"] = build_info["build_id"]
@@ -181,6 +192,18 @@
             config,
             enabled=not bool(fixtures),
         )
+        local_test_logo_normalization = normalize_channel_logos(
+            output,
+            local_test_channels,
+            public_base,
+            config,
+            enabled=not bool(fixtures),
+        ) if local_test_channels else {
+            "version": 1,
+            "enabled": True,
+            "summary": {"channels": 0, "normalized": 0, "fallback": 0, "failed": 0},
+            "channels": [],
+        }
         schedules, dates = build_program_index(epg_path, epg_to_channels)
 
         # Main EPG catalog + normal channel list.
@@ -197,6 +220,16 @@
             else:
                 subset = [c for c in channels if c["category"] == category]
             write_paginated_catalog(output, cat["id"], subset, page_size, discover_only=True)
+
+        local_test_settings = config.get("local_test_catalog") or {}
+        if bool(local_test_settings.get("enabled", False)):
+            write_paginated_catalog(
+                output,
+                str(local_test_settings.get("id") or "local-test"),
+                local_test_channels,
+                page_size,
+                discover_only=True,
+            )
 
         # Meta and stream endpoints.
         now = dt.datetime.now(UTC)
@@ -229,6 +262,33 @@
                 },
             )
             stremio_preview_rows.append({
+                "channel": channel_preview(ch),
+                "meta": meta,
+                "streams": streams,
+            })
+
+        local_test_preview_rows: list[dict[str, Any]] = []
+        for ch in local_test_channels:
+            meta = channel_meta(ch, [])
+            write_json(
+                output / "meta" / "tv" / f"{ch['id']}.json",
+                cached_resource({"meta": meta}),
+            )
+            streams = [
+                stream_object(stream, index + 1, build_info)
+                for index, stream in enumerate(ch.get("streams") or [])
+            ]
+            write_json(
+                output / "stream" / "tv" / f"{ch['id']}.json",
+                {
+                    "streams": streams,
+                    "stremioTvBuild": build_info,
+                    "cacheMaxAge": 60,
+                    "staleRevalidate": 120,
+                    "staleError": 600,
+                },
+            )
+            local_test_preview_rows.append({
                 "channel": channel_preview(ch),
                 "meta": meta,
                 "streams": streams,
@@ -331,6 +391,10 @@
                 for status in ("ok", "failed", "cooldown", "not-tested")
             },
             "primary_playback_qa": primary_playback_qa.get("summary", {}),
+            "local_test_catalog": {
+                **local_test_report.get("summary", {}),
+                "catalog_id": str((config.get("local_test_catalog") or {}).get("id") or "local-test"),
+            },
             "direct_media_survival": {
                 "tested": sum(
                     1

@@ -16,6 +16,7 @@ A self-updating, Philadelphia-focused live-TV addon for Stremio. It combines a c
 - Five-probe, 60-second burn-in for new/unproven candidates before promotion
 - 2-of-3 FFmpeg decoder survival gate for direct MPEG-TS/media streams
 - Final decoded Primary playback QA with automatic backup promotion
+- Separate 🧪 Local Test catalog for GitHub-runner/geo-blocked candidates
 - Automated missing-channel, source-yield, and redundancy diagnostics
 - Build-time refresh of short-lived public signed HLS candidates through a pinned resolver
 - Scheduled GitHub Pages deployment with no application server
@@ -51,6 +52,8 @@ For each channel, the builder:
 6. publishes no more than three choices, targeting two HD and one SD stream.
 
 The most reliable candidate becomes Primary. Sources explicitly marked as primary-deprioritized (currently SourPatchKid-derived direct streams) are kept out of Primary when another passing provider exists, but may remain as a last-resort Primary when they are the only source and have passed the decoder gate. Additional links are labeled Backup 1 and Backup 2.
+
+Runner/geo-blocked candidates are never mixed into the trusted lineup. When enabled, the addon publishes them in a separate **🧪 Local Test — Runner Blocked** catalog so they can be tested from the user's own Stremio/network. Required request headers are preserved through Stremio `proxyHeaders`, and each choice is labeled `LOCAL TEST 1`, `LOCAL TEST 2`, and so on.
 
 ## Data sources
 

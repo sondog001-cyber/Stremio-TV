@@ -70,6 +70,20 @@ def build_manifest(
             }
         )
 
+    local_test = config.get("local_test_catalog") or {}
+    if bool(local_test.get("enabled", False)):
+        catalogs.append(
+            {
+                "type": "tv",
+                "id": str(local_test.get("id") or "local-test"),
+                "name": str(local_test.get("name") or "🧪 Local Test — Runner Blocked"),
+                "extra": [
+                    {"name": "genre", "isRequired": True, "options": ["All"]},
+                    {"name": "skip"},
+                ],
+            }
+        )
+
     manifest = {
         "id": addon["id"],
         "version": addon["version"],

@@ -3596,6 +3596,131 @@ def build_source_family_scoreboard(
     }
 
 
+def _runner_or_geo_blocked_health(health: dict[str, Any]) -> bool:
+    """Return True when the builder failure looks egress/geo/access related."""
+    if not isinstance(health, dict) or health.get("status") in {"ok", "cooldown"}:
+        return False
+    try:
+        status_code = int(health.get("http_status"))
+    except (TypeError, ValueError):
+        status_code = 0
+    if status_code in {401, 403, 429, 451}:
+        return True
+    blob = json.dumps(health, sort_keys=True, default=str)
+    return bool(
+        re.search(
+            r"(?:HTTP\\s+(?:401|403|429|451)|geo(?:graphy|blocked)?|forbidden|access denied|region(?:al)?(?:ly)? blocked)",
+            blob,
+            re.I,
+        )
+    )
+
+
+def build_local_test_channels(
+    probed_entries: list[dict[str, Any]],
+    published_channels: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Expose runner/geo-blocked candidates in a separate Stremio test catalog.
+
+    These streams never participate in the trusted channel lineup, stability
+    promotion, or final Primary QA. They are surfaced only so a user can test
+    whether a URL blocked from GitHub Actions works from their own network.
+    """
+    settings = config.get("local_test_catalog") or {}
+    enabled = bool(settings.get("enabled", False))
+    max_streams = max(1, int(settings.get("max_streams_per_channel", 8)))
+    built_at = iso_z(dt.datetime.now(UTC))
+    if not enabled:
+        return [], {
+            "version": 1,
+            "enabled": False,
+            "built_at": built_at,
+            "summary": {"channels": 0, "streams": 0},
+            "channels": [],
+        }
+
+    published_ids = {
+        canonical_tvg_id(str(channel.get("tvg_id") or ""))
+        for channel in published_channels
+        if channel.get("tvg_id")
+    }
+    candidates: list[dict[str, Any]] = []
+    for entry in probed_entries:
+        tvg_id = str(entry.get("tvg_id") or "")
+        marker = canonical_tvg_id(tvg_id)
+        if not marker or marker in published_ids:
+            continue
+        health = entry.get("health") or {}
+        if not _runner_or_geo_blocked_health(health):
+            continue
+        item = dict(entry)
+        item["local_test"] = True
+        item["local_test_reason"] = str(health.get("detail") or "Runner/geo access failure")
+        candidates.append(item)
+
+    channels = merge_channels(
+        candidates,
+        config.get("favorites", []),
+        max_streams,
+        config,
+    )
+    rows: list[dict[str, Any]] = []
+    for channel in channels:
+        original_id = channel["id"]
+        digest = hashlib.sha1(
+            f"local-test:{canonical_tvg_id(str(channel.get('tvg_id') or channel.get('name') or original_id))}".encode("utf-8")
+        ).hexdigest()[:14]
+        channel["id"] = f"stremiotv_localtest_{digest}"
+        channel["original_channel_id"] = original_id
+        channel["name"] = f"🧪 {channel['name']}"
+        channel["category"] = "Local Test"
+        channel["service_type"] = "Runner-blocked candidates"
+        channel["favorite"] = False
+        channel["local_test"] = True
+        provider_hosts: list[str] = []
+        for index, stream in enumerate(channel.get("streams") or [], start=1):
+            stream["display_role"] = f"LOCAL TEST {index}"
+            stream["local_test"] = True
+            stream["local_test_reason"] = str(
+                (stream.get("health") or {}).get("detail")
+                or stream.get("local_test_reason")
+                or "Runner/geo access failure"
+            )
+            host = stream_provider_host(stream)
+            if host and host not in provider_hosts:
+                provider_hosts.append(host)
+        rows.append({
+            "id": channel["id"],
+            "tvg_id": channel.get("tvg_id"),
+            "name": channel.get("name"),
+            "stream_count": len(channel.get("streams") or []),
+            "provider_hosts": provider_hosts,
+            "sources": [
+                stream.get("source")
+                for stream in channel.get("streams") or []
+            ],
+        })
+
+    report = {
+        "version": 1,
+        "enabled": True,
+        "built_at": built_at,
+        "summary": {
+            "channels": len(channels),
+            "streams": sum(len(channel.get("streams") or []) for channel in channels),
+            "max_streams_per_channel": max_streams,
+        },
+        "channels": rows,
+    }
+    log(
+        "Local Test catalog: "
+        f"{report['summary']['channels']:,} runner-blocked channels, "
+        f"{report['summary']['streams']:,} candidate streams"
+    )
+    return channels, report
+
+
 def build_missing_source_diagnostics(
     candidate_coverage: list[dict[str, Any]],
     passing_coverage: list[dict[str, Any]],
@@ -3994,6 +4119,11 @@ def stream_object(
         description_parts.append("Builder check failed — may still work locally")
     else:
         description_parts.append("Not health-tested")
+    if stream.get("local_test"):
+        host = stream_provider_host(stream)
+        description_parts.append("LOCAL TEST: runner/geo blocked on GitHub")
+        if host:
+            description_parts.append(host)
     stability = (stream.get("stability") or {}).get("classification")
     if stability and stability != "Unknown":
         description_parts.append(stability)
