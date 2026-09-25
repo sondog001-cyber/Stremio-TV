@@ -3029,6 +3029,7 @@ def build_source_ordering_diagnostics(
                 "preference_label": stream.get("preference_label"),
                 "provider_host": stream_provider_host(stream),
                 "independent_provider": bool(stream.get("independent_provider")),
+                "primary_deprioritized": bool(stream.get("primary_deprioritized")),
                 "effective_url": stream_effective_url(stream),
                 "url": stream.get("url"),
             })
