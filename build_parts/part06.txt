@@ -70,14 +70,30 @@
             enabled=not bool(fixtures),
         )
         healthy_allowlist_coverage = build_allowlist_coverage(entries, config)
+
+        channels = merge_channels(entries, config.get("favorites", []), max_streams, config)
+        channels, primary_playback_qa = apply_primary_playback_qa(
+            channels,
+            config,
+            enabled=not bool(fixtures),
+        )
+        label_channel_streams(channels)
+
+        published_entries = [
+            stream
+            for channel in channels
+            for stream in (channel.get("streams") or [])
+        ]
+        published_allowlist_coverage = build_allowlist_coverage(
+            published_entries,
+            config,
+        )
         channel_state, channel_changes = build_channel_diagnostics(
-            healthy_allowlist_coverage,
+            published_allowlist_coverage,
             config,
             enabled=not bool(fixtures),
         )
 
-        channels = merge_channels(entries, config.get("favorites", []), max_streams, config)
-        label_channel_streams(channels)
         source_ordering_rows = build_source_ordering_diagnostics(channels, config)
         host_redundancy = build_host_redundancy_diagnostics(channels)
         source_family_scoreboard = build_source_family_scoreboard(
@@ -302,6 +318,7 @@
                 )
                 for status in ("ok", "failed", "cooldown", "not-tested")
             },
+            "primary_playback_qa": primary_playback_qa.get("summary", {}),
             "direct_media_survival": {
                 "tested": sum(
                     1
