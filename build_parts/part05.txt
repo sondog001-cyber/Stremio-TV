@@ -78,7 +78,6 @@ def build_manifest(
                 "id": str(local_test.get("id") or "local-test"),
                 "name": str(local_test.get("name") or "🧪 Local Test — Runner Blocked"),
                 "extra": [
-                    {"name": "genre", "isRequired": True, "options": ["All"]},
                     {"name": "skip"},
                 ],
             }
