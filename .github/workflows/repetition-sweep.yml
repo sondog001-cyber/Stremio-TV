@@ -1,0 +1,41 @@
+name: Full channel repetition sweep
+
+on:
+  push:
+    branches: [diagnostic-repetition-sweep]
+    paths:
+      - "scripts/repetition_sweep.py"
+      - ".github/workflows/repetition-sweep.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Sweep every published primary channel for repetition
+        run: |
+          python scripts/repetition_sweep.py \
+            --preview-url "https://sondog001-cyber.github.io/Stremio-TV/diagnostics/stremio-preview.json" \
+            --duration 30 \
+            --interval 6 \
+            --workers 16 \
+            --timeout 8 \
+            --output repetition-sweep.json
+      - name: Upload repetition diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: repetition-sweep
+          path: repetition-sweep.json
+          if-no-files-found: error
+          retention-days: 7
