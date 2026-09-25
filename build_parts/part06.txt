@@ -220,7 +220,13 @@
             streams = [stream_object(s, i + 1, build_info) for i, s in enumerate(ch["streams"])]
             write_json(
                 output / "stream" / "tv" / f"{ch['id']}.json",
-                {"streams": streams, "stremioTvBuild": build_info},
+                {
+                    "streams": streams,
+                    "stremioTvBuild": build_info,
+                    "cacheMaxAge": 300,
+                    "staleRevalidate": 600,
+                    "staleError": 1800,
+                },
             )
             stremio_preview_rows.append({
                 "channel": channel_preview(ch),
