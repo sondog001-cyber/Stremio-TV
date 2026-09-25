@@ -2688,6 +2688,8 @@ def _dead_source_cooldown(
     now: dt.datetime,
 ) -> dict[str, Any] | None:
     """Return a skip result while a previously dead URL is backing off."""
+    if entry.get("ephemeral_signed"):
+        return None
     settings = config.get("stream_stability") or {}
     if not settings.get("enabled", True):
         return None
