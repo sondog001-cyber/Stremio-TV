@@ -1,30 +1,30 @@
 #!/usr/bin/env python3
-import json, subprocess, time, concurrent.futures
+import json, subprocess, time
 
 candidates = [
-    {"channel":"Discovery Channel","url":"https://s2.thetvapp.to/live/56/tracks-v1a1/mono.m3u8?token=WFU5PvgZWRbibaFG30IORgMYYkPQGy0rQFIErfaW"},
-    {"channel":"FX Movie Channel","url":"https://s2.thetvapp.to/live/36/tracks-v1a1/mono.m3u8?token=WFU5PvgZWRbibaFG30IORgMYYkPQGy0rQFIErfaW"},
-    {"channel":"FXX","url":"https://s2.thetvapp.to/live/34/tracks-v1a1/mono.m3u8?token=WFU5PvgZWRbibaFG30IORgMYYkPQGy0rQFIErfaW"},
-    {"channel":"HGTV","url":"https://s2.thetvapp.to/live/104/tracks-v1a1/mono.m3u8?token=WFU5PvgZWRbibaFG30IORgMYYkPQGy0rQFIErfaW"},
-    {"channel":"Investigation Discovery","url":"https://s2.thetvapp.to/live/106/tracks-v1a1/mono.m3u8?token=WFU5PvgZWRbibaFG30IORgMYYkPQGy0rQFIErfaW"},
-    {"channel":"TLC","url":"https://s2.thetvapp.to/live/139/tracks-v1a1/mono.m3u8?token=WFU5PvgZWRbibaFG30IORgMYYkPQGy0rQFIErfaW"},
-    {"channel":"TV Land","url":"https://s2.thetvapp.to/live/145/tracks-v1a1/mono.m3u8?token=WFU5PvgZWRbibaFG30IORgMYYkPQGy0rQFIErfaW"},
-    {"channel":"Cinemax Classics UHD","url":"https://s2.thetvapp.to/live/6069/tracks-v1a1/mono.m3u8?token=WFU5PvgZWRbibaFG30IORgMYYkPQGy0rQFIErfaW"},
-    {"channel":"Smithsonian UHD","url":"https://s2.thetvapp.to/live/6184/tracks-v1a1/mono.m3u8?token=WFU5PvgZWRbibaFG30IORgMYYkPQGy0rQFIErfaW"},
-    {"channel":"Starz Comedy UHD","url":"https://s2.thetvapp.to/live/6189/tracks-v1a1/mono.m3u8?token=WFU5PvgZWRbibaFG30IORgMYYkPQGy0rQFIErfaW"},
-    {"channel":"Sundance UHD","url":"https://s2.thetvapp.to/live/6203/tracks-v1a1/mono.m3u8?token=WFU5PvgZWRbibaFG30IORgMYYkPQGy0rQFIErfaW"}
+    {"channel":"CBS Sports Network","label":"IPTVMate HD","url":"https://ch.iptvmate.net/c7d0bb4656a79af19f4de168162d60f1.m3u8"},
+    {"channel":"Discovery Channel","label":"IPTVMate HD","url":"https://ch.iptvmate.net/122bed766f4d7cae35d61372a978a4d6.m3u8"},
+    {"channel":"FXX","label":"IPTVMate FHD","url":"https://ch.iptvmate.net/c4db5de035d40f549ea5835804e6e1cd.m3u8"},
+    {"channel":"Fox Sports 2","label":"IPTVMate HD","url":"https://ch.iptvmate.net/177b338cf73bfd3b64b181a5bc1517f5.m3u8"},
+    {"channel":"HGTV","label":"IPTVMate HD","url":"https://ch.iptvmate.net/f66596df7e6d45466f45d5052ddc3992.m3u8"},
+    {"channel":"MLB Network","label":"IPTVMate HD","url":"https://ch.iptvmate.net/0897c5e0c5251314b604d1d8aa500b62.m3u8"},
+    {"channel":"TLC","label":"IPTVMate HD","url":"https://ch.iptvmate.net/be15df13575e823a25c074f497624a4f.m3u8"},
+    {"channel":"The Weather Channel","label":"IPTVMate HD","url":"https://ch.iptvmate.net/13f8cc3131cfc1c7981b6899ca605342.m3u8"},
 ]
-HEADERS = "Referer: https://thetvapp.to/\\r\\nOrigin: https://thetvapp.to\\r\\n"
-def check(item):
+rows=[]
+for item in candidates:
     started=time.time()
-    cmd=["ffmpeg","-hide_banner","-loglevel","error","-nostdin","-user_agent","Mozilla/5.0","-headers",HEADERS,"-rw_timeout","12000000","-i",item["url"],"-t","15","-map","0:v:0","-vf","fps=2,scale=160:-2","-an","-f","framemd5","-"]
+    cmd=[
+        "ffmpeg","-hide_banner","-loglevel","error","-nostdin",
+        "-rw_timeout","10000000","-i",item["url"],
+        "-t","12","-map","0:v:0","-vf","fps=2,scale=160:-2",
+        "-an","-f","framemd5","-"
+    ]
     try:
-        p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=32)
+        p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=22)
         frames=sum(1 for line in p.stdout.splitlines() if line and not line.startswith("#") and "," in line)
-        return {**item,"frames":frames,"decoded_seconds":round(frames/2,1),"exit":p.returncode,"elapsed":round(time.time()-started,2),"stderr":p.stderr[-600:],"passed":frames>=24}
+        rows.append({**item,"frames":frames,"decoded_seconds":round(frames/2,1),"exit":p.returncode,"elapsed":round(time.time()-started,2),"stderr":p.stderr[-500:],"passed":frames>=20})
     except subprocess.TimeoutExpired:
-        return {**item,"frames":0,"decoded_seconds":0,"exit":None,"elapsed":round(time.time()-started,2),"stderr":"timeout","passed":False}
-with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
-    rows=list(ex.map(check,candidates))
+        rows.append({**item,"frames":0,"decoded_seconds":0,"exit":None,"elapsed":round(time.time()-started,2),"stderr":"timeout","passed":False})
 with open("replacement-candidates.json","w") as f: json.dump(rows,f,indent=2)
 print(json.dumps(rows,indent=2))
