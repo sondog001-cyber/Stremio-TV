@@ -2704,6 +2704,50 @@ def probe_candidate_entries(
                 ),
             )
 
+    direct_survival_settings = settings.get("direct_media_survival") or {}
+    direct_survival_enabled = bool(direct_survival_settings.get("enabled", False))
+    direct_survival_workers = max(1, int(direct_survival_settings.get("max_workers", 8)))
+    if direct_survival_enabled:
+        direct_jobs = {
+            key: entries_by_key[key]
+            for key, health in results.items()
+            if health.get("status") == "ok"
+            and int(health.get("media_sample_bytes") or 0) > 0
+            and not health.get("hls_segment_count")
+        }
+        if direct_jobs:
+            log(f"Direct-media decoder gate: testing {len(direct_jobs):,} passing direct candidates")
+            gate_results = {}
+            with concurrent.futures.ThreadPoolExecutor(max_workers=direct_survival_workers) as executor:
+                future_map = {
+                    executor.submit(_validate_direct_media_survival, entry, direct_survival_settings): key
+                    for key, entry in direct_jobs.items()
+                }
+                for future in concurrent.futures.as_completed(future_map):
+                    key = future_map[future]
+                    try:
+                        gate_results[key] = future.result()
+                    except Exception as exc:
+                        gate_results[key] = {"status": "failed", "detail": f"Direct media decoder gate error: {str(exc)[:160]}", "continuity_failure": "direct-media-decoder-error"}
+            direct_passed = 0
+            direct_failed = 0
+            for key, gate in gate_results.items():
+                current = results[key]
+                if gate.get("status") == "ok":
+                    current["direct_media_survival"] = gate.get("direct_media_survival")
+                    current["direct_media_survival_detail"] = gate.get("detail")
+                    direct_passed += 1
+                else:
+                    results[key] = {
+                        **current,
+                        "status": "failed",
+                        "detail": gate.get("detail") or "Direct media survival failed",
+                        "continuity_failure": gate.get("continuity_failure", "direct-media-survival-failed"),
+                        "direct_media_survival": gate.get("direct_media_survival"),
+                        "stable": False,
+                    }
+                    direct_failed += 1
+            log(f"Direct-media decoder gate: passed={direct_passed:,}, failed={direct_failed:,}")
     selected_by_url = {row["url"]: row for row in priority_recovery["selected"]}
     for key in forced_keys:
         health = results.get(key, {"status": "failed", "detail": "No probe result"})
