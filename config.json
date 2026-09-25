@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with exact issue identity, persistent unstable-channel source hunting, native Live TV EPG, and promotion-gated 60-second playback validation.",
-    "version": "0.4.9"
+    "description": "Curated Philadelphia-area live TV with exact identity, persistent recovery hunting, native Live TV EPG, HLS continuity validation, and decoded direct-media survival gating.",
+    "version": "0.5.0"
   },
   "sources": {
     "playlists": [
@@ -913,6 +913,17 @@
         "Stable",
         "Backup"
       ]
+    },
+    "direct_media_survival": {
+      "enabled": true,
+      "duration_seconds": 12,
+      "min_decoded_seconds": 10,
+      "fps": 2,
+      "max_workers": 8,
+      "timeout_seconds": 20,
+      "detect_repeated_clips": true,
+      "repeat_min_seconds": 2,
+      "repeat_max_seconds": 4
     }
   },
   "discovery": {
