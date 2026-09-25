@@ -1,3 +1,5 @@
+import json
+import pathlib
 import unittest
 
 import build
@@ -49,6 +51,29 @@ class StreamQuarantineTests(unittest.TestCase):
         self.assertEqual(len(quarantined), 1)
         self.assertEqual(quarantined[0]["tvg_id"], "HGTV.us")
         self.assertEqual(quarantined[0]["reason"], "Confirmed repeating playback")
+
+    def test_production_quarantines_two_decoder_dead_hls_primaries(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        config = json.loads((root / "config.json").read_text(encoding="utf-8"))
+        rules = {
+            (row.get("tvg_id"), row.get("url"))
+            for row in config["curation"]["stream_quarantine"]
+        }
+
+        self.assertIn(
+            (
+                "CinemaxClassics.us@East",
+                "http://23.237.104.106:8080/USA_5STARMAX/index.m3u8",
+            ),
+            rules,
+        )
+        self.assertIn(
+            (
+                "StarzComedy.us@East",
+                "http://23.237.104.106:8080/USA_STARZ_COMEDY/index.m3u8",
+            ),
+            rules,
+        )
 
     def test_empty_quarantine_is_noop(self):
         entries = [{"tvg_id": "HGTV.us", "url": "https://example.test/hgtv.m3u8"}]

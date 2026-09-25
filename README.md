@@ -15,6 +15,7 @@ A self-updating, Philadelphia-focused live-TV addon for Stremio. It combines a c
 - Exact channel-identity validation
 - Five-probe, 60-second burn-in for new/unproven candidates before promotion
 - 2-of-3 FFmpeg decoder survival gate for direct MPEG-TS/media streams
+- Final decoded Primary playback QA with automatic backup promotion
 - Automated missing-channel, source-yield, and redundancy diagnostics
 - Scheduled GitHub Pages deployment with no application server
 
@@ -22,7 +23,7 @@ The addon does not host, proxy, or restream video. It returns validated upstream
 
 ## Stream policy
 
-Only allow-listed channels are considered. Before publication, every candidate must pass the configured health checks. New, Quarantine, and Dead candidates are sampled at 0, 15, 30, 45, and 60 seconds before promotion; any failed intermediate probe rejects them. Previously established Stable or Backup URLs keep the lower-churn two-probe continuity check across the same validation window. HLS streams must expose a valid playlist and readable media segment, and live HLS windows must advance across the validation window. Direct non-HLS media must sustain at least 10 seconds of decoded video in at least 2 of 3 independent 12-second FFmpeg connections; immediately replayed 2–4 second clips hard-fail before stability scoring or selection. Confirmed decoder-visible playback defects can be exact-URL quarantined even when ordinary reachability checks pass. Failed and untested candidates remain diagnostic-only.
+Only allow-listed channels are considered. Before publication, every candidate must pass the configured health checks. New, Quarantine, and Dead candidates are sampled at 0, 15, 30, 45, and 60 seconds before promotion; any failed intermediate probe rejects them. Previously established Stable or Backup URLs keep the lower-churn two-probe continuity check across the same validation window. HLS streams must expose a valid playlist and readable media segment, and live HLS windows must advance across the validation window. Direct non-HLS media must sustain at least 10 seconds of decoded video in at least 2 of 3 independent 12-second FFmpeg connections; immediately replayed 2–4 second clips hard-fail before stability scoring or selection. After selection, the chosen Primary is decoded end-to-end for a final QA pass across both HLS and direct transports. A failed Primary is removed and the next backup is tested/promoted; a channel with no decoded passing choice is omitted for that build. Confirmed decoder-visible playback defects can be exact-URL quarantined even when ordinary reachability checks pass. Failed and untested candidates remain diagnostic-only.
 
 Streams are classified across recent builds:
 
@@ -61,7 +62,7 @@ The builder combines:
 - an optional `manual_sources.json` file
 - optional private OTA/provider connectors for local deployments
 
-Secondary sources are isolated: one unavailable playlist does not fail the entire build. Source families are measured over time so consistently unproductive scanners can be reviewed and removed.
+Secondary sources are isolated: one unavailable playlist does not fail the entire build. Source families are measured over time so consistently unproductive scanners can be reviewed and removed. Missing-channel hunting is prioritized toward runner/geo-blocked exact IDs first, then cooldown/quarantined gaps, so scarce discovery work focuses on the most recoverable channels.
 
 ## Channel curation
 
@@ -148,6 +149,7 @@ Build output includes `status.json` and structured reports under `site/diagnosti
 | `channel-changes.json` | Recovered, lost, stable, and still-missing channels |
 | `missing-source-diagnostics.json` | Actionable missing-channel classifications |
 | `stream-health.json` | Current candidate probe results |
+| `primary-playback-qa.json` | Final decoded Primary checks, promotions, and dropped channels |
 | `stream-stability.json` | Cross-build URL reliability history |
 | `source-family-scoreboard.json` | Candidate, passing, selected, and recovery yield by source |
 | `source-ordering.json` | Primary/backup selection details |

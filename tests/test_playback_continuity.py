@@ -531,6 +531,95 @@ class PlaybackContinuityTests(unittest.TestCase):
             "identical-direct-media-sample",
         )
 
+    def test_primary_playback_qa_promotes_first_passing_backup(self):
+        channels = [{
+            "id": "ch1",
+            "name": "Example",
+            "tvg_id": "Example.us",
+            "streams": [
+                {"url": "https://bad.test/a.m3u8", "source": "bad", "family": "bad"},
+                {"url": "https://good.test/b.m3u8", "source": "good", "family": "good"},
+                {"url": "https://later.test/c.m3u8", "source": "later", "family": "later"},
+            ],
+        }]
+        config = {
+            "stream_health": {
+                "primary_playback_qa": {
+                    "enabled": True,
+                    "duration_seconds": 10,
+                    "min_decoded_seconds": 8,
+                    "fps": 2,
+                    "max_workers": 1,
+                }
+            }
+        }
+        results = [
+            {
+                "status": "failed",
+                "detail": "decode failed",
+                "continuity_failure": "primary-playback-decode-failed",
+                "primary_playback_qa": {"passed": False},
+            },
+            {
+                "status": "ok",
+                "detail": "decode passed",
+                "primary_playback_qa": {"passed": True},
+            },
+        ]
+        with mock.patch.object(
+            build,
+            "_validate_primary_playback_stream",
+            side_effect=results,
+        ):
+            kept, report = build.apply_primary_playback_qa(channels, config)
+
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(kept[0]["streams"][0]["source"], "good")
+        self.assertEqual(
+            [stream["source"] for stream in kept[0]["streams"]],
+            ["good", "later"],
+        )
+        self.assertEqual(report["summary"]["backup_promoted"], 1)
+        self.assertEqual(report["summary"]["channels_dropped"], 0)
+
+    def test_primary_playback_qa_drops_channel_when_every_selected_stream_fails(self):
+        channels = [{
+            "id": "ch1",
+            "name": "Example",
+            "tvg_id": "Example.us",
+            "streams": [
+                {"url": "https://bad.test/a.m3u8", "source": "a", "family": "a"},
+                {"url": "https://bad.test/b.m3u8", "source": "b", "family": "b"},
+            ],
+        }]
+        config = {
+            "stream_health": {
+                "primary_playback_qa": {
+                    "enabled": True,
+                    "duration_seconds": 10,
+                    "min_decoded_seconds": 8,
+                    "fps": 2,
+                    "max_workers": 1,
+                }
+            }
+        }
+        failure = {
+            "status": "failed",
+            "detail": "no decoded video",
+            "continuity_failure": "primary-playback-decode-failed",
+            "primary_playback_qa": {"passed": False},
+        }
+        with mock.patch.object(
+            build,
+            "_validate_primary_playback_stream",
+            side_effect=[failure, failure],
+        ):
+            kept, report = build.apply_primary_playback_qa(channels, config)
+
+        self.assertEqual(kept, [])
+        self.assertEqual(report["summary"]["channels_dropped"], 1)
+        self.assertEqual(report["channels"][0]["action"], "dropped-channel")
+
 
 if __name__ == "__main__":
     unittest.main()

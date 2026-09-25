@@ -57,6 +57,8 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertIn("https://raw.githubusercontent.com/arquerido/mych/main/TV247.m3u8", urls)
         self.assertIn("https://raw.githubusercontent.com/arquerido/mych/main/USAIR.m3u", urls)
         self.assertIn("https://raw.githubusercontent.com/aphrodite747/iptv-scraper/main/thetvapp.m3u8", urls)
+        self.assertIn("https://raw.githubusercontent.com/InsolenceWillow/insolencetvgo/main/moveonjoy.m3u", urls)
+        self.assertIn("https://raw.githubusercontent.com/spookyhost1/yarr-stremio/main/src/iptv/m3u-sources/us_tvpass.m3u", urls)
         self.assertNotIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/smart.m3u", urls)
         self.assertNotIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/TVPass.m3u", urls)
         self.assertEqual(sum(source["family"] == "github-playlist" for source in sources), 4)
@@ -99,6 +101,52 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertIn(
             "/SourPatchKid/",
             selection["primary_deprioritized_url_contains"],
+        )
+
+        primary_qa = config["stream_health"]["primary_playback_qa"]
+        self.assertTrue(primary_qa["enabled"])
+        self.assertEqual(primary_qa["duration_seconds"], 10)
+        self.assertEqual(primary_qa["min_decoded_seconds"], 8)
+        self.assertEqual(primary_qa["fps"], 2)
+        self.assertTrue(primary_qa["detect_repeated_clips"])
+
+    def test_production_missing_channel_hunt_prioritizes_runner_blocked_then_cooldown(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        config = json.loads((root / "config.json").read_text(encoding="utf-8"))
+        hunt = config["discovery"]["targeted_source_families"]
+
+        self.assertEqual(
+            hunt["priority_target_ids"],
+            [
+                "CBSSportsNetwork.us",
+                "DiscoveryChannel.us",
+                "FXMovieChannel.us",
+                "FXX.us",
+                "FoxSports2.us",
+                "InvestigationDiscovery.us",
+                "MLBNetwork.us",
+                "NBCSportsPhiladelphia.us",
+                "SmithsonianChannel.us",
+                "SundanceTV.us",
+                "TLC.us",
+                "WeatherChannel.us",
+            ],
+        )
+        self.assertEqual(
+            hunt["secondary_target_ids"],
+            [
+                "HGTV.us",
+                "MagnoliaNetwork.us",
+                "OWN.us",
+                "Reelz.us",
+                "StarzEncoreSpanish.us",
+                "TVLand.us",
+                "TravelChannel.us",
+                "KYW.us",
+                "WCAU.us",
+                "WPHL.us",
+                "WPVI.us",
+            ],
         )
 
     def test_production_config_retires_dead_historical_seeds_and_retests_current_exact_ids(self):
@@ -218,6 +266,26 @@ class TargetedScannerTests(unittest.TestCase):
         family_row = next(row for row in rows if row.get("kind") == "targeted-source-family")
         self.assertEqual(family_row["records_scanned"], 2)
         self.assertEqual(family_row["candidates_found"], 1)
+
+    def test_priority_hunt_ids_are_ordered_before_secondary_targets(self):
+        config = minimal_config()
+        config["discovery"]["targeted_source_families"]["priority_target_ids"] = [
+            "FXX.us"
+        ]
+        config["discovery"]["targeted_source_families"]["secondary_target_ids"] = [
+            "CNN.us"
+        ]
+        with (
+            mock.patch.object(build, "_load_previous_channel_state", return_value={}),
+            mock.patch.object(build, "_load_previous_stream_stability", return_value={}),
+        ):
+            targets = build._target_ids_for_source_hunt(
+                config,
+                [],
+                scope="national",
+            )
+
+        self.assertEqual(targets, ["FXX.us", "CNN.us"])
 
     def test_target_set_canonicalizes_existing_approved_aliases(self):
         config = minimal_config()
