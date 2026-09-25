@@ -434,10 +434,15 @@ def _target_ids_for_source_hunt(
                     targets[marker] = pattern
 
     allow_order = _exact_allowlist_ids(config, scope=scope)
+    priority_ids = list(hunt_settings.get("priority_target_ids") or [])
+    secondary_ids = list(hunt_settings.get("secondary_target_ids") or [])
+    preferred_order = list(dict.fromkeys(priority_ids + secondary_ids + allow_order))
     return [
         item
-        for item in allow_order
-        if canonical_tvg_id(item) in targets and canonical_tvg_id(item) not in private_only
+        for item in preferred_order
+        if canonical_tvg_id(item) in targets
+        and canonical_tvg_id(item) in in_scope
+        and canonical_tvg_id(item) not in private_only
     ]
 
 
@@ -1884,6 +1889,194 @@ def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, 
         "continuity_failure": "direct-media-insufficient-survival",
         "direct_media_survival": survival,
     }
+
+
+def _validate_primary_playback_stream(
+    stream: dict[str, Any],
+    settings: dict[str, Any],
+) -> dict[str, Any]:
+    """Decode one selected stream end-to-end, regardless of HLS/direct transport."""
+    direct_survival = ((stream.get("health") or {}).get("direct_media_survival") or {})
+    if direct_survival.get("passed") is True:
+        return {
+            "status": "ok",
+            "detail": "Already passed stronger 2-of-3 direct-media decoder gate",
+            "primary_playback_qa": {
+                "reused_direct_media_survival": True,
+                **direct_survival,
+            },
+        }
+
+    one_attempt = {
+        **settings,
+        "enabled": True,
+        "attempts": 1,
+        "required_passes": 1,
+    }
+    result = _validate_direct_media_survival(stream, one_attempt)
+    survival = result.get("direct_media_survival") or {}
+    if result.get("status") == "ok":
+        return {
+            "status": "ok",
+            "detail": result.get("detail") or "Primary playback decode passed",
+            "primary_playback_qa": survival,
+        }
+
+    failure = result.get("continuity_failure")
+    mapped_failure = (
+        "primary-playback-repeated-clip"
+        if failure == "direct-media-repeated-clip"
+        else "primary-playback-decode-failed"
+    )
+    return {
+        "status": "failed",
+        "detail": result.get("detail") or "Primary playback decode failed",
+        "continuity_failure": mapped_failure,
+        "primary_playback_qa": survival,
+    }
+
+
+def apply_primary_playback_qa(
+    channels: list[dict[str, Any]],
+    config: dict[str, Any],
+    *,
+    enabled: bool = True,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Decode selected Primaries and automatically promote a passing backup."""
+    settings = (config.get("stream_health") or {}).get("primary_playback_qa") or {}
+    enabled = enabled and bool(settings.get("enabled", False))
+    built_at = iso_z(dt.datetime.now(UTC))
+    if not enabled:
+        return channels, {
+            "version": 1,
+            "enabled": False,
+            "built_at": built_at,
+            "summary": {
+                "channels_tested": 0,
+                "primary_passed": 0,
+                "backup_promoted": 0,
+                "channels_dropped": 0,
+            },
+            "channels": [],
+        }
+
+    max_workers = max(1, int(settings.get("max_workers", 10)))
+
+    def inspect_channel(index: int, channel: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+        attempts: list[dict[str, Any]] = []
+        streams = list(channel.get("streams") or [])
+        passing_index: int | None = None
+        passing_qa: dict[str, Any] | None = None
+
+        for stream_index, stream in enumerate(streams):
+            result = _validate_primary_playback_stream(stream, settings)
+            attempts.append({
+                "stream_index": stream_index,
+                "role_before": "Primary" if stream_index == 0 else f"Backup {stream_index}",
+                "source": stream.get("source"),
+                "family": stream.get("family"),
+                "provider_host": stream_provider_host(stream),
+                "url": stream.get("url"),
+                "status": result.get("status"),
+                "detail": result.get("detail"),
+                "continuity_failure": result.get("continuity_failure"),
+                "qa": result.get("primary_playback_qa"),
+            })
+            if result.get("status") == "ok":
+                passing_index = stream_index
+                passing_qa = result.get("primary_playback_qa") or {}
+                break
+
+        return index, {
+            "channel_id": channel.get("id"),
+            "tvg_id": channel.get("tvg_id"),
+            "name": channel.get("name"),
+            "passing_index": passing_index,
+            "passing_qa": passing_qa,
+            "attempts": attempts,
+        }
+
+    results_by_index: dict[int, dict[str, Any]] = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(inspect_channel, index, channel): index
+            for index, channel in enumerate(channels)
+        }
+        for future in concurrent.futures.as_completed(futures):
+            index = futures[future]
+            try:
+                result_index, result = future.result()
+                results_by_index[result_index] = result
+            except Exception as exc:
+                channel = channels[index]
+                results_by_index[index] = {
+                    "channel_id": channel.get("id"),
+                    "tvg_id": channel.get("tvg_id"),
+                    "name": channel.get("name"),
+                    "passing_index": None,
+                    "passing_qa": None,
+                    "attempts": [],
+                    "error": str(exc)[:200],
+                }
+
+    kept_channels: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+    primary_passed = 0
+    backup_promoted = 0
+    dropped = 0
+
+    for index, channel in enumerate(channels):
+        row = results_by_index[index]
+        passing_index = row.get("passing_index")
+        if passing_index is None:
+            row["action"] = "dropped-channel"
+            dropped += 1
+            rows.append(row)
+            continue
+
+        passing_index = int(passing_index)
+        updated = dict(channel)
+        streams = [dict(stream) for stream in (channel.get("streams") or [])]
+        chosen = streams[passing_index]
+        chosen["primary_playback_qa"] = row.get("passing_qa") or {}
+        if passing_index == 0:
+            primary_passed += 1
+            row["action"] = "kept-primary"
+            updated["streams"] = streams
+        else:
+            backup_promoted += 1
+            row["action"] = "promoted-backup"
+            row["failed_streams_removed"] = passing_index
+            # Failed streams before the first passing backup are not published.
+            updated["streams"] = [chosen] + streams[passing_index + 1:]
+        kept_channels.append(updated)
+        rows.append(row)
+
+    report = {
+        "version": 1,
+        "enabled": True,
+        "built_at": built_at,
+        "settings": {
+            "duration_seconds": int(settings.get("duration_seconds", 10)),
+            "min_decoded_seconds": int(settings.get("min_decoded_seconds", 8)),
+            "fps": int(settings.get("fps", 2)),
+            "max_workers": max_workers,
+        },
+        "summary": {
+            "channels_tested": len(channels),
+            "primary_passed": primary_passed,
+            "backup_promoted": backup_promoted,
+            "channels_dropped": dropped,
+            "channels_published": len(kept_channels),
+        },
+        "channels": rows,
+    }
+    log(
+        "Primary playback QA: "
+        f"tested={len(channels):,}, primary_passed={primary_passed:,}, "
+        f"backup_promoted={backup_promoted:,}, dropped={dropped:,}"
+    )
+    return kept_channels, report
 
 
 def _stream_stability_key(entry: dict[str, Any]) -> str:
