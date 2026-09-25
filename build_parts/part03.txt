@@ -39,6 +39,17 @@
         selected.append(item)
 
     selected = sorted(selected[:max_streams], key=priority_key)
+    if selected:
+        preferred_primary_index = next(
+            (
+                index
+                for index, candidate in enumerate(selected)
+                if not candidate.get("primary_deprioritized")
+            ),
+            0,
+        )
+        if preferred_primary_index:
+            selected.insert(0, selected.pop(preferred_primary_index))
     used_provider_hosts: set[str] = set()
     for index, stream in enumerate(selected):
         preference_rank, preference_label = _stream_preference_match(stream, preference_rules)
