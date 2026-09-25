@@ -228,7 +228,7 @@
                 str(local_test_settings.get("id") or "local-test"),
                 local_test_channels,
                 page_size,
-                discover_only=True,
+                discover_only=False,
             )
 
         # Meta and stream endpoints.
