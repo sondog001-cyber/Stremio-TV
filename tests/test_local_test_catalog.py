@@ -69,8 +69,7 @@ class LocalTestCatalogTests(unittest.TestCase):
         )
         self.assertEqual(catalog["name"], "🧪 Local Test — Runner Blocked")
         extras = {row["name"]: row for row in catalog["extra"]}
-        self.assertTrue(extras["genre"]["isRequired"])
-        self.assertEqual(extras["genre"]["options"], ["All"])
+        self.assertNotIn("genre", extras)
         self.assertIn("skip", extras)
 
     def test_build_local_test_channels_only_uses_current_access_failures(self):
