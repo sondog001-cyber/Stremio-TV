@@ -1,4 +1,5 @@
 name: Full decoded-frame repetition sweep
+# v0.5.1 post-gate rescan
 
 on:
   push:
