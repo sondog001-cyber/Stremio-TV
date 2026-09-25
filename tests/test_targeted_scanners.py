@@ -76,6 +76,19 @@ class TargetedScannerTests(unittest.TestCase):
             {"Stable", "Backup"},
         )
 
+    def test_production_direct_media_survival_gate_is_enabled(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        config = json.loads((root / "config.json").read_text(encoding="utf-8"))
+        gate = config["stream_health"]["direct_media_survival"]
+
+        self.assertTrue(gate["enabled"])
+        self.assertEqual(gate["duration_seconds"], 12)
+        self.assertEqual(gate["min_decoded_seconds"], 10)
+        self.assertEqual(gate["fps"], 2)
+        self.assertTrue(gate["detect_repeated_clips"])
+        self.assertEqual(gate["repeat_min_seconds"], 2)
+        self.assertEqual(gate["repeat_max_seconds"], 4)
+
     def test_production_config_retires_dead_historical_seeds_and_retests_current_exact_ids(self):
         root = pathlib.Path(__file__).resolve().parents[1]
         config = json.loads((root / "config.json").read_text(encoding="utf-8"))
