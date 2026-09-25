@@ -60,6 +60,7 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertNotIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/smart.m3u", urls)
         self.assertNotIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/TVPass.m3u", urls)
         self.assertEqual(sum(source["family"] == "github-playlist" for source in sources), 4)
+        self.assertTrue(discovery["targeted_source_families"]["hunt_unstable_channels"])
 
     def test_production_burn_in_is_promotion_gated(self):
         root = pathlib.Path(__file__).resolve().parents[1]
@@ -298,6 +299,68 @@ class TargetedScannerTests(unittest.TestCase):
             ],
         )
 
+    def test_target_hunt_keeps_recovered_channel_until_stream_is_established(self):
+        config = minimal_config()
+        config["discovery"]["targeted_source_families"]["hunt_unstable_channels"] = True
+        entry = {
+            "name": "FXX",
+            "name_raw": "FXX",
+            "tvg_id": "FXX.us",
+            "url": "https://example.test/fxx.m3u8",
+            "source": "Candidate",
+            "family": "shovo",
+            "quality": "HD",
+            "headers": {},
+        }
+        key = build._stream_stability_key(entry)
+        prior_channel_state = {
+            "channels": {
+                "National:FXX.us": {
+                    "pattern": "FXX.us",
+                    "present": True,
+                }
+            }
+        }
+        quarantine_state = {
+            "streams": {
+                key: {
+                    "classification": "Quarantine",
+                    "history": [True, False],
+                }
+            }
+        }
+        stable_state = {
+            "streams": {
+                key: {
+                    "classification": "Stable",
+                    "history": [True, True, True, True, True],
+                }
+            }
+        }
+
+        with (
+            mock.patch.object(build, "_load_previous_channel_state", return_value=prior_channel_state),
+            mock.patch.object(build, "_load_previous_stream_stability", return_value=quarantine_state),
+        ):
+            quarantine_targets = build._target_ids_for_source_hunt(
+                config,
+                [entry],
+                scope="national",
+            )
+
+        with (
+            mock.patch.object(build, "_load_previous_channel_state", return_value=prior_channel_state),
+            mock.patch.object(build, "_load_previous_stream_stability", return_value=stable_state),
+        ):
+            stable_targets = build._target_ids_for_source_hunt(
+                config,
+                [entry],
+                scope="national",
+            )
+
+        self.assertIn("FXX.us", quarantine_targets)
+        self.assertNotIn("FXX.us", stable_targets)
+
     def test_local_and_national_target_sets_are_disjoint(self):
         config = minimal_config()
         config["curation"]["philly_allow"] = ["WPVI.us", "WPSG.us"]
@@ -424,20 +487,83 @@ class TargetedScannerTests(unittest.TestCase):
         )
         self.assertEqual(links, [])
 
+    def test_iptv_org_explicit_stream_id_prevents_cross_channel_alias_leakage(self):
+        config = minimal_config()
+        config["curation"]["national_allow"].extend([
+            "InvestigationDiscovery.us",
+            "TeenNick.us",
+        ])
+        config["discovery"]["iptv_org_issues"]["targets"] = [
+            {
+                "tvg_id": "InvestigationDiscovery.us",
+                "name": "Investigation Discovery",
+                "aliases": ["ID"],
+            },
+            {
+                "tvg_id": "TeenNick.us",
+                "name": "TeenNick",
+                "aliases": ["TeenNick"],
+            },
+        ]
+        issues = [{
+            "number": 52643,
+            "title": "Add: TeenNick IL SD",
+            "body": "\n".join([
+                "### Stream ID (required)",
+                "",
+                "TeenNick.il@SD",
+                "",
+                "### Stream URL (required)",
+                "",
+                "http://89.33.29.115:8080/TeenNick/index.m3u8",
+            ]),
+            "html_url": "https://github.com/iptv-org/iptv/issues/52643",
+            "labels": [{"name": "streams:add"}, {"name": "check:passed"}],
+        }]
+
+        with mock.patch.object(
+            build,
+            "_fetch_public_text",
+            return_value=(json.dumps(issues), "https://api.github.test/issues"),
+        ):
+            entries, rows = build.discover_iptv_org_passed_issues(
+                config,
+                ["InvestigationDiscovery.us", "TeenNick.us"],
+            )
+
+        self.assertEqual(entries, [])
+        self.assertEqual(rows, [])
+
     def test_iptv_org_removals_are_diagnostics_not_candidates(self):
         config = minimal_config()
         issues = [
             {
                 "number": 101,
                 "title": "Add: FXX",
-                "body": "https://example.test/fxx.m3u8",
+                "body": "\n".join([
+                    "### Stream ID (required)",
+                    "",
+                    "FXX.us",
+                    "",
+                    "### Stream URL (required)",
+                    "",
+                    "https://example.test/fxx.m3u8",
+                ]),
                 "html_url": "https://github.com/iptv-org/iptv/issues/101",
                 "labels": [{"name": "streams:add"}, {"name": "check:passed"}],
             },
             {
                 "number": 102,
                 "title": "Broken: FXX",
-                "body": "https://example.test/dead-fxx.m3u8",
+                "body": "\n".join([
+                    "### Stream ID (required)",
+                    "",
+                    "FXX.us",
+                    "",
+                    "### Stream URL (required)",
+                    "",
+                    "https://example.test/dead-fxx.m3u8",
+                ]),
                 "html_url": "https://github.com/iptv-org/iptv/issues/102",
                 "labels": [{"name": "streams:remove"}, {"name": "check:passed"}],
             },
