@@ -3645,6 +3645,11 @@ def build_local_test_channels(
         for channel in published_channels
         if channel.get("tvg_id")
     }
+    pinned_target_ids = {
+        canonical_tvg_id(str(value))
+        for value in settings.get("target_ids", [])
+        if str(value).strip()
+    }
     candidates: list[dict[str, Any]] = []
     for entry in probed_entries:
         tvg_id = str(entry.get("tvg_id") or "")
@@ -3652,7 +3657,11 @@ def build_local_test_channels(
         if not marker or marker in published_ids:
             continue
         health = entry.get("health") or {}
-        if not _runner_or_geo_blocked_health(health):
+        explicitly_pinned = bool(pinned_target_ids and marker in pinned_target_ids)
+        if explicitly_pinned:
+            if health.get("status") == "ok":
+                continue
+        elif not _runner_or_geo_blocked_health(health):
             continue
         item = dict(entry)
         item["local_test"] = True
@@ -3710,6 +3719,7 @@ def build_local_test_channels(
             "channels": len(channels),
             "streams": sum(len(channel.get("streams") or []) for channel in channels),
             "max_streams_per_channel": max_streams,
+            "pinned_target_ids": len(pinned_target_ids),
         },
         "channels": rows,
     }

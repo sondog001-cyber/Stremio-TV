@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with native EPG, decoded playback QA, source recovery, and a Local Test catalog for runner/geo-blocked candidates including access-failure cooldowns.",
-    "version": "0.6.2"
+    "description": "Curated Philadelphia-area live TV with native EPG, decoded playback QA, source recovery, and a pinned Local Test catalog for known runner/geo-blocked channels.",
+    "version": "0.6.3"
   },
   "sources": {
     "playlists": [
@@ -3245,6 +3245,19 @@
     "enabled": true,
     "id": "local-test",
     "name": "🧪 Local Test — Runner Blocked",
-    "max_streams_per_channel": 8
+    "max_streams_per_channel": 8,
+    "target_ids": [
+      "CBSSportsNetwork.us",
+      "DiscoveryChannel.us",
+      "FXMovieChannel.us",
+      "FXX.us",
+      "HGTV.us",
+      "InvestigationDiscovery.us",
+      "MLBNetwork.us",
+      "OWN.us",
+      "Reelz.us",
+      "SundanceTV.us",
+      "TVLand.us"
+    ]
   }
 }
