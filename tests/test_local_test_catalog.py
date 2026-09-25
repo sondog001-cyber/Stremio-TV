@@ -53,6 +53,10 @@ class LocalTestCatalogTests(unittest.TestCase):
                 "id": "local-test",
                 "name": "🧪 Local Test — Runner Blocked",
                 "max_streams_per_channel": 8,
+                "target_ids": [
+                    "CBSSportsNetwork.us",
+                    "HGTV.us",
+                ],
             },
         }
 
