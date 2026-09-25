@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with native EPG, decoded playback QA, source recovery, and a pinned Local Test catalog for known runner/geo-blocked channels.",
-    "version": "0.6.3"
+    "description": "Curated Philadelphia-area live TV with native EPG, decoded playback QA, source recovery, and a visible Local Test catalog for known runner/geo-blocked channels.",
+    "version": "0.6.4"
   },
   "sources": {
     "playlists": [
