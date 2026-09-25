@@ -61,6 +61,20 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertNotIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/TVPass.m3u", urls)
         self.assertEqual(sum(source["family"] == "github-playlist" for source in sources), 4)
 
+    def test_production_burn_in_is_promotion_gated(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        config = json.loads((root / "config.json").read_text(encoding="utf-8"))
+        burn_in = config["stream_health"]["burn_in"]
+
+        self.assertTrue(burn_in["enabled"])
+        self.assertEqual(burn_in["scope"], "promotion-only")
+        self.assertEqual(burn_in["duration_seconds"], 60)
+        self.assertEqual(burn_in["interval_seconds"], 15)
+        self.assertEqual(
+            set(burn_in["established_classifications"]),
+            {"Stable", "Backup"},
+        )
+
     def test_production_config_retests_clean_historical_exact_ids_only(self):
         root = pathlib.Path(__file__).resolve().parents[1]
         config = json.loads((root / "config.json").read_text(encoding="utf-8"))
