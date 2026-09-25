@@ -113,6 +113,141 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertEqual(primary_qa["fps"], 2)
         self.assertTrue(primary_qa["detect_repeated_clips"])
 
+    def test_daddylive_resolver_emits_signed_candidate_with_required_headers(self):
+        config = minimal_config()
+        config["discovery"]["daddylive_resolver"] = {
+            "enabled": True,
+            "base_url_env": "DADDYLIVE_RESOLVER_URL",
+            "family": "daddylive-resolver",
+            "source_name": "DaddyLive maintained live resolver",
+            "priority": 10,
+            "servers": ["stream"],
+            "targets": [
+                {
+                    "tvg_id": "FXX.us",
+                    "name": "FXX",
+                    "channel_id": 298,
+                    "group": "Entertainment",
+                }
+            ],
+        }
+        payload = {
+            "direct": "https://cdn.example.test/hls/fxx.m3u8?s=abc&e=123",
+            "vlc": (
+                "vlc 'https://cdn.example.test/hls/fxx.m3u8?s=abc&e=123' "
+                ":http-user-agent='Resolver UA' "
+                ":http-referrer='https://embed.example/e/fxx'"
+            ),
+            "expiresAt": 123,
+            "isHls": True,
+        }
+        response = mock.MagicMock()
+        response.__enter__.return_value = response
+        response.read.return_value = json.dumps(payload).encode("utf-8")
+
+        with (
+            mock.patch.object(
+                build.os,
+                "getenv",
+                side_effect=lambda key, default=None: (
+                    "http://127.0.0.1:3000"
+                    if key == "DADDYLIVE_RESOLVER_URL"
+                    else default
+                ),
+            ),
+            mock.patch.object(build.urllib.request, "urlopen", return_value=response),
+        ):
+            entries, report = build.discover_daddylive_resolver_streams(config)
+
+        self.assertEqual(report["resolved"], 1)
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertEqual(entry["tvg_id"], "FXX.us")
+        self.assertEqual(
+            entry["url"],
+            "https://cdn.example.test/hls/fxx.m3u8?s=abc&e=123",
+        )
+        self.assertEqual(entry["headers"]["User-Agent"], "Resolver UA")
+        self.assertEqual(
+            entry["headers"]["Referer"],
+            "https://embed.example/e/fxx",
+        )
+        self.assertEqual(
+            entry["stability_identity"],
+            "daddylive-resolver:298:stream",
+        )
+        self.assertTrue(entry["ephemeral_signed"])
+
+    def test_ephemeral_signed_resolver_candidate_bypasses_dead_source_cooldown(self):
+        entry = {
+            "tvg_id": "FXX.us",
+            "url": "https://cdn.example.test/fxx.m3u8?s=fresh",
+            "headers": {"Referer": "https://embed.example/e/fxx"},
+            "stability_identity": "daddylive-resolver:298:stream",
+            "ephemeral_signed": True,
+        }
+        key = build._stream_stability_key(entry)
+        previous = {
+            "streams": {
+                key: {
+                    "classification": "Dead",
+                    "consecutive_failures": 3,
+                    "next_probe_at": "2099-01-01T00:00:00Z",
+                    "last_failure_detail": "old signed URL expired",
+                }
+            }
+        }
+        config = {
+            "stream_stability": {
+                "enabled": True,
+                "dead_source_cooldown_hours": [1, 6, 24],
+            }
+        }
+
+        result = build._dead_source_cooldown(
+            entry,
+            previous,
+            config,
+            build.dt.datetime.now(build.UTC),
+        )
+
+        self.assertIsNone(result)
+
+    def test_resolver_stability_identity_survives_signed_url_rotation(self):
+        first = {
+            "tvg_id": "FXX.us",
+            "url": "https://cdn.example.test/a.m3u8?s=first",
+            "headers": {"Referer": "https://embed.example/e/fxx"},
+            "stability_identity": "daddylive-resolver:298:stream",
+        }
+        second = {
+            "tvg_id": "FXX.us",
+            "url": "https://cdn.example.test/a.m3u8?s=second",
+            "headers": {"Referer": "https://embed.example/e/fxx"},
+            "stability_identity": "daddylive-resolver:298:stream",
+        }
+
+        self.assertEqual(
+            build._stream_stability_key(first),
+            build._stream_stability_key(second),
+        )
+
+    def test_production_daddylive_resolver_targets_missing_exact_channels(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        config = json.loads((root / "config.json").read_text(encoding="utf-8"))
+        resolver = config["discovery"]["daddylive_resolver"]
+        targets = {row["tvg_id"]: row["channel_id"] for row in resolver["targets"]}
+
+        self.assertTrue(resolver["enabled"])
+        self.assertEqual(resolver["base_url_env"], "DADDYLIVE_RESOLVER_URL")
+        self.assertEqual(resolver["servers"], ["stream", "cast"])
+        self.assertEqual(targets["CBSSportsNetwork.us"], 308)
+        self.assertEqual(targets["DiscoveryChannel.us"], 313)
+        self.assertEqual(targets["NBCSportsPhiladelphia.us"], 777)
+        self.assertEqual(targets["Nicktoons.us"], 649)
+        self.assertEqual(targets["HGTV.us"], 382)
+        self.assertEqual(targets["TLC.us"], 337)
+
     def test_production_recovery_aliases_cover_common_us_feed_ids(self):
         root = pathlib.Path(__file__).resolve().parents[1]
         config = json.loads((root / "config.json").read_text(encoding="utf-8"))

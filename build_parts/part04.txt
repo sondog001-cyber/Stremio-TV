@@ -2079,12 +2079,185 @@ def apply_primary_playback_qa(
     return kept_channels, report
 
 
-def _stream_stability_key(entry: dict[str, Any]) -> str:
-    """Stable identity for one playback URL + request-header combination."""
-    payload = {
-        "url": entry.get("url") or "",
-        "headers": sorted((entry.get("headers") or {}).items()),
+def _parse_resolver_vlc_headers(command: str) -> dict[str, str]:
+    headers: dict[str, str] = {}
+    ua_match = re.search(r":http-user-agent='([^']+)'", command or "")
+    ref_match = re.search(r":http-referrer='([^']+)'", command or "")
+    if ua_match:
+        headers["User-Agent"] = ua_match.group(1)
+    if ref_match:
+        headers["Referer"] = ref_match.group(1)
+    return headers
+
+
+def discover_daddylive_resolver_streams(
+    config: dict[str, Any],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Resolve fresh signed DaddyLive HLS URLs from the pinned local resolver."""
+    settings = ((config.get("discovery") or {}).get("daddylive_resolver") or {})
+    built_at = iso_z(dt.datetime.now(UTC))
+    if not bool(settings.get("enabled", False)):
+        return [], {
+            "kind": "daddylive-resolver-summary",
+            "enabled": False,
+            "status": "disabled",
+            "built_at": built_at,
+            "targets": 0,
+            "resolved": 0,
+            "candidates_found": 0,
+            "results": [],
+        }
+
+    base_url = (
+        os.getenv(str(settings.get("base_url_env") or "DADDYLIVE_RESOLVER_URL"))
+        or str(settings.get("base_url") or "")
+    ).strip().rstrip("/")
+    targets = list(settings.get("targets") or [])
+    servers = [
+        str(server).strip()
+        for server in settings.get("servers", ["stream", "cast"])
+        if str(server).strip()
+    ] or ["stream"]
+    timeout = max(3, int(settings.get("timeout_seconds", 18)))
+
+    if not base_url:
+        return [], {
+            "kind": "daddylive-resolver-summary",
+            "enabled": True,
+            "status": "unavailable",
+            "detail": "Resolver base URL is not configured",
+            "built_at": built_at,
+            "targets": len(targets),
+            "resolved": 0,
+            "candidates_found": 0,
+            "results": [],
+        }
+
+    entries: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
+
+    for target in targets:
+        tvg_id = str(target.get("tvg_id") or "").strip()
+        channel_id = target.get("channel_id")
+        if not tvg_id or channel_id is None:
+            continue
+
+        row: dict[str, Any] = {
+            "tvg_id": tvg_id,
+            "name": target.get("name") or tvg_id,
+            "channel_id": int(channel_id),
+            "attempts": [],
+            "status": "failed",
+        }
+
+        for server in servers:
+            query = urllib.parse.urlencode({
+                "channel": int(channel_id),
+                "server": server,
+            })
+            resolve_url = f"{base_url}/api/resolve?{query}"
+            started = time.monotonic()
+            try:
+                req = urllib.request.Request(
+                    resolve_url,
+                    headers={
+                        "User-Agent": USER_AGENT,
+                        "Accept": "application/json",
+                    },
+                )
+                with urllib.request.urlopen(req, timeout=timeout) as response:
+                    payload = json.loads(response.read(1_000_000).decode("utf-8"))
+
+                direct = str(payload.get("direct") or "").strip()
+                headers = _parse_resolver_vlc_headers(str(payload.get("vlc") or ""))
+                attempt = {
+                    "server": server,
+                    "status": "ok" if direct.startswith(("http://", "https://")) else "failed",
+                    "elapsed_seconds": round(time.monotonic() - started, 2),
+                    "expires_at": payload.get("expiresAt"),
+                    "is_hls": payload.get("isHls"),
+                    "has_user_agent": bool(headers.get("User-Agent")),
+                    "has_referer": bool(headers.get("Referer")),
+                }
+                row["attempts"].append(attempt)
+                if attempt["status"] != "ok":
+                    continue
+
+                entry = {
+                    "name": target.get("name") or tvg_id,
+                    "name_raw": target.get("name") or tvg_id,
+                    "tvg_id": tvg_id,
+                    "url": direct,
+                    "headers": headers,
+                    "source": settings.get("source_name") or "DaddyLive maintained resolver",
+                    "family": settings.get("family") or "daddylive-resolver",
+                    "priority": int(target.get("priority", settings.get("priority", 6))),
+                    "philly": bool(target.get("philly", False)),
+                    "group": target.get("group") or "Live TV",
+                    "quality": target.get("quality") or "Unknown",
+                    "resolver_channel_id": int(channel_id),
+                    "resolver_server": server,
+                    "expires_at": payload.get("expiresAt"),
+                    "ephemeral_signed": True,
+                    "stability_identity": f"daddylive-resolver:{int(channel_id)}:{server}",
+                }
+                entries.append(entry)
+                row["status"] = "ok"
+                row["server"] = server
+                row["expires_at"] = payload.get("expiresAt")
+                row["has_user_agent"] = bool(headers.get("User-Agent"))
+                row["has_referer"] = bool(headers.get("Referer"))
+                break
+            except urllib.error.HTTPError as exc:
+                row["attempts"].append({
+                    "server": server,
+                    "status": "failed",
+                    "http_status": exc.code,
+                    "elapsed_seconds": round(time.monotonic() - started, 2),
+                    "error": f"HTTP {exc.code}",
+                })
+            except Exception as exc:
+                row["attempts"].append({
+                    "server": server,
+                    "status": "failed",
+                    "elapsed_seconds": round(time.monotonic() - started, 2),
+                    "error": str(exc)[:200],
+                })
+
+        results.append(row)
+
+    report = {
+        "kind": "daddylive-resolver-summary",
+        "enabled": True,
+        "status": "ok",
+        "built_at": built_at,
+        "base_url": base_url,
+        "targets": len(targets),
+        "resolved": sum(1 for row in results if row.get("status") == "ok"),
+        "candidates_found": len(entries),
+        "results": results,
     }
+    log(
+        "DaddyLive resolver: "
+        f"resolved={report['resolved']:,}/{report['targets']:,}, "
+        f"candidates={len(entries):,}"
+    )
+    return entries, report
+
+
+def _stream_stability_key(entry: dict[str, Any]) -> str:
+    """Stable identity for a logical source or one playback URL + headers."""
+    stable_identity = str(entry.get("stability_identity") or "").strip()
+    if stable_identity:
+        payload = {
+            "stability_identity": stable_identity,
+            "tvg_id": canonical_tvg_id(str(entry.get("tvg_id") or "")),
+        }
+    else:
+        payload = {
+            "url": entry.get("url") or "",
+            "headers": sorted((entry.get("headers") or {}).items()),
+        }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha1(encoded.encode("utf-8")).hexdigest()
 
@@ -2515,6 +2688,8 @@ def _dead_source_cooldown(
     now: dt.datetime,
 ) -> dict[str, Any] | None:
     """Return a skip result while a previously dead URL is backing off."""
+    if entry.get("ephemeral_signed"):
+        return None
     settings = config.get("stream_stability") or {}
     if not settings.get("enabled", True):
         return None

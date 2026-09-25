@@ -17,6 +17,7 @@ A self-updating, Philadelphia-focused live-TV addon for Stremio. It combines a c
 - 2-of-3 FFmpeg decoder survival gate for direct MPEG-TS/media streams
 - Final decoded Primary playback QA with automatic backup promotion
 - Automated missing-channel, source-yield, and redundancy diagnostics
+- Build-time refresh of short-lived public signed HLS candidates through a pinned resolver
 - Scheduled GitHub Pages deployment with no application server
 
 The addon does not host, proxy, or restream video. It returns validated upstream URLs to Stremio.
@@ -36,7 +37,7 @@ Streams are classified across recent builds:
 
 Dead candidates use increasing retry cooldowns. A bounded recovery pass periodically retests candidates for missing channels.
 
-Publicly published signed HLS URLs may be evaluated when they are exposed without authentication. They are rediscovered from their public source and must pass the same validation as every other candidate. Embedded usernames, passwords, account-shaped provider paths, cookies, bearer headers, and private subscription credentials are rejected.
+Publicly published signed HLS URLs may be evaluated when they are exposed without authentication. Short-lived resolver-backed URLs are refreshed during each scheduled build, carry only the public request headers required by the upstream player, and must pass the same burn-in, continuity, and decoded Primary QA as every other candidate. Their cross-build stability is tracked by logical channel/server identity rather than the rotating signature, while current playback health remains mandatory. Freshly signed candidates bypass dead-URL cooldown so an expired signature cannot suppress a newly resolved URL. Embedded usernames, passwords, account-shaped provider paths, cookies, bearer headers, and private subscription credentials are rejected.
 
 ## Stream selection
 
@@ -59,6 +60,7 @@ The builder combines:
 - selected public backup playlists and targeted source indexes
 - official public station/player pages
 - recent approved IPTV-org issue submissions
+- a pinned build-time public stream resolver for selected missing exact IDs
 - an optional `manual_sources.json` file
 - optional private OTA/provider connectors for local deployments
 
@@ -122,7 +124,7 @@ The public GitHub Actions build refuses to load the private overlay. Serve priva
 https://YOUR-GITHUB-USER.github.io/YOUR-REPOSITORY/manifest.json
 ```
 
-Scheduled builds refresh sources and guide data automatically. The installation URL does not change between deployments.
+Scheduled builds refresh sources, short-lived public signed stream URLs, and guide data automatically. The resolver runs only inside the build job; the deployed addon remains static GitHub Pages and publishes validated direct upstream URLs with the required public request headers. The installation URL does not change between deployments.
 
 ## Local development
 
@@ -150,6 +152,7 @@ Build output includes `status.json` and structured reports under `site/diagnosti
 | `missing-source-diagnostics.json` | Actionable missing-channel classifications |
 | `stream-health.json` | Current candidate probe results |
 | `primary-playback-qa.json` | Final decoded Primary checks, promotions, and dropped channels |
+| `daddylive-resolver.json` | Build-time signed-stream resolution status by exact target ID |
 | `stream-stability.json` | Cross-build URL reliability history |
 | `source-family-scoreboard.json` | Candidate, passing, selected, and recovery yield by source |
 | `source-ordering.json` | Primary/backup selection details |
