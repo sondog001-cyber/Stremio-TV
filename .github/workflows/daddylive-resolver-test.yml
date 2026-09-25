@@ -1,0 +1,57 @@
+name: DaddyLive resolver recovery test
+
+on:
+  push:
+    branches: [diagnostic-repetition-sweep]
+    paths:
+      - "scripts/daddylive_resolver_test.py"
+      - ".github/workflows/daddylive-resolver-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Start maintained DaddyLive resolver
+        run: |
+          git clone --depth 1 https://github.com/sharoon7171/daddylive-stream-resolver.git /tmp/dlresolver
+          cd /tmp/dlresolver
+          npm install
+          npm start > /tmp/dlresolver.log 2>&1 &
+          echo $! > /tmp/dlresolver.pid
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/dlresolver.log
+          exit 1
+      - name: Resolve and decode missing exact channels
+        run: python scripts/daddylive_resolver_test.py
+      - name: Show resolver log
+        if: always()
+        run: tail -n 250 /tmp/dlresolver.log || true
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: daddylive-resolver-test
+          path: daddylive-resolver-test.json
+          if-no-files-found: warn
+          retention-days: 7
