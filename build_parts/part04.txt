@@ -404,6 +404,33 @@ def _target_ids_for_source_hunt(
         if pattern and canonical_tvg_id(pattern) in in_scope:
             targets[canonical_tvg_id(pattern)] = pattern
 
+    # Keep hunting a channel after its first recovery until at least one of its
+    # current candidate URLs has established Stable/Backup history. A one-build
+    # recovery is not enough evidence to stop looking for an independent or
+    # more durable replacement.
+    previous_stability = _load_previous_stream_stability(config)
+    previous_streams = previous_stability.get("streams") or {}
+    if previous_streams:
+        established_classes = {"Stable", "Backup"}
+        by_channel: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for entry in coverage_entries:
+            marker = canonical_tvg_id(str(entry.get("tvg_id") or ""))
+            if marker in in_scope:
+                by_channel[marker].append(entry)
+
+        for marker, pattern in in_scope.items():
+            entries_for_channel = by_channel.get(marker) or []
+            if not entries_for_channel:
+                continue
+            has_established = False
+            for entry in entries_for_channel:
+                old = previous_streams.get(_stream_stability_key(entry))
+                if isinstance(old, dict) and old.get("classification") in established_classes:
+                    has_established = True
+                    break
+            if not has_established:
+                targets[marker] = pattern
+
     allow_order = _exact_allowlist_ids(config, scope=scope)
     return [
         item
@@ -769,6 +796,66 @@ def discover_official_page_streams(
     return discovered, rows
 
 
+def _extract_iptv_org_issue_stream_id(body: str) -> str:
+    """Return the explicit IPTV-org template Stream ID, when present."""
+    match = re.search(
+        r"(?im)^###\s*Stream ID(?:\s*\([^\n)]*\))?\s*$\s*\n+\s*([^\n]+)",
+        body or "",
+    )
+    if not match:
+        return ""
+    value = match.group(1).strip()
+    if value.lower() in {"_no response_", "none", "n/a"}:
+        return ""
+    return value
+
+
+def _iptv_org_issue_target(
+    issue_title: str,
+    issue_body: str,
+    targets: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Resolve one issue to one exact target without substring alias leakage."""
+    stream_id = _extract_iptv_org_issue_stream_id(issue_body)
+    if stream_id:
+        id_aliases = {
+            canonical_tvg_id(source): target
+            for source, target in ((config.get("curation") or {}).get("canonical_id_aliases") or {}).items()
+        }
+        marker = canonical_tvg_id(stream_id)
+        marker = canonical_tvg_id(id_aliases.get(marker, stream_id))
+        exact = [
+            target
+            for target in targets
+            if canonical_tvg_id(str(target.get("tvg_id") or "")) == marker
+        ]
+        return exact[0] if len(exact) == 1 else None
+
+    # Legacy issues without the template field may still be useful, but require
+    # a whole-token/phrase match. This deliberately rejects tiny aliases such as
+    # "ID" from matching words like "required".
+    combined_norm = norm(f"{issue_title}\n{issue_body}")
+    matches: list[dict[str, Any]] = []
+    for target in targets:
+        terms = [target.get("tvg_id", "")] + list(target.get("aliases") or [])
+        hit = False
+        for term in terms:
+            term_norm = norm(str(term or "")).strip()
+            if len(term_norm) < 3:
+                continue
+            if re.search(
+                rf"(?<![a-z0-9]){re.escape(term_norm)}(?![a-z0-9])",
+                combined_norm,
+                flags=re.I,
+            ):
+                hit = True
+                break
+        if hit:
+            matches.append(target)
+    return matches[0] if len(matches) == 1 else None
+
+
 def discover_iptv_org_passed_issues(
     config: dict[str, Any],
     target_ids: list[str] | None = None,
@@ -833,14 +920,8 @@ def discover_iptv_org_passed_issues(
         title = issue.get("title") or ""
         body = issue.get("body") or ""
         combined = f"{title}\n{body}"
-        combined_norm = norm(combined)
 
-        matched_target: dict[str, Any] | None = None
-        for target in targets:
-            terms = [target.get("tvg_id", "")] + list(target.get("aliases") or [])
-            if any(term and (norm_id(term) in norm_id(combined) or norm(term) in combined_norm) for term in terms):
-                matched_target = target
-                break
+        matched_target = _iptv_org_issue_target(title, body, targets, config)
         if not matched_target:
             continue
 
