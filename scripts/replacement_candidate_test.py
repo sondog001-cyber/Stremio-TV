@@ -1,54 +1,56 @@
 #!/usr/bin/env python3
-import base64
-import json
-import subprocess
-import time
-import urllib.parse
+import json, re, subprocess, time, urllib.request
 
-ORIGIN = "https://epicplayplay.cfd"
-REFERER = "https://epicplayplay.cfd/"
-
-channels = [
-    ("Bravo", "nfs", 307),
-    ("CBS Sports Network", "zeko", 308),
-    ("Discovery Channel", "zeko", 313),
-    ("FXX", "ddy6", 298),
-    ("Fox Sports 2", "zeko", 758),
-    ("HGTV", "zeko", 382),
-    ("Investigation Discovery", "wind", 324),
-    ("MLB Network", "wind", 399),
-    ("NBC Sports Philadelphia", "zeko", 777),
-    ("Nicktoons", "dokko1", 649),
-    ("OWN", "wind", 331),
-    ("Reelz", "zeko", 293),
-    ("Smithsonian Channel", "dokko1", 603),
-    ("SundanceTV", "dokko1", 658),
-    ("TLC", "wind", 337),
-    ("Weather Channel", "zeko", 394),
-    ("Travel Channel", "wind", 340),
-    ("FX Movie Channel", "zeko", 381),
-    ("Magnolia Network", "ddy6", 299),
+PLAYLIST="https://8-rouge-gamma.vercel.app/playlist?url=https%3A%2F%2Fbit.ly%2Fddy-m3u2&data=MT1odHRwczovL2Nvb2tpZXdlYnBsYXkueHl6L3wyPWh0dHBzOi8vY29va2lld2VicGxheS54eXov&epgMerging=true"
+TARGETS = [
+    ("CBSSportsNetwork.us", ["CBS Sports Network"]),
+    ("DiscoveryChannel.us", ["Discovery Channel"]),
+    ("FXMovieChannel.us", ["FX Movie", "FXM"]),
+    ("FXX.us", ["FXX"]),
+    ("FoxSports2.us", ["Fox Sports 2", "FS2"]),
+    ("HGTV.us", ["HGTV"]),
+    ("InvestigationDiscovery.us", ["Investigation Discovery"]),
+    ("MLBNetwork.us", ["MLB Network"]),
+    ("NBCSportsPhiladelphia.us", ["NBC Sports Philadelphia"]),
+    ("OWN.us", ["Oprah Winfrey Network", "OWN"]),
+    ("Reelz.us", ["Reelz"]),
+    ("SmithsonianChannel.us", ["Smithsonian Channel"]),
+    ("SundanceTV.us", ["Sundance TV", "SundanceTV"]),
+    ("TLC.us", ["TLC"]),
+    ("TVLand.us", ["TV Land"]),
+    ("TravelChannel.us", ["Travel Channel"]),
+    ("WeatherChannel.us", ["The Weather Channel", "Weather Channel"]),
+    ("RFDTV.us", ["RFD-TV", "RFD TV"]),
+    ("StarzComedy.us", ["Starz Comedy"]),
+    ("StarzEncoreSpanish.us", ["Starz Encore Spanish"]),
 ]
+req=urllib.request.Request(PLAYLIST,headers={"User-Agent":"Mozilla/5.0"})
+with urllib.request.urlopen(req,timeout=25) as r:
+    text=r.read(8_000_000).decode("utf-8","ignore")
+lines=[x.strip() for x in text.splitlines()]
+entries=[]
+for i,line in enumerate(lines):
+    if not line.startswith("#EXTINF"): continue
+    name=line.split(",",1)[1].strip() if "," in line else ""
+    tvg=""
+    m=re.search(r'tvg-id="([^"]*)"',line,re.I)
+    if m: tvg=m.group(1)
+    url=""
+    for j in range(i+1,min(i+8,len(lines))):
+        if lines[j] and not lines[j].startswith("#"):
+            url=lines[j]; break
+    if url: entries.append({"name":name,"tvg_id":tvg,"url":url})
 
-def b64(text):
-    return base64.b64encode(text.encode()).decode()
-
-def proxy_url(provider, channel_id):
-    inner_data = b64(f"Origin={ORIGIN}")
-    inner = f"https://chevy.soyspace.cyou/proxy/{provider}/premium{channel_id}/mono.m3u8&data={inner_data}"
-    outer_url = b64(urllib.parse.quote(inner, safe=""))
-    headers = b64(json.dumps({"Referer": REFERER}, separators=(",", ":")))
-    return f"https://playlist.freecdnllm.sbs/?url={outer_url}&headers={headers}"
+matches=[]
+for target_id,names in TARGETS:
+    for e in entries:
+        hay=(e["name"]+" "+e["tvg_id"]).lower()
+        if any(n.lower() in hay for n in names):
+            item={"target_id":target_id,**e}
+            if item not in matches: matches.append(item)
 
 rows=[]
-for name, provider, channel_id in channels:
-    item={
-        "channel":name,
-        "label":"Metroid current Daddy proxy",
-        "channel_id":channel_id,
-        "provider":provider,
-        "url":proxy_url(provider, channel_id),
-    }
+for item in matches[:40]:
     started=time.time()
     cmd=[
         "ffmpeg","-hide_banner","-loglevel","error","-nostdin",
@@ -57,44 +59,12 @@ for name, provider, channel_id in channels:
         "-an","-f","framemd5","-"
     ]
     try:
-        p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=24)
-        hashes=[]
-        for line in p.stdout.splitlines():
-            if not line or line.startswith("#") or "," not in line:
-                continue
-            hashes.append(line.split(",")[-1].strip())
-        frames=len(hashes)
-        repeat=False
-        repeat_seconds=None
-        for width in range(4,min(8,frames//2)+1):
-            for start in range(0,frames-2*width+1):
-                clip=hashes[start:start+width]
-                if len(set(clip)) >= 3 and clip == hashes[start+width:start+2*width]:
-                    repeat=True
-                    repeat_seconds=round(width/2,1)
-                    break
-            if repeat:
-                break
-        row={
-            **item,
-            "frames":frames,
-            "decoded_seconds":round(frames/2,1),
-            "repeat_detected":repeat,
-            "repeat_seconds":repeat_seconds,
-            "exit":p.returncode,
-            "elapsed":round(time.time()-started,2),
-            "stderr":p.stderr[-700:],
-            "passed":frames>=20 and not repeat,
-        }
+        p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=22)
+        frames=sum(1 for line in p.stdout.splitlines() if line and not line.startswith("#") and "," in line)
+        rows.append({**item,"frames":frames,"decoded_seconds":round(frames/2,1),"exit":p.returncode,"elapsed":round(time.time()-started,2),"stderr":p.stderr[-500:],"passed":frames>=20})
     except subprocess.TimeoutExpired:
-        row={**item,"frames":0,"decoded_seconds":0.0,"repeat_detected":False,"exit":None,"elapsed":round(time.time()-started,2),"stderr":"timeout","passed":False}
-    rows.append(row)
-    print(json.dumps(row,indent=2),flush=True)
+        rows.append({**item,"frames":0,"decoded_seconds":0.0,"exit":None,"elapsed":round(time.time()-started,2),"stderr":"timeout","passed":False})
 
-with open("replacement-candidates.json","w") as f:
-    json.dump(rows,f,indent=2)
-print(json.dumps({
-    "tested":len(rows),
-    "passed":sum(1 for r in rows if r["passed"]),
-    "passing_channels":[r["channel"] for r in rows if r["passed"]],
-},indent=2))
+payload={"playlist_entries":len(entries),"matches":len(matches),"tested":len(rows),"passed":sum(1 for r in rows if r["passed"]),"rows":rows}
+with open("replacement-candidates.json","w") as f: json.dump(payload,f,indent=2)
+print(json.dumps(payload,indent=2))
