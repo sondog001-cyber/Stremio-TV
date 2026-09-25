@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with native EPG, decoded Primary QA, continuity validation, and prioritized public-source recovery.",
-    "version": "0.5.3"
+    "description": "Curated Philadelphia-area live TV with native EPG, decoded Primary QA, continuity validation, and fresh build-time stream resolution.",
+    "version": "0.6.0"
   },
   "sources": {
     "playlists": [
@@ -2769,7 +2769,136 @@
         "type": "web-directory",
         "note": "Research-only directory; not treated as a stream source unless a stable public machine-readable candidate is discovered."
       }
-    ]
+    ],
+    "daddylive_resolver": {
+      "enabled": true,
+      "base_url_env": "DADDYLIVE_RESOLVER_URL",
+      "family": "daddylive-resolver",
+      "source_name": "DaddyLive maintained live resolver",
+      "priority": 10,
+      "timeout_seconds": 18,
+      "servers": [
+        "stream",
+        "cast"
+      ],
+      "targets": [
+        {
+          "tvg_id": "Bravo.us",
+          "name": "Bravo",
+          "channel_id": 307,
+          "group": "Entertainment"
+        },
+        {
+          "tvg_id": "CBSSportsNetwork.us",
+          "name": "CBS Sports Network",
+          "channel_id": 308,
+          "group": "Sports"
+        },
+        {
+          "tvg_id": "DiscoveryChannel.us",
+          "name": "Discovery Channel",
+          "channel_id": 313,
+          "group": "Documentary"
+        },
+        {
+          "tvg_id": "FXX.us",
+          "name": "FXX",
+          "channel_id": 298,
+          "group": "Entertainment"
+        },
+        {
+          "tvg_id": "FoxSports2.us",
+          "name": "Fox Sports 2",
+          "channel_id": 758,
+          "group": "Sports"
+        },
+        {
+          "tvg_id": "HGTV.us",
+          "name": "HGTV",
+          "channel_id": 382,
+          "group": "Entertainment"
+        },
+        {
+          "tvg_id": "InvestigationDiscovery.us",
+          "name": "Investigation Discovery",
+          "channel_id": 324,
+          "group": "Documentary"
+        },
+        {
+          "tvg_id": "MLBNetwork.us",
+          "name": "MLB Network",
+          "channel_id": 399,
+          "group": "Sports"
+        },
+        {
+          "tvg_id": "NBCSportsPhiladelphia.us",
+          "name": "NBC Sports Philadelphia",
+          "channel_id": 777,
+          "group": "Sports",
+          "philly": true
+        },
+        {
+          "tvg_id": "Nicktoons.us",
+          "name": "Nicktoons",
+          "channel_id": 649,
+          "group": "Kids"
+        },
+        {
+          "tvg_id": "OWN.us",
+          "name": "OWN",
+          "channel_id": 331,
+          "group": "Entertainment"
+        },
+        {
+          "tvg_id": "Reelz.us",
+          "name": "Reelz",
+          "channel_id": 293,
+          "group": "Entertainment"
+        },
+        {
+          "tvg_id": "SmithsonianChannel.us",
+          "name": "Smithsonian Channel",
+          "channel_id": 603,
+          "group": "Documentary"
+        },
+        {
+          "tvg_id": "SundanceTV.us",
+          "name": "SundanceTV",
+          "channel_id": 658,
+          "group": "Movies"
+        },
+        {
+          "tvg_id": "TLC.us",
+          "name": "TLC",
+          "channel_id": 337,
+          "group": "Documentary"
+        },
+        {
+          "tvg_id": "WeatherChannel.us",
+          "name": "The Weather Channel",
+          "channel_id": 394,
+          "group": "News"
+        },
+        {
+          "tvg_id": "TravelChannel.us",
+          "name": "Travel Channel",
+          "channel_id": 340,
+          "group": "Documentary"
+        },
+        {
+          "tvg_id": "FXMovieChannel.us",
+          "name": "FX Movie Channel",
+          "channel_id": 381,
+          "group": "Movies"
+        },
+        {
+          "tvg_id": "MagnoliaNetwork.us",
+          "name": "Magnolia Network",
+          "channel_id": 299,
+          "group": "Entertainment"
+        }
+      ]
+    }
   },
   "channel_metadata": {
     "WPVI.us": {
