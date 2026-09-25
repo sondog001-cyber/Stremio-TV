@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with native EPG, HLS continuity checks, 2-of-3 direct-media validation, and final decoded Primary playback QA.",
-    "version": "0.5.2"
+    "description": "Curated Philadelphia-area live TV with native EPG, decoded Primary QA, continuity validation, and prioritized public-source recovery.",
+    "version": "0.5.3"
   },
   "sources": {
     "playlists": [
@@ -479,7 +479,29 @@
       "Starz.Edge.-.Eastern.us": "StarzEdge.us",
       "CW57WPSG.us": "WPSG.us",
       "NBC.Sports.Philadelphia.Plus.us2": "NBCSportsPhiladelphiaPlus.us",
-      "NBCSportsPhiladelphiaPlus.us2": "NBCSportsPhiladelphiaPlus.us"
+      "NBCSportsPhiladelphiaPlus.us2": "NBCSportsPhiladelphiaPlus.us",
+      "CBS.Sports.Network.USA.us": "CBSSportsNetwork.us",
+      "Discovery.Channel.(US).-.Eastern.Feed.us": "DiscoveryChannel.us",
+      "FX.Networks.East.Coast.us": "FX.us",
+      "FX.Movie.Channel.us": "FXMovieChannel.us",
+      "FXX.USA.-.Eastern.us": "FXX.us",
+      "Fox.Sports.2.us": "FoxSports2.us",
+      "HGTV.USA.-.Eastern.Feed.us": "HGTV.us",
+      "Investigation.Discovery.USA.-.Eastern.us": "InvestigationDiscovery.us",
+      "MLB.Network.us": "MLBNetwork.us",
+      "NBC.Sports.Philadelphia.HDTV.(NBCSPAHD).us": "NBCSportsPhiladelphia.us",
+      "National.Geographic.US.-.Eastern.us": "NationalGeographic.us",
+      "Oprah.Winfrey.Network.USA.Eastern.us": "OWN.us",
+      "Paramount.Network.USA.-.Eastern.Feed.us": "ParamountNetwork.us",
+      "ReelzChannel.us": "Reelz.us",
+      "Smithsonian.Channel.USA.HD.us": "SmithsonianChannel.us",
+      "Starz.Comedy.HD.-.Eastern.us": "StarzComedy.us",
+      "SundanceTV.USA.-.East.us": "SundanceTV.us",
+      "TLC.USA.-.Eastern.us": "TLC.us",
+      "The.Weather.Channel.us": "WeatherChannel.us",
+      "Travel.US.-.East.us": "TravelChannel.us",
+      "TV.Land.-.Eastern.us": "TVLand.us",
+      "Magnolia.-.East.us": "MagnoliaNetwork.us"
     },
     "approved_source_aliases": {
       "E.us": [
@@ -1249,6 +1271,33 @@
           "priority": 12,
           "philly": false,
           "content_note": "Independent maintained TVPass index discovered in exact-ID search; only prioritized missing IDs are retained."
+        },
+        {
+          "name": "arquerido NEX alternate US feeds",
+          "family": "arquerido-nex",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/arquerido/mych/main/NEX.m3u8",
+          "priority": 9,
+          "philly": false,
+          "content_note": "Alternate direct-feed family with independent nexgen/143.244 hosts; exact curated IDs only after explicit canonical ID remaps."
+        },
+        {
+          "name": "arquerido MOVE alternate MoveOnJoy feeds",
+          "family": "arquerido-move",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/arquerido/mych/main/MOVE.m3u8",
+          "priority": 10,
+          "philly": false,
+          "content_note": "Alternate fl1 MoveOnJoy index; used only for current missing/unstable exact IDs and subjected to the full playback QA stack."
+        },
+        {
+          "name": "arquerido TAZZ public sports relay index",
+          "family": "arquerido-tazz",
+          "format": "m3u",
+          "url": "https://raw.githubusercontent.com/arquerido/mych/main/TAZZTV.m3u",
+          "priority": 10,
+          "philly": false,
+          "content_note": "Public sports relay index providing independent CBS Sports/FS2/MLB candidates; exact IDs only and no credential-shaped URLs accepted."
         }
       ],
       "hunt_unstable_channels": true,
