@@ -2439,6 +2439,9 @@ def probe_candidate_entries(
             if is_final_probe and double_probe:
                 batch.update(established_pass)
             if not batch:
+                if double_probe and established_pass and not is_final_probe:
+                    time.sleep(burn_in_interval)
+                    continue
                 break
 
             time.sleep(burn_in_interval)
@@ -2484,18 +2487,6 @@ def probe_candidate_entries(
 
             if is_final_probe and double_probe:
                 for key, entry in established_pass.items():
-                    first_health = results.get(key, {})
-                    if first_health.get("validation_mode") == "established-two-probe":
-                        continue
-                    # The first result may have been temporarily overwritten only
-                    # for burn-in candidates; established candidates retain probe 1.
-                    first_health = (
-                        refs[key][0].get("health")
-                        if refs[key] and refs[key][0].get("health")
-                        else results.get(key, {})
-                    )
-                    # At this point entries have not yet received health, so use
-                    # the original first probe kept separately below.
                     first_health = first_probe_health[key]
                     final_health = next_results.get(
                         key,
@@ -2530,7 +2521,7 @@ def probe_candidate_entries(
             result = finalize_continuity(
                 samples[0],
                 samples[-1],
-                f"Passed {planned_elapsed}s promotion burn-in ({len(samples)} probes)",
+                f"Passed {planned_elapsed}s burn-in ({len(samples)} probes) before promotion",
                 failure_detail=(
                     f"Final burn-in probe failed after probe 1 passed: "
                     f"{samples[-1].get('detail', 'unknown')}"
