@@ -84,14 +84,18 @@ def main():
     ap.add_argument("--timeout",type=int,default=32)
     ap.add_argument("--fps",type=int,default=2)
     ap.add_argument("--output",default="frame-repetition-sweep.json")
+    ap.add_argument("--only",default="",help="Comma-separated channel names to test")
     args=ap.parse_args()
 
     preview=fetch_json(args.preview_url)
+    only={x.strip() for x in args.only.split(",") if x.strip()}
     items=[]
     for row in preview.get("channels",[]):
         ch=row.get("channel") or {}
         streams=row.get("streams") or []
         if not streams: continue
+        if only and ch.get("name") not in only:
+            continue
         s=streams[0]
         hints=s.get("behaviorHints") or {}
         proxy=hints.get("proxyHeaders") or {}
