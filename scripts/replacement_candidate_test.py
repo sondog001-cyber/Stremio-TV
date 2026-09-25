@@ -2,11 +2,10 @@
 import json, subprocess, time
 
 candidates = [
-    {"channel":"Starz Comedy","label":"arquerido NEX","url":"http://143.244.60.30/STARZ_COMEDY/index.m3u8"},
-    {"channel":"Starz Comedy","label":"MoveOnJoy","url":"http://fl2.moveonjoy.com/STARZ_COMEDY/index.m3u8"},
-    {"channel":"Starz Comedy","label":"historical mirror","url":"http://40.160.24.55/STARZ_COMEDY/index.m3u8"},
-    {"channel":"Starz Comedy","label":"IPTVMate redirect","url":"https://ch.iptvmate.net/26051a4a8efad9bba4d60d9443832216.m3u8"},
-    {"channel":"Cinemax Classics","label":"852851 proxy","url":"https://iptv.852851.xyz/ch/b87c7b595ab0e18621da9e14c865480c/master.m3u8"},
+    {"channel":"WPVI / 6ABC","label":"MoveOnJoy fl1","url":"https://fl1.moveonjoy.com/PA_PHILADELPHIA_ABC/index.m3u8"},
+    {"channel":"KYW / CBS3","label":"MoveOnJoy fl1","url":"https://fl1.moveonjoy.com/PA_PHILADELPHIA_CBS/index.m3u8"},
+    {"channel":"WCAU / NBC10","label":"MoveOnJoy fl1","url":"https://fl1.moveonjoy.com/PA_PHILADELPHIA_NBC/index.m3u8"},
+    {"channel":"WPHL / PHL17","label":"LocalBTV tk","url":"https://v-pi.theus6tv.tk/hls/17.1/playlist.m3u8"},
 ]
 rows=[]
 for item in candidates:
