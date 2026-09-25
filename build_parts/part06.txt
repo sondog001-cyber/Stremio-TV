@@ -56,6 +56,12 @@
             log(f"Adding {len(discovered_entries):,} dynamically discovered candidates")
             entries.extend(discovered_entries)
 
+        resolver_entries, daddylive_resolver_report = discover_daddylive_resolver_streams(config)
+        if resolver_entries:
+            log(f"Adding {len(resolver_entries):,} freshly resolved DaddyLive candidates")
+            entries.extend(resolver_entries)
+        discovery_results.append(daddylive_resolver_report)
+
         entries = canonicalize_approved_sources(entries, config)
         entries, identity_rejected = enforce_exact_identity(entries, config)
         entries, quarantined_streams = apply_stream_quarantine(entries, config)
@@ -383,6 +389,12 @@
             "playback_defect_quarantined_streams": len(quarantined_streams),
             "dynamic_discovery_candidates": len(discovered_entries),
             "dynamic_discovery_events": len(discovery_results),
+            "daddylive_resolver": {
+                "status": daddylive_resolver_report.get("status"),
+                "targets": daddylive_resolver_report.get("targets", 0),
+                "resolved": daddylive_resolver_report.get("resolved", 0),
+                "candidates": daddylive_resolver_report.get("candidates_found", 0),
+            },
             "private_connectors": {
                 "enabled": bool(private_streams),
                 "streams": len(private_streams),
