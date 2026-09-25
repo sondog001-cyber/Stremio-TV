@@ -178,6 +178,41 @@ class TargetedScannerTests(unittest.TestCase):
         )
         self.assertTrue(entry["ephemeral_signed"])
 
+    def test_ephemeral_signed_resolver_candidate_bypasses_dead_source_cooldown(self):
+        entry = {
+            "tvg_id": "FXX.us",
+            "url": "https://cdn.example.test/fxx.m3u8?s=fresh",
+            "headers": {"Referer": "https://embed.example/e/fxx"},
+            "stability_identity": "daddylive-resolver:298:stream",
+            "ephemeral_signed": True,
+        }
+        key = build._stream_stability_key(entry)
+        previous = {
+            "streams": {
+                key: {
+                    "classification": "Dead",
+                    "consecutive_failures": 3,
+                    "next_probe_at": "2099-01-01T00:00:00Z",
+                    "last_failure_detail": "old signed URL expired",
+                }
+            }
+        }
+        config = {
+            "stream_stability": {
+                "enabled": True,
+                "dead_source_cooldown_hours": [1, 6, 24],
+            }
+        }
+
+        result = build._dead_source_cooldown(
+            entry,
+            previous,
+            config,
+            build.dt.datetime.now(build.UTC),
+        )
+
+        self.assertIsNone(result)
+
     def test_resolver_stability_identity_survives_signed_url_rotation(self):
         first = {
             "tvg_id": "FXX.us",
