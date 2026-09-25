@@ -295,6 +295,8 @@ class PlaybackContinuityTests(unittest.TestCase):
             "fps": 2,
             "timeout_seconds": 20,
             "detect_repeated_clips": True,
+            "attempts": 1,
+            "required_passes": 1,
         }
         output = "\n".join(
             f"0, {index}, {index}, 1, 1, {index + 1:032x}"
@@ -311,8 +313,8 @@ class PlaybackContinuityTests(unittest.TestCase):
             )
 
         self.assertEqual(result["status"], "failed")
-        self.assertEqual(result["continuity_failure"], "direct-media-short-decode")
-        self.assertEqual(result["direct_media_survival"]["decoded_seconds"], 4.0)
+        self.assertEqual(result["continuity_failure"], "direct-media-insufficient-survival")
+        self.assertEqual(result["direct_media_survival"]["attempts"][0]["decoded_seconds"], 4.0)
         self.assertFalse(result["direct_media_survival"]["passed"])
 
     def test_direct_media_decoder_accepts_ten_seconds_of_video(self):
@@ -323,6 +325,8 @@ class PlaybackContinuityTests(unittest.TestCase):
             "fps": 2,
             "timeout_seconds": 20,
             "detect_repeated_clips": True,
+            "attempts": 1,
+            "required_passes": 1,
         }
         output = "\n".join(
             f"0, {index}, {index}, 1, 1, {index + 1:032x}"
@@ -339,7 +343,8 @@ class PlaybackContinuityTests(unittest.TestCase):
             )
 
         self.assertEqual(result["status"], "ok")
-        self.assertEqual(result["direct_media_survival"]["decoded_seconds"], 12.0)
+        self.assertEqual(result["direct_media_survival"]["attempts"][0]["decoded_seconds"], 12.0)
+        self.assertEqual(result["direct_media_survival"]["passed_attempts"], 1)
         self.assertTrue(result["direct_media_survival"]["passed"])
 
     def test_direct_media_decoder_detects_replayed_clip(self):
@@ -352,6 +357,8 @@ class PlaybackContinuityTests(unittest.TestCase):
             "detect_repeated_clips": True,
             "repeat_min_seconds": 2,
             "repeat_max_seconds": 4,
+            "attempts": 1,
+            "required_passes": 1,
         }
         clip = [f"{index + 1:032x}" for index in range(4)]
         hashes = clip + clip + [f"{index + 10:032x}" for index in range(20)]
@@ -371,7 +378,48 @@ class PlaybackContinuityTests(unittest.TestCase):
 
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["continuity_failure"], "direct-media-repeated-clip")
-        self.assertEqual(result["direct_media_survival"]["repeat"]["clip_seconds"], 2.0)
+        self.assertEqual(result["direct_media_survival"]["attempts"][0]["repeat"]["clip_seconds"], 2.0)
+
+    def test_direct_media_decoder_requires_two_of_three_attempts(self):
+        settings = {
+            "enabled": True,
+            "duration_seconds": 12,
+            "min_decoded_seconds": 10,
+            "fps": 2,
+            "timeout_seconds": 20,
+            "detect_repeated_clips": True,
+            "attempts": 3,
+            "required_passes": 2,
+        }
+        short_output = "\n".join(
+            f"0, {index}, {index}, 1, 1, {index + 1:032x}"
+            for index in range(8)
+        )
+        good_output = "\n".join(
+            f"0, {index}, {index}, 1, 1, {index + 100:032x}"
+            for index in range(24)
+        )
+        short = mock.Mock(stdout=short_output, stderr="", returncode=0)
+        good_1 = mock.Mock(stdout=good_output, stderr="", returncode=0)
+        good_2 = mock.Mock(stdout=good_output, stderr="", returncode=0)
+
+        with (
+            mock.patch.object(build.shutil, "which", return_value="/usr/bin/ffmpeg"),
+            mock.patch.object(
+                build.subprocess,
+                "run",
+                side_effect=[short, good_1, good_2],
+            ) as run,
+        ):
+            result = build._validate_direct_media_survival(
+                {"url": "http://example.test/live", "headers": {}},
+                settings,
+            )
+
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["direct_media_survival"]["passed_attempts"], 2)
+        self.assertEqual(result["direct_media_survival"]["attempts_completed"], 3)
+        self.assertEqual(run.call_count, 3)
 
     def test_direct_decoder_gate_marks_candidate_failed_before_stability_scoring(self):
         entry = {
@@ -411,8 +459,8 @@ class PlaybackContinuityTests(unittest.TestCase):
         }
         gate_result = {
             "status": "failed",
-            "detail": "Direct media decoded only 3.0s; requires 10s",
-            "continuity_failure": "direct-media-short-decode",
+            "detail": "Direct media passed 0/2 decoder attempts; requires 2",
+            "continuity_failure": "direct-media-insufficient-survival",
             "direct_media_survival": {
                 "decoded_seconds": 3.0,
                 "passed": False,
@@ -427,7 +475,7 @@ class PlaybackContinuityTests(unittest.TestCase):
             healthy, rows, state = build.probe_candidate_entries([entry], config)
 
         self.assertEqual(healthy, [])
-        self.assertEqual(rows[0]["health"]["continuity_failure"], "direct-media-short-decode")
+        self.assertEqual(rows[0]["health"]["continuity_failure"], "direct-media-insufficient-survival")
         key = build._stream_stability_key(entry)
         self.assertEqual(state["streams"][key]["last_result"], "fail")
     def test_identical_direct_media_samples_fail_second_probe(self):
