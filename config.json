@@ -1188,7 +1188,8 @@
           "philly": false,
           "content_note": "Public direct HLS list with exact US feed IDs and playback Origin/Referer headers; no login credentials accepted."
         }
-      ]
+      ],
+      "hunt_unstable_channels": true
     },
     "github_candidate_search": {
       "enabled": false,
