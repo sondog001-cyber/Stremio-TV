@@ -31,11 +31,10 @@ jobs:
         run: |
           python scripts/frame_repetition_sweep.py \
             --preview-url "https://sondog001-cyber.github.io/Stremio-TV/diagnostics/stremio-preview.json" \
-            --seconds 30 \
-            --workers 3 \
-            --timeout 45 \
+            --seconds 18 \
+            --workers 8 \
+            --timeout 32 \
             --fps 2 \
-            --only "NBC Sports Philadelphia,Cooking Channel,TLC,BET,Comedy Central,FXX,Lifetime,SundanceTV,The Weather Channel,CBS Sports Network,MLB Network,FX Movie Channel,Smithsonian Channel" \
             --output frame-repetition-sweep.json
       - name: Upload frame repetition diagnostics
         if: always()
