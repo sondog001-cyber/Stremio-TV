@@ -302,6 +302,33 @@
                 )
                 for status in ("ok", "failed", "cooldown", "not-tested")
             },
+            "direct_media_survival": {
+                "tested": sum(
+                    1
+                    for row in stream_health_results
+                    if isinstance((row.get("health") or {}).get("direct_media_survival"), dict)
+                ),
+                "passed": sum(
+                    1
+                    for row in stream_health_results
+                    if ((row.get("health") or {}).get("direct_media_survival") or {}).get("passed") is True
+                ),
+                "failed": sum(
+                    1
+                    for row in stream_health_results
+                    if ((row.get("health") or {}).get("direct_media_survival") or {}).get("passed") is False
+                ),
+                "short_decode": sum(
+                    1
+                    for row in stream_health_results
+                    if (row.get("health") or {}).get("continuity_failure") == "direct-media-short-decode"
+                ),
+                "repeated_clip": sum(
+                    1
+                    for row in stream_health_results
+                    if (row.get("health") or {}).get("continuity_failure") == "direct-media-repeated-clip"
+                ),
+            },
             "quality_measurements": quality_measurements["summary"],
             "channel_logos": logo_normalization.get("summary", {}),
             "missing_source_buckets": missing_source_diagnostics["summary"],

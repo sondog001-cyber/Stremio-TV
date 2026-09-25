@@ -43,6 +43,10 @@ jobs:
         run: python assemble_build.py
       - name: Run builder tests
         run: python -m unittest discover -s tests -v
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
       - name: Build static Stremio addon
         run: python build.py
         env:
