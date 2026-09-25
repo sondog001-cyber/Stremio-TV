@@ -3481,20 +3481,25 @@ def build_missing_source_diagnostics(
                 action = "Replace or repair candidates that failed playlist/media validation."
                 failure_kind = "playback_validation"
         else:
-            streams = (channel or {}).get("streams", [])
-            measured = [stream for stream in streams if stream.get("measured_height")]
-            hd_count = sum(1 for stream in streams if is_hd_stream(stream))
-            sd_count = sum(1 for stream in streams if is_sd_stream(stream))
-            if streams and not measured:
-                bucket = "missing_quality_metadata"
-                action = "Add or expose an HLS master playlist with RESOLUTION metadata."
-            elif hd_count < target_hd or sd_count < target_sd:
-                bucket = "insufficient_quality_mix"
-                action = "Find the missing measured HD/SD rendition or backup family."
+            if channel is None:
+                bucket = "primary_playback_qa_failed"
+                action = "Replace or promote a candidate that passes decoded Primary playback QA."
+                failure_kind = "decoded_primary_playback"
             else:
-                bucket = "complete"
-                action = "No source work required."
-            failure_kind = None
+                streams = channel.get("streams", [])
+                measured = [stream for stream in streams if stream.get("measured_height")]
+                hd_count = sum(1 for stream in streams if is_hd_stream(stream))
+                sd_count = sum(1 for stream in streams if is_sd_stream(stream))
+                if streams and not measured:
+                    bucket = "missing_quality_metadata"
+                    action = "Add or expose an HLS master playlist with RESOLUTION metadata."
+                elif hd_count < target_hd or sd_count < target_sd:
+                    bucket = "insufficient_quality_mix"
+                    action = "Find the missing measured HD/SD rendition or backup family."
+                else:
+                    bucket = "complete"
+                    action = "No source work required."
+                failure_kind = None
 
         bucket_counts[bucket] += 1
         if passing_count == 0:
@@ -3518,7 +3523,24 @@ def build_missing_source_diagnostics(
     return {
         "summary": {
             "expected_channels": len(rows),
-            "channels_without_passing_stream": sum(1 for row in rows if row["passing_candidate_count"] == 0),
+            "channels_without_passing_stream": sum(
+                1
+                for row in rows
+                if row["passing_candidate_count"] == 0
+                or row["bucket"] == "primary_playback_qa_failed"
+            ),
+            "channels_without_published_stream": sum(
+                1
+                for row in rows
+                if row["bucket"] in {
+                    "no_candidate",
+                    "private_connector_required",
+                    "quarantined_or_cooldown",
+                    "runner_or_geo_blocked",
+                    "failed_probes",
+                    "primary_playback_qa_failed",
+                }
+            ),
             "bucket_counts": dict(sorted(bucket_counts.items())),
             "without_passing_bucket_counts": dict(sorted(without_passing_counts.items())),
         },
