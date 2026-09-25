@@ -2191,9 +2191,9 @@ def probe_candidate_entries(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     """Probe the full curated candidate pool before selecting channel streams.
 
-    Production can require two successful probes separated by one global wait.
-    This catches transient/cached URLs without multiplying the wait by the
-    number of streams.
+    Production can require a multi-probe burn-in window. All candidates are
+    probed in parallel at each interval, so the survival window is global
+    rather than multiplied by the number of streams.
     """
     settings = config.get("stream_health") or {}
     enabled = enabled and bool(settings.get("enabled", True))
@@ -2203,6 +2203,10 @@ def probe_candidate_entries(
     verify_segment = bool(settings.get("verify_segment_for_all_candidates", True))
     double_probe = bool(settings.get("double_probe", True))
     second_probe_delay = int(settings.get("second_probe_delay_seconds", 60))
+    burn_in_settings = settings.get("burn_in") or {}
+    burn_in_enabled = bool(burn_in_settings.get("enabled", False))
+    burn_in_duration = max(1, int(burn_in_settings.get("duration_seconds", 60)))
+    burn_in_interval = max(1, int(burn_in_settings.get("interval_seconds", 15)))
 
     rows: list[dict[str, Any]] = []
     previous_stability: dict[str, Any] = {}
@@ -2285,7 +2289,168 @@ def probe_candidate_entries(
         if health.get("status") == "ok"
     }
 
-    if double_probe and first_pass:
+    def finalize_continuity(
+        first_health: dict[str, Any],
+        final_health: dict[str, Any],
+        success_detail: str,
+        *,
+        failure_detail: str,
+        burn_in: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        extra = {"burn_in": burn_in} if burn_in is not None else {}
+        if final_health.get("status") != "ok":
+            return {
+                **final_health,
+                "status": "failed",
+                "detail": failure_detail,
+                "probe_1": first_health,
+                "probe_2": final_health,
+                "stable": False,
+                **extra,
+            }
+
+        first_tail = first_health.get("hls_tail_sha256")
+        final_tail = final_health.get("hls_tail_sha256")
+        first_sequence = first_health.get("hls_media_sequence")
+        final_sequence = final_health.get("hls_media_sequence")
+        stalled_live_hls = bool(
+            first_health.get("hls_is_live")
+            and final_health.get("hls_is_live")
+            and first_tail
+            and final_tail
+            and first_tail == final_tail
+            and (
+                first_sequence is None
+                or final_sequence is None
+                or first_sequence == final_sequence
+            )
+        )
+        if stalled_live_hls:
+            return {
+                **final_health,
+                "status": "failed",
+                "detail": "Live HLS window did not advance across validation window",
+                "continuity_failure": "stalled-live-hls-window",
+                "probe_1": first_health,
+                "probe_2": final_health,
+                "stable": False,
+                **extra,
+            }
+
+        first_sample = first_health.get("media_sample_sha256")
+        final_sample = final_health.get("media_sample_sha256")
+        frozen_direct_media = bool(
+            first_sample
+            and final_sample
+            and first_sample == final_sample
+            and int(first_health.get("media_sample_bytes") or 0) >= 32768
+            and int(final_health.get("media_sample_bytes") or 0) >= 32768
+        )
+        if frozen_direct_media:
+            return {
+                **final_health,
+                "status": "failed",
+                "detail": "Direct media sample did not advance across validation window",
+                "continuity_failure": "identical-direct-media-sample",
+                "probe_1": first_health,
+                "probe_2": final_health,
+                "stable": False,
+                **extra,
+            }
+
+        return {
+            **first_health,
+            "status": "ok",
+            "detail": success_detail,
+            "probe_1": first_health,
+            "probe_2": final_health,
+            "stable": True,
+            **extra,
+        }
+
+    if burn_in_enabled and first_pass:
+        checks_after_first = max(1, (burn_in_duration + burn_in_interval - 1) // burn_in_interval)
+        planned_elapsed = checks_after_first * burn_in_interval
+        active = dict(first_pass)
+        samples_by_key: dict[
+            tuple[str, tuple[tuple[str, str], ...]],
+            list[dict[str, Any]],
+        ] = {
+            key: [results[key]]
+            for key in active
+        }
+        log(
+            f"Health burn-in: {len(active):,} candidates passed probe 1; "
+            f"{checks_after_first} more probe(s) every {burn_in_interval}s "
+            f"across ~{planned_elapsed}s"
+        )
+
+        for probe_index in range(2, checks_after_first + 2):
+            if not active:
+                break
+            time.sleep(burn_in_interval)
+            next_results = run_probe_batch(active)
+            for key in list(active):
+                health = next_results.get(
+                    key,
+                    {"status": "failed", "detail": f"No burn-in probe {probe_index} result"},
+                )
+                samples_by_key[key].append(health)
+                if health.get("status") == "ok":
+                    results[key] = health
+                    continue
+
+                elapsed = (probe_index - 1) * burn_in_interval
+                results[key] = {
+                    **health,
+                    "status": "failed",
+                    "detail": (
+                        f"Burn-in probe {probe_index} failed after initial pass: "
+                        f"{health.get('detail', 'unknown')}"
+                    ),
+                    "continuity_failure": "burn-in-probe-failed",
+                    "probe_1": samples_by_key[key][0],
+                    "probe_2": health,
+                    "stable": False,
+                    "burn_in": {
+                        "enabled": True,
+                        "duration_seconds": burn_in_duration,
+                        "interval_seconds": burn_in_interval,
+                        "planned_probes": checks_after_first + 1,
+                        "probes_attempted": len(samples_by_key[key]),
+                        "elapsed_seconds": elapsed,
+                        "failed_probe": probe_index,
+                        "passed": False,
+                    },
+                }
+                del active[key]
+
+        for key in active:
+            samples = samples_by_key[key]
+            burn_in = {
+                "enabled": True,
+                "duration_seconds": burn_in_duration,
+                "interval_seconds": burn_in_interval,
+                "planned_probes": checks_after_first + 1,
+                "probes_attempted": len(samples),
+                "elapsed_seconds": planned_elapsed,
+                "failed_probe": None,
+                "passed": True,
+            }
+            results[key] = finalize_continuity(
+                samples[0],
+                samples[-1],
+                f"Passed {planned_elapsed}s burn-in ({len(samples)} probes)",
+                failure_detail=(
+                    f"Final burn-in probe failed after probe 1 passed: "
+                    f"{samples[-1].get('detail', 'unknown')}"
+                ),
+                burn_in=burn_in,
+            )
+            if results[key].get("status") != "ok":
+                results[key]["burn_in"]["passed"] = False
+
+    elif double_probe and first_pass:
         log(
             f"Health stability check: {len(first_pass):,} candidates passed probe 1; "
             f"waiting {second_probe_delay}s before probe 2"
@@ -2296,73 +2461,19 @@ def probe_candidate_entries(
         for key, first_health in list(results.items()):
             if first_health.get("status") != "ok":
                 continue
-            second_health = second_results.get(key, {"status": "failed", "detail": "No second probe result"})
-            if second_health.get("status") == "ok":
-                first_tail = first_health.get("hls_tail_sha256")
-                second_tail = second_health.get("hls_tail_sha256")
-                first_sequence = first_health.get("hls_media_sequence")
-                second_sequence = second_health.get("hls_media_sequence")
-                stalled_live_hls = bool(
-                    first_health.get("hls_is_live")
-                    and second_health.get("hls_is_live")
-                    and first_tail
-                    and second_tail
-                    and first_tail == second_tail
-                    and (
-                        first_sequence is None
-                        or second_sequence is None
-                        or first_sequence == second_sequence
-                    )
-                )
-                if stalled_live_hls:
-                    results[key] = {
-                        **second_health,
-                        "status": "failed",
-                        "detail": "Live HLS window did not advance between probes",
-                        "continuity_failure": "stalled-live-hls-window",
-                        "probe_1": first_health,
-                        "probe_2": second_health,
-                        "stable": False,
-                    }
-                    continue
-
-                first_sample = first_health.get("media_sample_sha256")
-                second_sample = second_health.get("media_sample_sha256")
-                frozen_direct_media = bool(
-                    first_sample
-                    and second_sample
-                    and first_sample == second_sample
-                    and int(first_health.get("media_sample_bytes") or 0) >= 32768
-                    and int(second_health.get("media_sample_bytes") or 0) >= 32768
-                )
-                if frozen_direct_media:
-                    results[key] = {
-                        **second_health,
-                        "status": "failed",
-                        "detail": "Direct media sample did not advance between probes",
-                        "continuity_failure": "identical-direct-media-sample",
-                        "probe_1": first_health,
-                        "probe_2": second_health,
-                        "stable": False,
-                    }
-                    continue
-                results[key] = {
-                    **first_health,
-                    "status": "ok",
-                    "detail": "Passed two HLS/media probes",
-                    "probe_1": first_health,
-                    "probe_2": second_health,
-                    "stable": True,
-                }
-            else:
-                results[key] = {
-                    **second_health,
-                    "status": "failed",
-                    "detail": f"Probe 2 failed after probe 1 passed: {second_health.get('detail', 'unknown')}",
-                    "probe_1": first_health,
-                    "probe_2": second_health,
-                    "stable": False,
-                }
+            second_health = second_results.get(
+                key,
+                {"status": "failed", "detail": "No second probe result"},
+            )
+            results[key] = finalize_continuity(
+                first_health,
+                second_health,
+                "Passed two HLS/media probes",
+                failure_detail=(
+                    "Probe 2 failed after probe 1 passed: "
+                    f"{second_health.get('detail', 'unknown')}"
+                ),
+            )
 
     selected_by_url = {row["url"]: row for row in priority_recovery["selected"]}
     for key in forced_keys:
