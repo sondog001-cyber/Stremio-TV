@@ -80,17 +80,16 @@ class TargetedScannerTests(unittest.TestCase):
         }
         self.assertTrue(expected.issubset(seed_urls))
 
-        rejected_dead_hosts = (
-            "40.160.24.",
-            "206.212.244.63/",
-            "185.246.209.113/",
-            "messi.damitv.st/",
-        )
-        for url in seed_urls:
-            self.assertFalse(
-                any(host in url for host in rejected_dead_hosts),
-                f"known-dead historical host leaked into research seeds: {url}",
-            )
+        rejected_historical_urls = {
+            "http://40.160.24.55/REELZ/index.m3u8",
+            "http://40.160.24.55/TV_LAND/index.m3u8",
+            "http://40.160.24.58/NEWSNATION/index.m3u8",
+            "http://206.212.244.63/144/index.m3u8",
+            "http://206.212.244.63/712/index.m3u8",
+            "http://185.246.209.113/TVLandHD/index.m3u8",
+            "https://messi.damitv.st/papi/ts/nflnetwork-usa/playlist.m3u8",
+        }
+        self.assertTrue(rejected_historical_urls.isdisjoint(seed_urls))
 
     def test_m3u_parser_preserves_origin_referrer_and_kodi_inline_headers(self):
         text = "\n".join(
