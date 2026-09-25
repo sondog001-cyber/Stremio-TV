@@ -1660,6 +1660,68 @@ def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) ->
         }
 
 
+def _framemd5_hashes(text: str) -> list[str]:
+    hashes: list[str] = []
+    for raw in (text or "").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = [part.strip() for part in line.split(",")]
+        if len(parts) >= 6 and re.fullmatch(r"[0-9a-fA-F]{32}", parts[-1]):
+            hashes.append(parts[-1].lower())
+    return hashes
+
+
+def _find_repeated_frame_clip(hashes: list[str], fps: int, min_seconds: int = 2, max_seconds: int = 4) -> dict[str, Any] | None:
+    if fps <= 0:
+        return None
+    min_width = max(1, int(min_seconds * fps))
+    max_width = min(int(max_seconds * fps), len(hashes) // 2)
+    for width in range(min_width, max_width + 1):
+        for start in range(0, len(hashes) - (2 * width) + 1):
+            first = hashes[start:start + width]
+            second = hashes[start + width:start + (2 * width)]
+            if len(set(first)) < 3:
+                continue
+            if first == second:
+                return {"start_frame": start, "width_frames": width, "clip_seconds": round(width / fps, 2), "unique_frames": len(set(first))}
+    return None
+
+
+def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
+    if not bool(settings.get("enabled", False)):
+        return {"status": "not-tested", "detail": "Direct-media survival disabled"}
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        return {"status": "failed", "detail": "FFmpeg unavailable for direct-media decoder validation", "continuity_failure": "direct-media-decoder-unavailable"}
+    url = str(stream.get("url") or "")
+    duration = max(1, int(settings.get("duration_seconds", 12)))
+    min_decoded_seconds = max(1, min(duration, int(settings.get("min_decoded_seconds", 10))))
+    fps = max(1, int(settings.get("fps", 2)))
+    timeout = max(duration + 3, int(settings.get("timeout_seconds", duration + 8)))
+    min_frames = max(1, min_decoded_seconds * fps)
+    command = [ffmpeg, "-hide_banner", "-loglevel", "error", "-nostdin", "-user_agent", USER_AGENT, "-rw_timeout", "10000000"]
+    headers = stream.get("headers") or {}
+    if headers:
+        command.extend(["-headers", "".join(f"{key}: {value}\\r\\n" for key, value in headers.items())])
+    command.extend(["-i", url, "-t", str(duration), "-map", "0:v:0", "-vf", f"fps={fps},scale=160:-2", "-an", "-f", "framemd5", "-"])
+    started = time.monotonic()
+    try:
+        completed = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=timeout, check=False)
+    except subprocess.TimeoutExpired:
+        return {"status": "failed", "detail": f"Direct media decoder timed out after {timeout}s", "continuity_failure": "direct-media-decoder-timeout", "direct_media_survival": {"duration_seconds": duration, "min_decoded_seconds": min_decoded_seconds, "fps": fps, "decoded_frames": 0, "decoded_seconds": 0.0, "passed": False}}
+    hashes = _framemd5_hashes(completed.stdout)
+    decoded_frames = len(hashes)
+    decoded_seconds = round(decoded_frames / fps, 2)
+    repeat = _find_repeated_frame_clip(hashes, fps, int(settings.get("repeat_min_seconds", 2)), int(settings.get("repeat_max_seconds", 4))) if bool(settings.get("detect_repeated_clips", True)) else None
+    survival = {"duration_seconds": duration, "min_decoded_seconds": min_decoded_seconds, "fps": fps, "decoded_frames": decoded_frames, "decoded_seconds": decoded_seconds, "elapsed_seconds": round(time.monotonic() - started, 2), "ffmpeg_exit_code": completed.returncode, "repeat": repeat, "passed": False}
+    if repeat is not None:
+        return {"status": "failed", "detail": f"Repeated direct-media video clip detected (~{repeat['clip_seconds']}s immediately replayed)", "continuity_failure": "direct-media-repeated-clip", "direct_media_survival": survival}
+    if decoded_frames < min_frames:
+        return {"status": "failed", "detail": f"Direct media decoded only {decoded_seconds:.1f}s; requires {min_decoded_seconds}s", "continuity_failure": "direct-media-short-decode", "direct_media_survival": survival}
+    survival["passed"] = True
+    return {"status": "ok", "detail": f"Decoded {decoded_seconds:.1f}s of direct media", "direct_media_survival": survival}
+
 def _stream_stability_key(entry: dict[str, Any]) -> str:
     """Stable identity for one playback URL + request-header combination."""
     payload = {
