@@ -61,6 +61,37 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertNotIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/TVPass.m3u", urls)
         self.assertEqual(sum(source["family"] == "github-playlist" for source in sources), 4)
 
+    def test_production_config_retests_clean_historical_exact_ids_only(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        config = json.loads((root / "config.json").read_text(encoding="utf-8"))
+        seed_urls = {
+            seed["url"]
+            for seed in config["discovery"]["seed_candidates"]
+        }
+
+        expected = {
+            "http://170.254.18.106/HGTV/index.m3u8",
+            "http://livex.pop-app.live/s4n/poplive/ch323/playlist.m3u8",
+            "http://23.237.104.106:8080/USA_REELZ/index.m3u8",
+            "http://168.228.44.241:9998/play/a0e1/index.m3u8",
+            "https://sra72yz.s.gy/STARZ_ENCORE_ESPANOL_EAST_HD",
+            "https://tvsen3.aynaott.com/5fUWDMxZ/index.m3u8",
+            "https://tvsen6.aynaott.com/nfl/index.m3u8",
+        }
+        self.assertTrue(expected.issubset(seed_urls))
+
+        rejected_dead_hosts = (
+            "40.160.24.",
+            "206.212.244.63/",
+            "185.246.209.113/",
+            "messi.damitv.st/",
+        )
+        for url in seed_urls:
+            self.assertFalse(
+                any(host in url for host in rejected_dead_hosts),
+                f"known-dead historical host leaked into research seeds: {url}",
+            )
+
     def test_m3u_parser_preserves_origin_referrer_and_kodi_inline_headers(self):
         text = "\n".join(
             [
