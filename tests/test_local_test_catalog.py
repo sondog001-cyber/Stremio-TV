@@ -100,19 +100,23 @@ class LocalTestCatalogTests(unittest.TestCase):
             self.config,
         )
 
-        self.assertEqual(len(channels), 1)
-        channel = channels[0]
-        self.assertEqual(channel["tvg_id"], "CBSSportsNetwork.us")
-        self.assertTrue(channel["name"].startswith("🧪 "))
-        self.assertTrue(channel["id"].startswith("stremiotv_localtest_"))
-        self.assertEqual(len(channel["streams"]), 2)
         self.assertEqual(
-            [stream["display_role"] for stream in channel["streams"]],
+            {channel["tvg_id"] for channel in channels},
+            {"CBSSportsNetwork.us", "HGTV.us"},
+        )
+        cbs = next(channel for channel in channels if channel["tvg_id"] == "CBSSportsNetwork.us")
+        hgtv = next(channel for channel in channels if channel["tvg_id"] == "HGTV.us")
+        self.assertTrue(cbs["name"].startswith("🧪 "))
+        self.assertTrue(cbs["id"].startswith("stremiotv_localtest_"))
+        self.assertEqual(len(cbs["streams"]), 2)
+        self.assertEqual(
+            [stream["display_role"] for stream in cbs["streams"]],
             ["LOCAL TEST 1", "LOCAL TEST 2"],
         )
-        self.assertTrue(all(stream["local_test"] for stream in channel["streams"]))
-        self.assertEqual(report["summary"]["channels"], 1)
-        self.assertEqual(report["summary"]["streams"], 2)
+        self.assertTrue(all(stream["local_test"] for stream in cbs["streams"]))
+        self.assertEqual(len(hgtv["streams"]), 1)
+        self.assertEqual(report["summary"]["channels"], 2)
+        self.assertEqual(report["summary"]["streams"], 3)
 
     def test_published_channel_is_not_duplicated_into_local_test(self):
         entries = [
