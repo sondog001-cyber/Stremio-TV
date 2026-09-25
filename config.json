@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, expiring client verification, native Live TV EPG, and promotion-gated 60-second playback validation.",
-    "version": "0.4.7"
+    "description": "Curated Philadelphia-area live TV with priority recovery, fresh exact-ID discovery, source-ID normalization, native Live TV EPG, and promotion-gated 60-second playback validation.",
+    "version": "0.4.8"
   },
   "sources": {
     "playlists": [
@@ -473,7 +473,13 @@
       "AandE.us": "AE.us",
       "ACCN.us": "ACCNetwork.us",
       "BloombergTelevision.us": "BloombergTV.us",
-      "WTXF.us": "Fox.us@WTXFTV"
+      "WTXF.us": "Fox.us@WTXFTV",
+      "TeenNick.-.Eastern.us": "TeenNick.us",
+      "TeenNick.(East).(TNCK).us": "TeenNick.us",
+      "Starz.Edge.-.Eastern.us": "StarzEdge.us",
+      "CW57WPSG.us": "WPSG.us",
+      "NBC.Sports.Philadelphia.Plus.us2": "NBCSportsPhiladelphiaPlus.us",
+      "NBCSportsPhiladelphiaPlus.us2": "NBCSportsPhiladelphiaPlus.us"
     },
     "approved_source_aliases": {
       "E.us": [
@@ -630,6 +636,21 @@
       "HGTV.us": [
         "HGTV",
         "HGTV East"
+      ],
+      "TeenNick.us": [
+        "TeenNick",
+        "Teen Nick",
+        "TeenNick East",
+        "TeenNick - Eastern"
+      ],
+      "StarzEdge.us": [
+        "Starz Edge",
+        "Starz Edge East"
+      ],
+      "NBCSportsPhiladelphiaPlus.us": [
+        "NBC Sports Philadelphia Plus",
+        "NBCSN Philadelphia Plus",
+        "NBC Sports Philly Plus"
       ]
     },
     "identity_rules": {
@@ -2556,95 +2577,30 @@
         "research_url": "https://streamtest.in/logs/https-tvsen7-aynascope-net-hgtv-index-m3u8"
       },
       {
-        "name": "HGTV",
-        "tvg_id": "HGTV.us",
-        "url": "http://170.254.18.106/HGTV/index.m3u8",
-        "source": "IPTV-org historical exact-ID issue #15899",
+        "name": "TeenNick",
+        "tvg_id": "TeenNick.us",
+        "url": "http://tvsen7.aynascope.net/teennick/index.m3u8",
+        "source": "IPTV-org current exact-ID feed",
         "source_type": "public-third-party",
-        "priority": 8,
+        "priority": 6,
         "philly": false,
-        "group": "Home & Lifestyle",
+        "group": "Kids",
         "content_kind": "full-linear",
-        "content_note": "Historical exact HGTV submission retained as a low-priority revalidation lead; must pass the full 60-second burn-in before publication.",
-        "research_url": "https://github.com/iptv-org/iptv/issues/15899"
+        "content_note": "Current IPTV-org exact TeenNick East feed; promotion requires the full 60-second burn-in.",
+        "research_url": "https://github.com/iptv-org/iptv/blob/master/streams/us.m3u"
       },
       {
-        "name": "HGTV",
-        "tvg_id": "HGTV.us",
-        "url": "http://livex.pop-app.live/s4n/poplive/ch323/playlist.m3u8",
-        "source": "IPTV-org historical exact-ID issue #16050",
+        "name": "Starz Edge",
+        "tvg_id": "StarzEdge.us",
+        "url": "http://168.228.44.241:9998/play/a0e0/index.m3u8",
+        "source": "IPTV-org current exact-ID feed",
         "source_type": "public-third-party",
-        "priority": 8,
-        "philly": false,
-        "group": "Home & Lifestyle",
-        "content_kind": "full-linear",
-        "content_note": "Historical exact HGTV submission retained as a low-priority revalidation lead; must pass the full 60-second burn-in before publication.",
-        "research_url": "https://github.com/iptv-org/iptv/issues/16050"
-      },
-      {
-        "name": "Reelz",
-        "tvg_id": "Reelz.us",
-        "url": "http://23.237.104.106:8080/USA_REELZ/index.m3u8",
-        "source": "IPTV-org historical exact-ID issue #39918",
-        "source_type": "public-third-party",
-        "priority": 9,
-        "philly": false,
-        "group": "Entertainment",
-        "content_kind": "full-linear",
-        "content_note": "Historical exact Reelz submission on a still-relevant public host family; promotion requires exact identity plus the full burn-in.",
-        "research_url": "https://github.com/iptv-org/iptv/issues/39918"
-      },
-      {
-        "name": "Starz Encore Spanish",
-        "tvg_id": "StarzEncoreSpanish.us",
-        "url": "http://168.228.44.241:9998/play/a0e1/index.m3u8",
-        "source": "IPTV-org historical exact-ID issue #48699",
-        "source_type": "public-third-party",
-        "priority": 8,
+        "priority": 7,
         "philly": false,
         "group": "Movies",
         "content_kind": "full-linear",
-        "content_note": "Exact Starz Encore Spanish East historical submission; diagnostic-only until it survives current health and continuity validation.",
-        "research_url": "https://github.com/iptv-org/iptv/issues/48699"
-      },
-      {
-        "name": "Starz Encore Spanish",
-        "tvg_id": "StarzEncoreSpanish.us",
-        "url": "https://sra72yz.s.gy/STARZ_ENCORE_ESPANOL_EAST_HD",
-        "source": "IPTV-org historical exact-ID issue #46884",
-        "source_type": "public-third-party",
-        "priority": 8,
-        "philly": false,
-        "group": "Movies",
-        "content_kind": "full-linear",
-        "content_note": "Exact Starz Encore Spanish East historical submission; diagnostic-only until it survives current health and continuity validation.",
-        "research_url": "https://github.com/iptv-org/iptv/issues/46884"
-      },
-      {
-        "name": "Comedy Central",
-        "tvg_id": "ComedyCentral.us",
-        "url": "https://tvsen3.aynaott.com/5fUWDMxZ/index.m3u8",
-        "source": "IPTV-org historical exact-ID issue #49032",
-        "source_type": "public-third-party",
-        "priority": 8,
-        "philly": false,
-        "group": "Entertainment",
-        "content_kind": "full-linear",
-        "content_note": "Exact Comedy Central East historical submission; must pass the current 60-second burn-in before selection.",
-        "research_url": "https://github.com/iptv-org/iptv/issues/49032"
-      },
-      {
-        "name": "NFL Network",
-        "tvg_id": "NFLNetwork.us",
-        "url": "https://tvsen6.aynaott.com/nfl/index.m3u8",
-        "source": "IPTV-org exact-ID issue #51852",
-        "source_type": "public-third-party",
-        "priority": 8,
-        "philly": false,
-        "group": "Sports",
-        "content_kind": "full-linear",
-        "content_note": "Exact NFL Network SD submission marked geo-blocked upstream; retained for runner testing and only publishable if the current runner can complete burn-in.",
-        "research_url": "https://github.com/iptv-org/iptv/issues/51852"
+        "content_note": "Current IPTV-org exact Starz Edge East feed; diagnostic until it survives promotion burn-in.",
+        "research_url": "https://github.com/iptv-org/iptv/blob/master/streams/us.m3u"
       }
     ],
     "research_directories": [
