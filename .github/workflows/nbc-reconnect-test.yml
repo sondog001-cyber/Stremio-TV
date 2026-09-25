@@ -1,0 +1,38 @@
+name: NBC reconnect fingerprint test
+
+on:
+  push:
+    branches: [diagnostic-repetition-sweep]
+    paths:
+      - "scripts/nbc_reconnect_test.py"
+      - ".github/workflows/nbc-reconnect-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Reconnect to NBC primary six times
+        run: python scripts/nbc_reconnect_test.py
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nbc-reconnect-test
+          path: nbc-reconnect-test.json
+          if-no-files-found: error
+          retention-days: 7
