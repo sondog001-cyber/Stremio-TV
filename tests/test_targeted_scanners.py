@@ -60,6 +60,7 @@ class TargetedScannerTests(unittest.TestCase):
         self.assertNotIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/smart.m3u", urls)
         self.assertNotIn("https://raw.githubusercontent.com/judy-gotv/iptv/main/TVPass.m3u", urls)
         self.assertEqual(sum(source["family"] == "github-playlist" for source in sources), 4)
+        self.assertTrue(discovery["targeted_source_families"]["hunt_unstable_channels"])
 
     def test_production_burn_in_is_promotion_gated(self):
         root = pathlib.Path(__file__).resolve().parents[1]
@@ -300,6 +301,7 @@ class TargetedScannerTests(unittest.TestCase):
 
     def test_target_hunt_keeps_recovered_channel_until_stream_is_established(self):
         config = minimal_config()
+        config["discovery"]["targeted_source_families"]["hunt_unstable_channels"] = True
         entry = {
             "name": "FXX",
             "name_raw": "FXX",
@@ -538,14 +540,30 @@ class TargetedScannerTests(unittest.TestCase):
             {
                 "number": 101,
                 "title": "Add: FXX",
-                "body": "https://example.test/fxx.m3u8",
+                "body": "\n".join([
+                    "### Stream ID (required)",
+                    "",
+                    "FXX.us",
+                    "",
+                    "### Stream URL (required)",
+                    "",
+                    "https://example.test/fxx.m3u8",
+                ]),
                 "html_url": "https://github.com/iptv-org/iptv/issues/101",
                 "labels": [{"name": "streams:add"}, {"name": "check:passed"}],
             },
             {
                 "number": 102,
                 "title": "Broken: FXX",
-                "body": "https://example.test/dead-fxx.m3u8",
+                "body": "\n".join([
+                    "### Stream ID (required)",
+                    "",
+                    "FXX.us",
+                    "",
+                    "### Stream URL (required)",
+                    "",
+                    "https://example.test/dead-fxx.m3u8",
+                ]),
                 "html_url": "https://github.com/iptv-org/iptv/issues/102",
                 "labels": [{"name": "streams:remove"}, {"name": "check:passed"}],
             },
