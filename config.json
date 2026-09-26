@@ -2754,6 +2754,19 @@
         "content_kind": "full-linear",
         "content_note": "Current IPTV-org exact Starz Edge East feed; diagnostic until it survives promotion burn-in.",
         "research_url": "https://github.com/iptv-org/iptv/blob/master/streams/us.m3u"
+      },
+      {
+        "name": "FXX",
+        "tvg_id": "FXX.us",
+        "url": "https://cdn.telecloud.tv/CH3255/index.m3u8",
+        "source": "IPTV-org issue-history Telecloud lead",
+        "source_type": "public-third-party",
+        "priority": 9,
+        "philly": false,
+        "group": "Entertainment",
+        "content_kind": "full-linear",
+        "content_note": "Validated in isolated deep-dive QA: passed five-probe 60-second live-HLS burn-in at 1080p plus final decoded playback QA with no repeat detected.",
+        "research_url": "https://github.com/iptv-org/iptv/issues/39881"
       }
     ],
     "research_directories": [
