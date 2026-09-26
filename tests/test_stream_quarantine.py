@@ -75,6 +75,22 @@ class StreamQuarantineTests(unittest.TestCase):
             rules,
         )
 
+    def test_production_quarantines_brazil_espn_from_espn_us(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        config = json.loads((root / "config.json").read_text(encoding="utf-8"))
+        rules = {
+            (row.get("tvg_id"), row.get("url"))
+            for row in config["curation"]["stream_quarantine"]
+        }
+
+        self.assertIn(
+            (
+                "ESPN.us",
+                "http://181.78.197.59:8000/play/a07z/index.m3u8",
+            ),
+            rules,
+        )
+
     def test_empty_quarantine_is_noop(self):
         entries = [{"tvg_id": "HGTV.us", "url": "https://example.test/hgtv.m3u8"}]
         kept, quarantined = build.apply_stream_quarantine(entries, {"curation": {}})
