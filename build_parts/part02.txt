@@ -300,6 +300,126 @@ def apply_stream_quarantine(
     return kept, quarantined
 
 
+
+_SENSITIVE_REQUEST_HEADERS = {
+    "authorization",
+    "cookie",
+    "proxy-authorization",
+    "x-api-key",
+}
+
+
+def apply_safety_controls(
+    entries: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Apply global source safety rules and rapid takedown kill switches.
+
+    This gate runs across every candidate source family before probing or
+    publication. Publicly exposed signed query strings may pass unchanged, but
+    the builder will not accept embedded credentials, authentication headers,
+    DRM/license material, or candidates explicitly marked as requiring login or
+    a paywall.
+
+    Two kill switches are supported:
+    - disabled_urls removes one exact upstream URL.
+    - disabled_channels removes every candidate for an exact channel ID.
+
+    The switches intentionally disable sources rather than hiding, rotating, or
+    proxying them.
+    """
+    settings = config.get("safety_controls") or {}
+    disabled_urls = {
+        str(value).strip()
+        for value in (settings.get("disabled_urls") or [])
+        if str(value).strip()
+    }
+    disabled_channels = {
+        canonical_tvg_id(str(value))
+        for value in (settings.get("disabled_channels") or [])
+        if str(value).strip()
+    }
+    blocked_headers = {
+        str(value).strip().lower()
+        for value in (
+            settings.get("blocked_request_headers")
+            or sorted(_SENSITIVE_REQUEST_HEADERS)
+        )
+        if str(value).strip()
+    }
+
+    kept: list[dict[str, Any]] = []
+    rejected: list[dict[str, Any]] = []
+    for original in entries:
+        entry = dict(original)
+        entry.setdefault("source", "Unknown")
+        entry.setdefault("family", "unknown")
+
+        url = str(entry.get("url") or "").strip()
+        tvg_id = str(entry.get("tvg_id") or "").strip()
+        reason: str | None = None
+
+        if canonical_tvg_id(tvg_id) in disabled_channels:
+            reason = "channel-kill-switch"
+        elif url in disabled_urls:
+            reason = "url-kill-switch"
+        else:
+            try:
+                parsed = urllib.parse.urlsplit(url)
+            except Exception:
+                parsed = None
+
+            if parsed is not None and (parsed.username is not None or parsed.password is not None):
+                reason = "embedded-url-credentials"
+
+            headers = entry.get("headers") or {}
+            if reason is None and isinstance(headers, dict):
+                sensitive = sorted(
+                    str(key)
+                    for key in headers
+                    if str(key).strip().lower() in blocked_headers
+                )
+                if sensitive:
+                    reason = "sensitive-auth-header"
+
+            if reason is None and bool(settings.get("reject_auth_required", True)):
+                if any(bool(entry.get(key)) for key in ("requires_auth", "requires_login", "paywalled")):
+                    reason = "authentication-or-paywall-required"
+
+            if reason is None and bool(settings.get("reject_drm", True)):
+                drm_fields = (
+                    "drm",
+                    "license",
+                    "license_url",
+                    "license_server",
+                    "key_system",
+                    "widevine",
+                    "playready",
+                    "fairplay",
+                )
+                if any(bool(entry.get(key)) for key in drm_fields):
+                    reason = "drm-or-license-material"
+
+        if reason is None:
+            kept.append(entry)
+            continue
+
+        rejected.append({
+            "name": entry.get("name"),
+            "tvg_id": tvg_id,
+            "source": entry.get("source"),
+            "family": entry.get("family"),
+            "url": url,
+            "reason": reason,
+        })
+
+    if rejected:
+        counts = Counter(row["reason"] for row in rejected)
+        summary = ", ".join(f"{key}={value}" for key, value in sorted(counts.items()))
+        log(f"Safety controls: removed {len(rejected):,} candidate stream(s) ({summary})")
+    return kept, rejected
+
+
 def build_allowlist_coverage(entries: list[dict[str, Any]], config: dict[str, Any]) -> list[dict[str, Any]]:
     """Report whether each exact tvg-id allow-list entry exists in any source.
 

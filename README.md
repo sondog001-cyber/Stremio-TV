@@ -23,6 +23,20 @@ A self-updating, Philadelphia-focused live-TV addon for Stremio. It combines a c
 
 The addon does not host, proxy, or restream video. It returns validated upstream URLs to Stremio.
 
+
+### Rapid source removal and access policy
+
+The public addon remains **direct-upstream-only**: Stremio receives the validated upstream media URL and this project does not proxy or restream the video.
+
+Every candidate retains its source/provider attribution internally through the build and diagnostics. A global safety gate runs before probing and publication and rejects candidates that contain embedded URL credentials, sensitive authentication headers, DRM/license material, or explicit login/paywall requirements. Publicly exposed signed URLs may pass unchanged when no login or private credential is required; the project does not manufacture authorization tokens.
+
+For rapid removal, `config.json` exposes two kill switches under `safety_controls`:
+
+- `disabled_urls`: exact upstream URLs to remove while leaving the rest of the channel intact.
+- `disabled_channels`: exact channel IDs whose candidates should all be removed.
+
+If a credible complaint identifies a source or channel, add it to the appropriate kill switch. The policy is to **disable the affected source/channel rather than hide it, rotate it, or proxy it through another host**. The build records removals in `diagnostics/safety-controls.json`.
+
 ## Stream policy
 
 Only allow-listed channels are considered. Before publication, every candidate must pass the configured health checks. New, Quarantine, and Dead candidates are sampled at 0, 15, 30, 45, and 60 seconds before promotion; any failed intermediate probe rejects them. Previously established Stable or Backup URLs keep the lower-churn two-probe continuity check across the same validation window. HLS streams must expose a valid playlist and readable media segment, and live HLS windows must advance across the validation window. Direct non-HLS media must sustain at least 10 seconds of decoded video in at least 2 of 3 independent 12-second FFmpeg connections; immediately replayed 2–4 second clips hard-fail before stability scoring or selection. After selection, the chosen Primary is decoded end-to-end for a final QA pass across both HLS and direct transports. A failed Primary is removed and the next backup is tested/promoted; a channel with no decoded passing choice is omitted for that build. Confirmed decoder-visible playback defects can be exact-URL quarantined even when ordinary reachability checks pass. Failed and untested candidates remain diagnostic-only.

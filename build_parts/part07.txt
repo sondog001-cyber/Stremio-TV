@@ -38,6 +38,10 @@
         write_json(output / "diagnostics" / "channel-changes.json", channel_changes)
         write_json(output / "diagnostics" / "identity-rejected.json", identity_rejected)
         write_json(output / "diagnostics" / "stream-quarantine.json", quarantined_streams)
+        write_json(output / "diagnostics" / "safety-controls.json", {
+            "policy": config.get("safety_controls") or {},
+            "rejected": safety_rejected,
+        })
         write_json(output / "diagnostics" / "dynamic-discovery.json", discovery_results)
         write_json(
             output / "diagnostics" / "targeted-source-scans.json",
