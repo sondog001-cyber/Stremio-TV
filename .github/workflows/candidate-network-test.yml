@@ -1,0 +1,75 @@
+name: Deep Dive Candidate Network Test
+
+on:
+  push:
+    branches: [deep-dive-candidates-20260926]
+    paths:
+      - "config.json"
+      - "build.py"
+      - "assemble_build.py"
+      - "build_parts/**"
+      - "tests/**"
+      - ".github/workflows/candidate-network-test.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  candidate-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Assemble builder
+        run: python assemble_build.py
+      - name: Run builder tests
+        run: python -m unittest discover -s tests -v
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Start pinned DaddyLive resolver for baseline comparison
+        shell: bash
+        run: |
+          set +e
+          rm -rf /tmp/daddylive-resolver
+          git clone --quiet https://github.com/sharoon7171/daddylive-stream-resolver.git /tmp/daddylive-resolver
+          cd /tmp/daddylive-resolver || exit 0
+          git checkout --quiet 5064460e16ca78f191473753b5696dea54ea134a
+          npm ci --silent
+          nohup npm start > /tmp/daddylive-resolver.log 2>&1 &
+          for i in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then
+              echo "Resolver ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "WARNING: resolver unavailable; candidate test continues"
+          exit 0
+      - name: Run full candidate build QA
+        run: python build.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DADDYLIVE_RESOLVER_URL: http://127.0.0.1:3000
+      - name: Upload candidate diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: deep-dive-candidate-diagnostics
+          path: |
+            site/status.json
+            site/diagnostics/
+          if-no-files-found: ignore
+          retention-days: 3
