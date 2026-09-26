@@ -9,7 +9,7 @@ on:
       - "assemble_build.py"
       - "build_parts/**"
       - "tests/**"
-      - ".github/workflows/candidate-network-test.yml"
+      - ".github/workflows/qa-resilience-test.yml"
 
 permissions:
   contents: read
