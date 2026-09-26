@@ -2769,19 +2769,6 @@
         "research_url": "https://github.com/iptv-org/iptv/issues/15894"
       },
       {
-        "name": "HGTV",
-        "tvg_id": "HGTV.us",
-        "url": "http://170.254.18.106/HGTV/index.m3u8",
-        "source": "IPTV-org issue-history distinct-host lead",
-        "source_type": "public-third-party",
-        "priority": 9,
-        "philly": false,
-        "group": "Home & Lifestyle",
-        "content_kind": "full-linear",
-        "content_note": "Deep-dive candidate from public IPTV-org issue history; must pass full burn-in and decoded playback QA.",
-        "research_url": "https://github.com/iptv-org/iptv/issues/15899"
-      },
-      {
         "name": "FX Movie Channel",
         "tvg_id": "FXMovieChannel.us",
         "url": "https://gpuserver3.tier1streams.com/FXM/index.m3u8",
@@ -2949,19 +2936,6 @@
         "content_kind": "full-linear",
         "content_note": "Older distinct-host candidate retained only if current full QA passes.",
         "research_url": "https://github.com/iptv-org/iptv/issues/40417"
-      },
-      {
-        "name": "TV Land",
-        "tvg_id": "TVLand.us",
-        "url": "http://185.246.209.113/TVLandHD/index.m3u8",
-        "source": "IPTV-org issue-history independent-host lead",
-        "source_type": "public-third-party",
-        "priority": 12,
-        "philly": false,
-        "group": "Entertainment",
-        "content_kind": "full-linear",
-        "content_note": "Older distinct-host candidate retained only if current full QA passes.",
-        "research_url": "https://github.com/iptv-org/iptv/issues/40419"
       },
       {
         "name": "RFD-TV",
