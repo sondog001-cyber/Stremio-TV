@@ -531,6 +531,47 @@ class PlaybackContinuityTests(unittest.TestCase):
             "identical-direct-media-sample",
         )
 
+    def test_primary_playback_retries_transient_decoder_timeout(self):
+        settings = {
+            "enabled": True,
+            "duration_seconds": 10,
+            "min_decoded_seconds": 8,
+            "fps": 2,
+            "timeout_seconds": 25,
+            "detect_repeated_clips": True,
+            "attempts": 2,
+            "required_passes": 1,
+        }
+        good_output = "\n".join(
+            f"0, {index}, {index}, 1, 1, {index + 100:032x}"
+            for index in range(20)
+        )
+        good = mock.Mock(stdout=good_output, stderr="", returncode=0)
+        timeout = build.subprocess.TimeoutExpired(cmd=["ffmpeg"], timeout=25)
+
+        with (
+            mock.patch.object(build.shutil, "which", return_value="/usr/bin/ffmpeg"),
+            mock.patch.object(
+                build.subprocess,
+                "run",
+                side_effect=[timeout, good],
+            ) as run,
+        ):
+            result = build._validate_primary_playback_stream(
+                {"url": "http://example.test/live", "headers": {}},
+                settings,
+            )
+
+        self.assertEqual(result["status"], "ok")
+        qa = result["primary_playback_qa"]
+        self.assertEqual(qa["attempts_required"], 2)
+        self.assertEqual(qa["required_passes"], 1)
+        self.assertEqual(qa["attempts_completed"], 2)
+        self.assertEqual(qa["passed_attempts"], 1)
+        self.assertEqual(qa["attempts"][0]["failure"], "timeout")
+        self.assertTrue(qa["attempts"][1]["passed"])
+        self.assertEqual(run.call_count, 2)
+
     def test_primary_playback_qa_promotes_first_passing_backup(self):
         channels = [{
             "id": "ch1",
