@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with native EPG, decoded playback QA, source recovery, and a visible Local Test catalog for known runner/geo-blocked channels.",
-    "version": "0.6.4"
+    "version": "0.6.5"
   },
   "sources": {
     "playlists": [
@@ -3265,6 +3265,29 @@
       "Reelz.us",
       "SundanceTV.us",
       "TVLand.us"
+    ],
+    "exclude_families": [
+      "insolence",
+      "daddylive",
+      "tv247",
+      "usair",
+      "thetvapp",
+      "arquerido-move",
+      "shovo",
+      "openstream"
+    ],
+    "exclude_provider_hosts": [
+      "23.237.104.106",
+      "aynascope.net",
+      "dlhd.sx",
+      "fbcdntv247.cfd",
+      "klcis.cc",
+      "moveonjoy.com",
+      "newkso.ru",
+      "nexgen.bz",
+      "themyst.icu",
+      "thetvapp.to",
+      "tvpass.org"
     ]
   }
 }

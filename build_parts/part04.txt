@@ -3650,6 +3650,17 @@ def build_local_test_channels(
         for value in settings.get("target_ids", [])
         if str(value).strip()
     }
+    excluded_families = {
+        str(value).strip().lower()
+        for value in settings.get("exclude_families", [])
+        if str(value).strip()
+    }
+    excluded_provider_hosts = {
+        str(value).strip().lower().rstrip(".")
+        for value in settings.get("exclude_provider_hosts", [])
+        if str(value).strip()
+    }
+    excluded_tested_streams = 0
     candidates: list[dict[str, Any]] = []
     for entry in probed_entries:
         tvg_id = str(entry.get("tvg_id") or "")
@@ -3661,6 +3672,11 @@ def build_local_test_channels(
         # channel also has trusted published streams. This lets the user test
         # runner-blocked alternates independently from the production choices.
         if marker in published_ids and not explicitly_pinned:
+            continue
+        family = str(entry.get("family") or "").strip().lower()
+        provider_host = stream_provider_host(entry).lower().rstrip(".")
+        if family in excluded_families or provider_host in excluded_provider_hosts:
+            excluded_tested_streams += 1
             continue
         health = entry.get("health") or {}
         if explicitly_pinned:
@@ -3725,13 +3741,17 @@ def build_local_test_channels(
             "streams": sum(len(channel.get("streams") or []) for channel in channels),
             "max_streams_per_channel": max_streams,
             "pinned_target_ids": len(pinned_target_ids),
+            "excluded_tested_streams": excluded_tested_streams,
+            "excluded_families": sorted(excluded_families),
+            "excluded_provider_hosts": sorted(excluded_provider_hosts),
         },
         "channels": rows,
     }
     log(
         "Local Test catalog: "
         f"{report['summary']['channels']:,} runner-blocked channels, "
-        f"{report['summary']['streams']:,} candidate streams"
+        f"{report['summary']['streams']:,} candidate streams, "
+        f"{excluded_tested_streams:,} previously-tested streams hidden"
     )
     return channels, report
 
