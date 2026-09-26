@@ -2767,6 +2767,19 @@
         "content_kind": "full-linear",
         "content_note": "Validated in isolated deep-dive QA: passed five-probe 60-second live-HLS burn-in at 1080p plus final decoded playback QA with no repeat detected.",
         "research_url": "https://github.com/iptv-org/iptv/issues/39881"
+      },
+      {
+        "name": "The Weather Channel",
+        "tvg_id": "WeatherChannel.us",
+        "url": "https://twcprod-live.twc-tv.com/v1/manifest/b4d4d63a49309cc5140171fb2e92485c31be1e9e/DSP_6228e4760505741a116f1ba2_twcprod-live/6bf09ce5-366b-463c-b67e-c4b799f73c3f/4.m3u8",
+        "source": "IPTV-org issue-history direct TWC CDN lead",
+        "source_type": "public-third-party",
+        "priority": 8,
+        "philly": false,
+        "group": "News",
+        "content_kind": "full-linear",
+        "content_note": "Validated in isolated deep-dive QA: direct twc-tv.com HLS passed five probes over 60 seconds plus final decoded playback QA with no repeat detected.",
+        "research_url": "https://github.com/iptv-org/iptv/issues/9199"
       }
     ],
     "research_directories": [
