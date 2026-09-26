@@ -1,0 +1,36 @@
+name: Recovery candidate sweep
+
+on:
+  push:
+    branches: [recovery-candidate-sweep-20260925]
+    paths:
+      - "scripts/recovery_candidate_sweep.py"
+      - ".github/workflows/recovery-candidate-sweep.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Test recovery candidates twice
+        run: python scripts/recovery_candidate_sweep.py
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: recovery-candidate-sweep
+          path: recovery-candidate-sweep.json
+          if-no-files-found: error
+          retention-days: 7
