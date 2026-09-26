@@ -2,8 +2,8 @@
   "addon": {
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
-    "description": "Curated Philadelphia-area live TV with native EPG, decoded playback QA, source recovery, and a visible Local Test catalog for known runner/geo-blocked channels.",
-    "version": "0.6.5"
+    "description": "Curated Philadelphia-area live TV with native EPG, decoded playback QA, exact stream identity guards, and prioritized recovery hunting.",
+    "version": "0.6.6"
   },
   "sources": {
     "playlists": [
@@ -801,6 +801,13 @@
         "reason": "User-confirmed playback defect: repeating short segments instead of continuous live playback.",
         "observed_at": "2026-09-25",
         "evidence": "Manual Stremio Local Test 8 playback verification"
+      },
+      {
+        "tvg_id": "ESPN.us",
+        "url": "http://181.78.197.59:8000/play/a07z/index.m3u8",
+        "reason": "Wrong regional identity for ESPN US: exact URL is listed upstream as ESPN.br@SD / Brazil feed and was user-confirmed non-English.",
+        "observed_at": "2026-09-25",
+        "evidence": "User Stremio playback verification + IPTV-org streams/br.m3u exact URL identity"
       }
     ]
   },
