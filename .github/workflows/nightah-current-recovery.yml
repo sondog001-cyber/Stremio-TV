@@ -1,0 +1,36 @@
+name: Nightah current recovery diagnostic
+
+on:
+  push:
+    branches: [resolver-origin-diagnostic]
+    paths:
+      - "scripts/nightah_current_recovery.py"
+      - ".github/workflows/nightah-current-recovery.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Decode current Nightah missing-channel entries
+        run: python scripts/nightah_current_recovery.py
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nightah-current-recovery
+          path: nightah-current-recovery.json
+          if-no-files-found: error
+          retention-days: 7
