@@ -794,6 +794,13 @@
         "reason": "Decoded Primary QA timed out twice with zero video frames; quarantine exact URL pending replacement.",
         "observed_at": "2026-09-25",
         "evidence": "v0.5.1 full decoded-frame sweep + 30s focused retry"
+      },
+      {
+        "tvg_id": "FXX.us",
+        "url": "http://themyst.icu:826/SourPatchKid/nlnE4DVQUs/102177",
+        "reason": "User-confirmed playback defect: repeating short segments instead of continuous live playback.",
+        "observed_at": "2026-09-25",
+        "evidence": "Manual Stremio Local Test 8 playback verification"
       }
     ]
   },
