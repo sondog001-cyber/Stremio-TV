@@ -1,0 +1,55 @@
+name: Resolver Origin diagnostic
+
+on:
+  push:
+    branches: [resolver-origin-diagnostic]
+    paths:
+      - "scripts/resolver_origin_diagnostic.py"
+      - ".github/workflows/resolver-origin-diagnostic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Start pinned DaddyLive resolver
+        run: |
+          git clone --quiet https://github.com/sharoon7171/daddylive-stream-resolver.git /tmp/daddylive-resolver
+          cd /tmp/daddylive-resolver
+          git checkout --quiet 5064460e16ca78f191473753b5696dea54ea134a
+          npm ci --silent
+          nohup npm start >/tmp/daddylive-resolver.log 2>&1 &
+          for i in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then
+              echo "Resolver ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/daddylive-resolver.log
+          exit 1
+      - name: Compare direct headers vs Origin vs live proxy
+        run: python scripts/resolver_origin_diagnostic.py
+      - name: Upload diagnostic
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: resolver-origin-diagnostic
+          path: resolver-origin-diagnostic.json
+          if-no-files-found: error
+          retention-days: 7
