@@ -1907,13 +1907,18 @@ def _validate_primary_playback_stream(
             },
         }
 
-    one_attempt = {
+    primary_attempts = max(1, int(settings.get("attempts", 2)))
+    primary_required_passes = max(
+        1,
+        min(primary_attempts, int(settings.get("required_passes", 1))),
+    )
+    primary_settings = {
         **settings,
         "enabled": True,
-        "attempts": 1,
-        "required_passes": 1,
+        "attempts": primary_attempts,
+        "required_passes": primary_required_passes,
     }
-    result = _validate_direct_media_survival(stream, one_attempt)
+    result = _validate_direct_media_survival(stream, primary_settings)
     survival = result.get("direct_media_survival") or {}
     if result.get("status") == "ok":
         return {
