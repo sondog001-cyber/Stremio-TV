@@ -157,6 +157,31 @@ class LocalTestCatalogTests(unittest.TestCase):
         self.assertEqual(channels, [])
         self.assertEqual(report["summary"]["channels"], 0)
 
+    def test_previously_tested_families_and_hosts_are_hidden(self):
+        self.config["local_test_catalog"]["exclude_families"] = ["daddylive"]
+        self.config["local_test_catalog"]["exclude_provider_hosts"] = ["tested.example"]
+        entries = [
+            {
+                **candidate("CBSSportsNetwork.us", "https://newkso.ru/old.m3u8"),
+                "family": "daddylive",
+            },
+            {
+                **candidate("CBSSportsNetwork.us", "https://tested.example/old.m3u8"),
+                "family": "research-seed",
+            },
+            {
+                **candidate("CBSSportsNetwork.us", "https://fresh.example/new.m3u8"),
+                "family": "new-family",
+            },
+        ]
+
+        channels, report = build.build_local_test_channels(entries, [], self.config)
+
+        self.assertEqual(len(channels), 1)
+        self.assertEqual(len(channels[0]["streams"]), 1)
+        self.assertEqual(channels[0]["streams"][0]["url"], "https://fresh.example/new.m3u8")
+        self.assertEqual(report["summary"]["excluded_tested_streams"], 2)
+
     def test_local_test_stream_preserves_request_headers(self):
         stream = candidate(
             "CBSSportsNetwork.us",
