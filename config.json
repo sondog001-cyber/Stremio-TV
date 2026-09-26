@@ -2767,6 +2767,19 @@
         "content_kind": "full-linear",
         "content_note": "Validated in isolated deep-dive QA: passed five-probe 60-second live-HLS burn-in at 1080p plus final decoded playback QA with no repeat detected.",
         "research_url": "https://github.com/iptv-org/iptv/issues/39881"
+      },
+      {
+        "name": "ESPN2",
+        "tvg_id": "ESPN2.us",
+        "url": "http://85.237.89.160:9590/usa-s/ESPN-2-HD/index.m3u8",
+        "source": "Recent public exact-ID ESPN2 lead on established sports host",
+        "source_type": "public-third-party",
+        "priority": 8,
+        "philly": false,
+        "group": "Sports",
+        "content_kind": "full-linear",
+        "content_note": "Validated in isolated deep-dive QA: passed five-probe 60-second live-HLS burn-in at 720p plus final decoded playback QA with 10.0 decoded seconds and no repeat detected.",
+        "research_url": "https://github.com/maroughi99/iptv/blob/master/every-single-channel.m3u"
       }
     ],
     "research_directories": [
