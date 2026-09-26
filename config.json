@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with native EPG, decoded playback QA, exact stream identity guards, and prioritized recovery hunting.",
-    "version": "0.6.7"
+    "version": "0.6.8"
   },
   "sources": {
     "playlists": [
@@ -988,11 +988,13 @@
       "duration_seconds": 10,
       "min_decoded_seconds": 8,
       "fps": 2,
-      "max_workers": 10,
-      "timeout_seconds": 18,
+      "max_workers": 4,
+      "timeout_seconds": 25,
       "detect_repeated_clips": true,
       "repeat_min_seconds": 2,
-      "repeat_max_seconds": 4
+      "repeat_max_seconds": 4,
+      "attempts": 2,
+      "required_passes": 1
     }
   },
   "discovery": {
@@ -3336,5 +3338,9 @@
       "thetvapp.to",
       "tvpass.org"
     ]
+  },
+  "deployment_guard": {
+    "enabled": true,
+    "minimum_channels": 65
   }
 }
