@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with native EPG, decoded playback QA, exact stream identity guards, and prioritized recovery hunting.",
-    "version": "0.6.6"
+    "version": "0.6.7"
   },
   "sources": {
     "playlists": [
@@ -3226,6 +3226,20 @@
       "category": "Movies",
       "service_type": "Premium movie network"
     }
+  },
+  "safety_controls": {
+    "mode": "direct-upstream-only",
+    "complaint_policy": "disable-affected-source-or-channel-do-not-hide-or-rotate",
+    "disabled_urls": [],
+    "disabled_channels": [],
+    "blocked_request_headers": [
+      "Authorization",
+      "Cookie",
+      "Proxy-Authorization",
+      "X-Api-Key"
+    ],
+    "reject_auth_required": true,
+    "reject_drm": true
   },
   "stream_stability": {
     "enabled": true,
