@@ -3654,10 +3654,15 @@ def build_local_test_channels(
     for entry in probed_entries:
         tvg_id = str(entry.get("tvg_id") or "")
         marker = canonical_tvg_id(tvg_id)
-        if not marker or marker in published_ids:
+        if not marker:
+            continue
+        explicitly_pinned = bool(pinned_target_ids and marker in pinned_target_ids)
+        # Pinned targets stay visible in the Local Test catalog even when the
+        # channel also has trusted published streams. This lets the user test
+        # runner-blocked alternates independently from the production choices.
+        if marker in published_ids and not explicitly_pinned:
             continue
         health = entry.get("health") or {}
-        explicitly_pinned = bool(pinned_target_ids and marker in pinned_target_ids)
         if explicitly_pinned:
             if health.get("status") == "ok":
                 continue

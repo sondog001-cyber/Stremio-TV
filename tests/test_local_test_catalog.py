@@ -121,7 +121,7 @@ class LocalTestCatalogTests(unittest.TestCase):
         self.assertEqual(report["summary"]["channels"], 2)
         self.assertEqual(report["summary"]["streams"], 3)
 
-    def test_published_channel_is_not_duplicated_into_local_test(self):
+    def test_pinned_published_channel_stays_in_local_test(self):
         entries = [
             candidate(
                 "CBSSportsNetwork.us",
@@ -129,6 +129,24 @@ class LocalTestCatalogTests(unittest.TestCase):
             )
         ]
         published = [{"tvg_id": "CBSSportsNetwork.us"}]
+
+        channels, report = build.build_local_test_channels(
+            entries,
+            published,
+            self.config,
+        )
+
+        self.assertEqual([channel["tvg_id"] for channel in channels], ["CBSSportsNetwork.us"])
+        self.assertEqual(report["summary"]["channels"], 1)
+
+    def test_unpinned_published_channel_is_not_duplicated(self):
+        entries = [
+            candidate(
+                "DiscoveryChannel.us",
+                "https://blocked.example/discovery.m3u8",
+            )
+        ]
+        published = [{"tvg_id": "DiscoveryChannel.us"}]
 
         channels, report = build.build_local_test_channels(
             entries,
