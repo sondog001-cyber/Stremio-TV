@@ -677,5 +677,154 @@ class PlaybackContinuityTests(unittest.TestCase):
         self.assertEqual(report["channels"][0]["action"], "dropped-channel")
 
 
+    def test_primary_decoder_failure_replaces_current_stability_pass(self):
+        stream = {
+            "name": "Example",
+            "tvg_id": "Example.us",
+            "source": "Example source",
+            "family": "example",
+            "url": "https://example.test/live.m3u8",
+            "headers": {},
+        }
+        key = build._stream_stability_key(stream)
+        state = {
+            "enabled": True,
+            "history_size": 5,
+            "updated_at": "2026-09-28T12:00:00Z",
+            "streams": {
+                key: {
+                    "url": stream["url"],
+                    "tvg_id": stream["tvg_id"],
+                    "classification": "Stable",
+                    "rank": 0,
+                    "passes": 5,
+                    "samples": 5,
+                    "history_size": 5,
+                    "history": [True, True, True, True, True],
+                    "last_result": "pass",
+                    "consecutive_failures": 0,
+                    "decoder_consecutive_failures": 0,
+                    "missed_builds": 0,
+                }
+            },
+            "current_counts": {"Stable": 1},
+        }
+        channels = [{
+            "id": "example",
+            "name": "Example",
+            "tvg_id": "Example.us",
+            "streams": [dict(stream, stability={"classification": "Stable"})],
+        }]
+        report = {
+            "enabled": True,
+            "built_at": "2026-09-28T12:00:00Z",
+            "channels": [{
+                "tvg_id": "Example.us",
+                "name": "Example",
+                "attempts": [{
+                    "source": "Example source",
+                    "family": "example",
+                    "provider_host": "example.test",
+                    "url": stream["url"],
+                    "stability_key": key,
+                    "status": "failed",
+                    "detail": "No decoded video",
+                    "continuity_failure": "primary-playback-decode-failed",
+                }],
+            }],
+        }
+        config = {
+            "stream_stability": {
+                "history_size": 5,
+                "dead_source_cooldown_hours": [1, 6, 24],
+            }
+        }
+
+        feedback = build.apply_primary_playback_feedback_to_stability(
+            channels,
+            state,
+            report,
+            config,
+        )
+
+        record = state["streams"][key]
+        self.assertEqual(record["history"], [True, True, True, True, False])
+        self.assertEqual(record["classification"], "Backup")
+        self.assertEqual(record["passes"], 4)
+        self.assertEqual(record["samples"], 5)
+        self.assertEqual(record["last_result"], "decoder-fail")
+        self.assertEqual(record["last_decoder_result"], "fail")
+        self.assertEqual(record["decoder_consecutive_failures"], 1)
+        self.assertEqual(state["current_counts"], {"Backup": 1})
+        self.assertEqual(channels[0]["streams"][0]["stability"]["classification"], "Backup")
+        self.assertEqual(feedback["decoder_failed"], 1)
+        self.assertEqual(feedback["downgraded"], 1)
+
+    def test_playback_classification_marks_hls_alive_decoder_dead(self):
+        stream = {
+            "tvg_id": "Example.us",
+            "url": "https://example.test/live.m3u8",
+            "headers": {},
+        }
+        key = build._stream_stability_key(stream)
+        health_rows = [{
+            "name": "Example",
+            "tvg_id": "Example.us",
+            "source": "Example source",
+            "family": "example",
+            "provider_host": "example.test",
+            "url": stream["url"],
+            "effective_url": stream["url"],
+            "stability_key": key,
+            "health": {
+                "status": "ok",
+                "detail": "Passed HLS continuity",
+            },
+        }]
+        primary = {
+            "enabled": True,
+            "built_at": "2026-09-28T12:00:00Z",
+            "channels": [{
+                "name": "Example",
+                "tvg_id": "Example.us",
+                "attempts": [{
+                    "source": "Example source",
+                    "family": "example",
+                    "provider_host": "example.test",
+                    "url": stream["url"],
+                    "stability_key": key,
+                    "status": "failed",
+                    "detail": "FFmpeg decoded 0 seconds",
+                    "continuity_failure": "primary-playback-decode-failed",
+                }],
+            }],
+        }
+        state = {
+            "enabled": True,
+            "updated_at": "2026-09-28T12:00:00Z",
+            "streams": {
+                key: {
+                    "classification": "Backup",
+                    "history": [True, True, True, True, False],
+                    "last_decoder_result": "fail",
+                    "decoder_consecutive_failures": 1,
+                }
+            },
+        }
+
+        report = build.build_playback_classification_diagnostics(
+            health_rows,
+            primary,
+            state,
+        )
+
+        self.assertEqual(report["summary"]["hls_alive_decoder_dead"], 1)
+        self.assertEqual(report["summary"]["channels_hls_alive_decoder_dead"], 1)
+        self.assertEqual(report["channels"][0]["classification"], "hls-alive-decoder-dead")
+        self.assertEqual(report["streams"][0]["decoder_status"], "failed")
+        self.assertEqual(report["streams"][0]["stability"], "Backup")
+
+
+
 if __name__ == "__main__":
     unittest.main()
