@@ -1693,6 +1693,24 @@ def _find_repeated_frame_clip(hashes: list[str], fps: int, min_seconds: int = 2,
     return None
 
 
+def _sanitize_ffmpeg_error(stderr: str, stream_url: str, limit: int = 600) -> str:
+    """Keep actionable FFmpeg failure text without publishing signed URL details."""
+    text = str(stderr or "").strip()
+    if not text:
+        return ""
+    if stream_url:
+        text = text.replace(stream_url, "[stream-url]")
+    text = re.sub(
+        r"https?://([^/\\s:]+)(?::\\d+)?[^\\s]*",
+        lambda match: f"[url:{match.group(1)}]",
+        text,
+    )
+    text = re.sub(r"(?i)(token|sig|signature|auth|key)=([^&\\s]+)", r"\\1=[redacted]", text)
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    compact = " | ".join(lines[-6:])
+    return compact[-max(1, int(limit)):]
+
+
 def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     """Require repeated successful decoded connections for direct media."""
     if not bool(settings.get("enabled", False)):
@@ -1792,6 +1810,7 @@ def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, 
                 "decoded_seconds": decoded_seconds,
                 "elapsed_seconds": round(time.monotonic() - started, 2),
                 "ffmpeg_exit_code": completed.returncode,
+                "ffmpeg_error": _sanitize_ffmpeg_error(completed.stderr, url),
                 "repeat": repeat,
                 "passed": False,
             }
