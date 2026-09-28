@@ -1,0 +1,85 @@
+name: Established Probe Retry Network Test
+
+on:
+  push:
+    branches: [established-probe-retry-deepdive]
+    paths:
+      - ".github/workflows/established-probe-retry-network-test.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  network-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+      - run: python -m pip install -r requirements.txt
+      - run: python assemble_build.py
+      - run: python -m unittest discover -s tests -v
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Start pinned resolver
+        shell: bash
+        run: |
+          set +e
+          rm -rf /tmp/daddylive-resolver
+          git clone --quiet https://github.com/sharoon7171/daddylive-stream-resolver.git /tmp/daddylive-resolver
+          cd /tmp/daddylive-resolver || exit 0
+          git checkout --quiet 5064460e16ca78f191473753b5696dea54ea134a
+          npm ci --silent
+          nohup npm start > /tmp/daddylive-resolver.log 2>&1 &
+          for i in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo "WARNING: resolver unavailable"
+          exit 0
+      - name: Run full network build
+        run: python build.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DADDYLIVE_RESOLVER_URL: http://127.0.0.1:3000
+      - name: Report retry targets and coverage
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          status=json.loads(Path("site/status.json").read_text())
+          health=json.loads(Path("site/diagnostics/stream-health.json").read_text())
+          channels=json.loads(Path("site/diagnostics/channels.json").read_text())
+          targets={"CBSSportsNetwork.us","NFLNetwork.us","MSNOW.us"}
+          published={row.get("tvg_id") for row in channels}
+          print("PUBLISHED_CHANNELS", status.get("channels"))
+          for row in health:
+              if row.get("tvg_id") in targets and row.get("family")=="aria-tv":
+                  h=row.get("health") or {}
+                  print("ARIA_TARGET", row.get("tvg_id"), json.dumps({
+                      "status":h.get("status"),
+                      "detail":h.get("detail"),
+                      "http_status":h.get("http_status"),
+                      "attempts":h.get("established_final_probe_attempts"),
+                      "validation_mode":h.get("validation_mode"),
+                      "published":row.get("tvg_id") in published,
+                      "stability":(row.get("stability") or {}).get("classification"),
+                  }, sort_keys=True))
+          if int(status.get("channels",0)) < 65:
+              raise SystemExit("coverage guard failed")
+          PY
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: established-probe-retry-diagnostics
+          path: |
+            site/status.json
+            site/diagnostics/
+          retention-days: 3
