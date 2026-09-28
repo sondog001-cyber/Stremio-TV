@@ -287,6 +287,21 @@ class PlaybackContinuityTests(unittest.TestCase):
         self.assertEqual(probe.call_count, 2)
         self.assertEqual(sleep.call_count, 4)
 
+    def test_ffmpeg_error_excerpt_redacts_urls_and_tokens(self):
+        stderr = (
+            "https://cdn.example.test/live.m3u8?token=secret123: Server returned 403 Forbidden\n"
+            "Failed to open https://segments.example.test/a.ts?sig=abc123"
+        )
+        result = build._sanitize_ffmpeg_error(
+            stderr,
+            "https://cdn.example.test/live.m3u8?token=secret123",
+        )
+
+        self.assertNotIn("secret123", result)
+        self.assertNotIn("abc123", result)
+        self.assertIn("403 Forbidden", result)
+        self.assertIn("[url:segments.example.test]", result)
+
     def test_direct_media_decoder_rejects_short_stream(self):
         settings = {
             "enabled": True,
