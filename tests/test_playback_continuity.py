@@ -287,6 +287,169 @@ class PlaybackContinuityTests(unittest.TestCase):
         self.assertEqual(probe.call_count, 2)
         self.assertEqual(sleep.call_count, 4)
 
+    def test_established_stream_retries_transient_final_probe_404(self):
+        entry = {
+            "name": "NFL Network",
+            "tvg_id": "NFLNetwork.us",
+            "source": "aria-tv United States",
+            "family": "aria-tv",
+            "url": "http://example.test/nfl/master.m3u8",
+            "headers": {},
+        }
+        config = {
+            "stream_health": {
+                "enabled": True,
+                "require_passed_only": True,
+                "timeout_seconds": 1,
+                "max_workers": 1,
+                "verify_segment_for_all_candidates": True,
+                "double_probe": True,
+                "second_probe_delay_seconds": 60,
+                "established_final_probe_retries": 2,
+                "established_final_probe_retry_delay_seconds": 3,
+                "burn_in": {
+                    "enabled": True,
+                    "scope": "promotion-only",
+                    "duration_seconds": 60,
+                    "interval_seconds": 15,
+                    "established_classifications": ["Stable", "Backup"],
+                },
+                "priority_recovery": {"enabled": False},
+            },
+            "stream_stability": {
+                "enabled": True,
+                "history_size": 5,
+                "retention_builds": 20,
+                "dead_source_cooldown_hours": [1, 6, 24],
+            },
+            "favorites": [],
+        }
+        stable_key = build._stream_stability_key(entry)
+        previous = {
+            "streams": {
+                stable_key: {
+                    "classification": "Backup",
+                    "history": [True, True, True, True, False],
+                    "consecutive_failures": 0,
+                    "last_result": "pass",
+                }
+            }
+        }
+        probe_1 = {
+            "status": "ok",
+            "detail": "Valid HLS playlist + segment",
+            "http_status": 200,
+            "final_url": "http://example.test/nfl/stream.m3u8?uid=1",
+            "hls_is_live": True,
+            "hls_media_sequence": 100,
+            "hls_tail_sha256": "tail-100",
+        }
+        transient_404 = {
+            "status": "failed",
+            "detail": "HTTP 404",
+            "http_status": 404,
+        }
+        retry_ok = {
+            **probe_1,
+            "final_url": "http://example.test/nfl/stream.m3u8?uid=2",
+            "hls_media_sequence": 104,
+            "hls_tail_sha256": "tail-104",
+        }
+
+        with (
+            mock.patch.object(
+                build,
+                "_probe_stream",
+                side_effect=[probe_1, transient_404, retry_ok],
+            ) as probe,
+            mock.patch.object(build, "_load_previous_stream_stability", return_value=previous),
+            mock.patch.object(build, "_load_previous_channel_state", return_value={}),
+            mock.patch.object(build.time, "sleep", return_value=None),
+        ):
+            healthy, rows, _state = build.probe_candidate_entries([entry], config)
+
+        self.assertEqual(len(healthy), 1)
+        health = rows[0]["health"]
+        self.assertEqual(health["status"], "ok")
+        self.assertEqual(health["validation_mode"], "established-two-probe")
+        self.assertEqual(health["established_final_probe_attempts"], 2)
+        self.assertEqual(probe.call_count, 3)
+
+    def test_established_stream_does_not_retry_nontransient_403(self):
+        entry = {
+            "name": "Protected Example",
+            "tvg_id": "Example.us",
+            "source": "Test",
+            "family": "test",
+            "url": "http://example.test/protected.m3u8",
+            "headers": {},
+        }
+        config = {
+            "stream_health": {
+                "enabled": True,
+                "require_passed_only": True,
+                "timeout_seconds": 1,
+                "max_workers": 1,
+                "verify_segment_for_all_candidates": True,
+                "double_probe": True,
+                "established_final_probe_retries": 2,
+                "established_final_probe_retry_delay_seconds": 3,
+                "burn_in": {
+                    "enabled": True,
+                    "scope": "promotion-only",
+                    "duration_seconds": 60,
+                    "interval_seconds": 15,
+                    "established_classifications": ["Stable", "Backup"],
+                },
+                "priority_recovery": {"enabled": False},
+            },
+            "stream_stability": {
+                "enabled": True,
+                "history_size": 5,
+                "retention_builds": 20,
+                "dead_source_cooldown_hours": [1, 6, 24],
+            },
+            "favorites": [],
+        }
+        stable_key = build._stream_stability_key(entry)
+        previous = {
+            "streams": {
+                stable_key: {
+                    "classification": "Stable",
+                    "history": [True, True, True, True, True],
+                    "consecutive_failures": 0,
+                    "last_result": "pass",
+                }
+            }
+        }
+        probe_1 = {
+            "status": "ok",
+            "detail": "Valid HLS playlist + segment",
+            "http_status": 200,
+            "final_url": "http://example.test/protected/stream.m3u8",
+            "hls_is_live": True,
+            "hls_media_sequence": 100,
+            "hls_tail_sha256": "tail-100",
+        }
+        forbidden = {
+            "status": "failed",
+            "detail": "HTTP 403",
+            "http_status": 403,
+        }
+
+        with (
+            mock.patch.object(build, "_probe_stream", side_effect=[probe_1, forbidden]) as probe,
+            mock.patch.object(build, "_load_previous_stream_stability", return_value=previous),
+            mock.patch.object(build, "_load_previous_channel_state", return_value={}),
+            mock.patch.object(build.time, "sleep", return_value=None),
+        ):
+            healthy, rows, _state = build.probe_candidate_entries([entry], config)
+
+        self.assertEqual(healthy, [])
+        self.assertEqual(rows[0]["health"]["status"], "failed")
+        self.assertEqual(rows[0]["health"]["established_final_probe_attempts"], 1)
+        self.assertEqual(probe.call_count, 2)
+
     def test_ffmpeg_error_excerpt_redacts_urls_and_tokens(self):
         stderr = (
             "https://cdn.example.test/live.m3u8?token=secret123: Server returned 403 Forbidden\n"
