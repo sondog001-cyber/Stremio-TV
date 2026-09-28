@@ -2010,6 +2010,8 @@ def apply_primary_playback_qa(
                 "family": stream.get("family"),
                 "provider_host": stream_provider_host(stream),
                 "url": stream.get("url"),
+                "stability_key": _stream_stability_key(stream),
+                "stability_identity": stream.get("stability_identity"),
                 "status": result.get("status"),
                 "detail": result.get("detail"),
                 "continuity_failure": result.get("continuity_failure"),
@@ -2110,6 +2112,344 @@ def apply_primary_playback_qa(
         f"backup_promoted={backup_promoted:,}, dropped={dropped:,}"
     )
     return kept_channels, report
+
+
+
+def apply_primary_playback_feedback_to_stability(
+    channels: list[dict[str, Any]],
+    stream_stability_state: dict[str, Any],
+    primary_playback_qa: dict[str, Any],
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    """Replace this build's optimistic probe pass with final decoder truth.
+
+    Candidate probing and HLS continuity happen before Primary Playback QA. A
+    selected stream can therefore look healthy enough to receive a passing
+    stability sample and then fail FFmpeg immediately afterward. Decoder-aware
+    persistence replaces the current build's sample rather than appending a
+    second sample, so one build always contributes exactly one pass/fail result.
+    """
+    if not stream_stability_state.get("enabled") or not primary_playback_qa.get("enabled"):
+        feedback = {
+            "enabled": False,
+            "tested_streams": 0,
+            "decoder_passed": 0,
+            "decoder_failed": 0,
+            "downgraded": 0,
+        }
+        stream_stability_state["decoder_feedback"] = feedback
+        return feedback
+
+    settings = config.get("stream_stability") or {}
+    history_size = max(
+        1,
+        int(stream_stability_state.get("history_size") or settings.get("history_size", 5)),
+    )
+    cooldown_hours = [
+        max(1, int(value))
+        for value in settings.get("dead_source_cooldown_hours", [1, 6, 24])
+    ] or [1, 6, 24]
+    built_at = (
+        primary_playback_qa.get("built_at")
+        or stream_stability_state.get("updated_at")
+        or iso_z(dt.datetime.now(UTC))
+    )
+    records = stream_stability_state.get("streams") or {}
+    rows: list[dict[str, Any]] = []
+    downgraded = 0
+
+    for channel in primary_playback_qa.get("channels") or []:
+        for attempt in channel.get("attempts") or []:
+            key = str(attempt.get("stability_key") or "").strip()
+            record = records.get(key)
+            if not key or not isinstance(record, dict):
+                continue
+
+            previous_classification = str(record.get("classification") or "Unknown")
+            passed = attempt.get("status") == "ok"
+            history = [bool(value) for value in (record.get("history") or [])][-history_size:]
+            if history:
+                history[-1] = passed
+            else:
+                history = [passed]
+
+            score = _classify_stream_stability(history, history_size)
+            for field in ("classification", "rank", "passes", "samples", "history_size", "history"):
+                record[field] = score[field]
+            record["last_result"] = "pass" if passed else "decoder-fail"
+            record["last_seen"] = built_at
+            record["last_probed_at"] = built_at
+            record["last_decoder_result"] = "pass" if passed else "fail"
+            record["last_decoder_detail"] = attempt.get("detail")
+            record["last_decoder_failure"] = attempt.get("continuity_failure")
+            record["last_decoder_at"] = built_at
+
+            old_decoder_failures = int(record.get("decoder_consecutive_failures", 0) or 0)
+            if passed:
+                record["decoder_consecutive_failures"] = 0
+                record["consecutive_failures"] = 0
+                record["next_probe_at"] = None
+                record["last_failure_detail"] = None
+                record["last_failure_http_status"] = None
+            else:
+                decoder_failures = old_decoder_failures + 1
+                record["decoder_consecutive_failures"] = decoder_failures
+                record["consecutive_failures"] = max(
+                    decoder_failures,
+                    int(record.get("consecutive_failures", 0) or 0),
+                )
+                delay = cooldown_hours[
+                    min(decoder_failures - 1, len(cooldown_hours) - 1)
+                ]
+                record["next_probe_at"] = iso_z(
+                    dt.datetime.now(UTC) + dt.timedelta(hours=delay)
+                )
+                record["last_failure_detail"] = attempt.get("detail")
+                record["last_failure_http_status"] = None
+
+            if (
+                not passed
+                and previous_classification in {"Stable", "Backup"}
+                and score["classification"] != previous_classification
+            ):
+                downgraded += 1
+
+            rows.append({
+                "tvg_id": channel.get("tvg_id"),
+                "name": channel.get("name"),
+                "source": attempt.get("source"),
+                "family": attempt.get("family"),
+                "provider_host": attempt.get("provider_host"),
+                "url": attempt.get("url"),
+                "stability_key": key,
+                "decoder_status": "passed" if passed else "failed",
+                "decoder_detail": attempt.get("detail"),
+                "continuity_failure": attempt.get("continuity_failure"),
+                "classification_before": previous_classification,
+                "classification_after": score["classification"],
+                "history": score["history"],
+            })
+
+    # Synchronize published channel stream labels with the corrected state.
+    for channel in channels:
+        for stream in channel.get("streams") or []:
+            record = records.get(_stream_stability_key(stream))
+            if not isinstance(record, dict):
+                continue
+            stream["stability"] = {
+                field: record.get(field)
+                for field in (
+                    "classification",
+                    "rank",
+                    "passes",
+                    "samples",
+                    "history_size",
+                    "history",
+                    "last_result",
+                    "last_seen",
+                    "consecutive_failures",
+                    "next_probe_at",
+                    "last_decoder_result",
+                    "decoder_consecutive_failures",
+                )
+            }
+
+    current_counts: dict[str, int] = defaultdict(int)
+    for record in records.values():
+        if not isinstance(record, dict) or int(record.get("missed_builds", 0) or 0) != 0:
+            continue
+        current_counts[str(record.get("classification") or "Unknown")] += 1
+    stream_stability_state["current_counts"] = dict(current_counts)
+
+    feedback = {
+        "enabled": True,
+        "tested_streams": len(rows),
+        "decoder_passed": sum(1 for row in rows if row["decoder_status"] == "passed"),
+        "decoder_failed": sum(1 for row in rows if row["decoder_status"] == "failed"),
+        "downgraded": downgraded,
+        "rows": rows,
+    }
+    stream_stability_state["decoder_feedback"] = feedback
+    log(
+        "Decoder-aware stability: "
+        f"tested={feedback['tested_streams']:,}, "
+        f"passed={feedback['decoder_passed']:,}, "
+        f"failed={feedback['decoder_failed']:,}, "
+        f"downgraded={feedback['downgraded']:,}"
+    )
+    return feedback
+
+
+def build_playback_classification_diagnostics(
+    health_rows: list[dict[str, Any]],
+    primary_playback_qa: dict[str, Any],
+    stream_stability_state: dict[str, Any],
+) -> dict[str, Any]:
+    """Label candidates by transport/HLS health versus actual decoder health."""
+    built_at = (
+        primary_playback_qa.get("built_at")
+        or stream_stability_state.get("updated_at")
+        or iso_z(dt.datetime.now(UTC))
+    )
+    state_records = stream_stability_state.get("streams") or {}
+    rows_by_key: dict[str, dict[str, Any]] = {}
+
+    for row in health_rows:
+        key = str(row.get("stability_key") or "").strip()
+        if not key:
+            continue
+        health = row.get("health") or {}
+        health_status = str(health.get("status") or "not-tested")
+        continuity_failure = str(health.get("continuity_failure") or "")
+        if health_status == "cooldown":
+            classification = "cooldown"
+            hls_status = "not-tested"
+            decoder_status = "not-tested"
+        elif continuity_failure.startswith("direct-media-"):
+            classification = "hls-alive-decoder-dead"
+            hls_status = "alive"
+            decoder_status = "failed"
+        elif health_status == "ok":
+            classification = "hls-alive-not-final-tested"
+            hls_status = "alive"
+            decoder_status = "not-tested"
+        elif health_status == "failed":
+            classification = "hls-or-transport-failed"
+            hls_status = "failed"
+            decoder_status = "not-tested"
+        else:
+            classification = "not-tested"
+            hls_status = "not-tested"
+            decoder_status = "not-tested"
+
+        stability = state_records.get(key) if isinstance(state_records.get(key), dict) else {}
+        rows_by_key[key] = {
+            "tvg_id": row.get("tvg_id"),
+            "name": row.get("name"),
+            "source": row.get("source"),
+            "family": row.get("family"),
+            "provider_host": row.get("provider_host"),
+            "url": row.get("url"),
+            "effective_url": row.get("effective_url"),
+            "stability_key": key,
+            "stage": "candidate-health",
+            "hls_status": hls_status,
+            "decoder_status": decoder_status,
+            "classification": classification,
+            "detail": health.get("detail"),
+            "continuity_failure": health.get("continuity_failure"),
+            "stability": stability.get("classification"),
+            "stability_history": stability.get("history") or [],
+            "last_decoder_result": stability.get("last_decoder_result"),
+            "decoder_consecutive_failures": int(
+                stability.get("decoder_consecutive_failures", 0) or 0
+            ),
+        }
+
+    for channel in primary_playback_qa.get("channels") or []:
+        for attempt in channel.get("attempts") or []:
+            key = str(attempt.get("stability_key") or "").strip()
+            if not key:
+                continue
+            passed = attempt.get("status") == "ok"
+            stability = state_records.get(key) if isinstance(state_records.get(key), dict) else {}
+            row = rows_by_key.setdefault(key, {
+                "tvg_id": channel.get("tvg_id"),
+                "name": channel.get("name"),
+                "source": attempt.get("source"),
+                "family": attempt.get("family"),
+                "provider_host": attempt.get("provider_host"),
+                "url": attempt.get("url"),
+                "effective_url": attempt.get("url"),
+                "stability_key": key,
+            })
+            row.update({
+                "stage": "primary-playback-qa",
+                "hls_status": "alive",
+                "decoder_status": "passed" if passed else "failed",
+                "classification": (
+                    "hls-alive-decoder-ok"
+                    if passed
+                    else "hls-alive-decoder-dead"
+                ),
+                "detail": attempt.get("detail"),
+                "continuity_failure": attempt.get("continuity_failure"),
+                "stability": stability.get("classification"),
+                "stability_history": stability.get("history") or [],
+                "last_decoder_result": stability.get("last_decoder_result"),
+                "decoder_consecutive_failures": int(
+                    stability.get("decoder_consecutive_failures", 0) or 0
+                ),
+            })
+
+    rows = sorted(
+        rows_by_key.values(),
+        key=lambda row: (
+            str(row.get("tvg_id") or ""),
+            str(row.get("source") or ""),
+            str(row.get("url") or ""),
+        ),
+    )
+    by_channel: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        marker = canonical_tvg_id(str(row.get("tvg_id") or ""))
+        if marker:
+            by_channel[marker].append(row)
+
+    channel_rows: list[dict[str, Any]] = []
+    for marker, candidate_rows in sorted(by_channel.items()):
+        classes = [str(row.get("classification") or "") for row in candidate_rows]
+        if "hls-alive-decoder-ok" in classes:
+            channel_class = "decoder-capable"
+        elif "hls-alive-decoder-dead" in classes:
+            channel_class = "hls-alive-decoder-dead"
+        elif "hls-alive-not-final-tested" in classes:
+            channel_class = "hls-alive-not-final-tested"
+        elif all(value == "cooldown" for value in classes):
+            channel_class = "cooldown"
+        else:
+            channel_class = "hls-or-transport-failed"
+        first = candidate_rows[0]
+        channel_rows.append({
+            "tvg_id": first.get("tvg_id"),
+            "name": first.get("name"),
+            "classification": channel_class,
+            "candidate_count": len(candidate_rows),
+            "decoder_ok_candidates": sum(
+                1 for row in candidate_rows
+                if row.get("classification") == "hls-alive-decoder-ok"
+            ),
+            "decoder_dead_candidates": sum(
+                1 for row in candidate_rows
+                if row.get("classification") == "hls-alive-decoder-dead"
+            ),
+            "sources": sorted({
+                str(row.get("source"))
+                for row in candidate_rows
+                if row.get("source")
+            }),
+        })
+
+    counts = Counter(str(row.get("classification") or "unknown") for row in rows)
+    return {
+        "version": 1,
+        "built_at": built_at,
+        "summary": {
+            "candidates": len(rows),
+            "channels": len(channel_rows),
+            "hls_alive_decoder_ok": counts.get("hls-alive-decoder-ok", 0),
+            "hls_alive_decoder_dead": counts.get("hls-alive-decoder-dead", 0),
+            "hls_alive_not_final_tested": counts.get("hls-alive-not-final-tested", 0),
+            "hls_or_transport_failed": counts.get("hls-or-transport-failed", 0),
+            "cooldown": counts.get("cooldown", 0),
+            "channels_hls_alive_decoder_dead": sum(
+                1 for row in channel_rows
+                if row["classification"] == "hls-alive-decoder-dead"
+            ),
+        },
+        "channels": channel_rows,
+        "streams": rows,
+    }
 
 
 def _parse_resolver_vlc_headers(command: str) -> dict[str, str]:
@@ -2487,6 +2827,11 @@ def apply_stream_stability(
             "last_probed_at": last_probed_at,
             "last_failure_detail": last_failure_detail,
             "last_failure_http_status": last_failure_http_status,
+            "last_decoder_result": old.get("last_decoder_result"),
+            "last_decoder_detail": old.get("last_decoder_detail"),
+            "last_decoder_failure": old.get("last_decoder_failure"),
+            "last_decoder_at": old.get("last_decoder_at"),
+            "decoder_consecutive_failures": int(old.get("decoder_consecutive_failures", 0) or 0),
             "missed_builds": 0,
         }
         state_streams[key] = record
@@ -3365,6 +3710,7 @@ def probe_candidate_entries(
             "url": entry.get("url"),
             "effective_url": stream_effective_url(entry),
             "provider_host": stream_provider_host(entry),
+            "stability_key": _stream_stability_key(entry),
             "health": entry.get("health"),
             "stability": entry.get("stability"),
             "discovery_issue": entry.get("discovery_issue"),
