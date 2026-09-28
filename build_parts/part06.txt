@@ -85,6 +85,17 @@
             config,
             enabled=not bool(fixtures),
         )
+        decoder_stability_feedback = apply_primary_playback_feedback_to_stability(
+            channels,
+            stream_stability_state,
+            primary_playback_qa,
+            config,
+        )
+        playback_classification = build_playback_classification_diagnostics(
+            stream_health_results,
+            primary_playback_qa,
+            stream_stability_state,
+        )
         label_channel_streams(channels)
         local_test_channels, local_test_report = build_local_test_channels(
             probed_entries,
@@ -392,6 +403,12 @@
                 for status in ("ok", "failed", "cooldown", "not-tested")
             },
             "primary_playback_qa": primary_playback_qa.get("summary", {}),
+            "decoder_stability_feedback": {
+                key: value
+                for key, value in decoder_stability_feedback.items()
+                if key != "rows"
+            },
+            "playback_classification": playback_classification.get("summary", {}),
             "local_test_catalog": {
                 **local_test_report.get("summary", {}),
                 "catalog_id": str((config.get("local_test_catalog") or {}).get("id") or "local-test"),
@@ -438,6 +455,11 @@
                 "history_size": stream_stability_state.get("history_size", 5),
                 "prior_state_built_at": stream_stability_state.get("source_state_built_at"),
                 "current_counts": stream_stability_state.get("current_counts", {}),
+                "decoder_feedback": {
+                    key: value
+                    for key, value in (stream_stability_state.get("decoder_feedback") or {}).items()
+                    if key != "rows"
+                },
                 "priority_recovery": {
                     "eligible_candidates": (stream_stability_state.get("priority_recovery") or {}).get("eligible_candidates", 0),
                     "selected_count": (stream_stability_state.get("priority_recovery") or {}).get("selected_count", 0),
