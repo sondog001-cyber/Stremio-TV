@@ -3258,6 +3258,14 @@ def probe_candidate_entries(
     verify_segment = bool(settings.get("verify_segment_for_all_candidates", True))
     double_probe = bool(settings.get("double_probe", True))
     second_probe_delay = int(settings.get("second_probe_delay_seconds", 60))
+    established_final_probe_retries = max(
+        0,
+        int(settings.get("established_final_probe_retries", 0)),
+    )
+    established_final_probe_retry_delay = max(
+        0,
+        int(settings.get("established_final_probe_retry_delay_seconds", 3)),
+    )
     burn_in_settings = settings.get("burn_in") or {}
     burn_in_enabled = bool(burn_in_settings.get("enabled", False))
     burn_in_scope = str(burn_in_settings.get("scope", "promotion-only")).strip().lower()
@@ -3344,6 +3352,28 @@ def probe_candidate_entries(
                 except Exception as exc:
                     batch_results[key] = {"status": "failed", "detail": str(exc)[:180]}
         return batch_results
+
+    def transient_established_probe_failure(health: dict[str, Any]) -> bool:
+        if health.get("status") == "ok":
+            return False
+        http_status = health.get("http_status")
+        if http_status is not None:
+            try:
+                code = int(http_status)
+            except (TypeError, ValueError):
+                return False
+            return code in {404, 408, 425, 429, 500, 502, 503, 504}
+        detail = str(health.get("detail") or "").lower()
+        return any(
+            marker in detail
+            for marker in (
+                "timed out",
+                "timeout",
+                "connection reset",
+                "temporarily unavailable",
+                "remote end closed",
+            )
+        )
 
     results.update(run_probe_batch(jobs))
 
@@ -3501,6 +3531,38 @@ def probe_candidate_entries(
 
             time.sleep(burn_in_interval)
             next_results = run_probe_batch(batch)
+            established_final_attempts: dict[
+                tuple[str, tuple[tuple[str, str], ...]],
+                int,
+            ] = {}
+            if is_final_probe and double_probe and established_pass:
+                retry_batch = {
+                    key: entry
+                    for key, entry in established_pass.items()
+                    if transient_established_probe_failure(
+                        next_results.get(
+                            key,
+                            {"status": "failed", "detail": "No established final probe result"},
+                        )
+                    )
+                }
+                for _retry_index in range(established_final_probe_retries):
+                    if not retry_batch:
+                        break
+                    if established_final_probe_retry_delay:
+                        time.sleep(established_final_probe_retry_delay)
+                    retry_results = run_probe_batch(retry_batch)
+                    next_retry_batch = {}
+                    for key, entry in retry_batch.items():
+                        established_final_attempts[key] = established_final_attempts.get(key, 1) + 1
+                        retry_health = retry_results.get(
+                            key,
+                            {"status": "failed", "detail": "No established retry result"},
+                        )
+                        next_results[key] = retry_health
+                        if transient_established_probe_failure(retry_health):
+                            next_retry_batch[key] = entry
+                    retry_batch = next_retry_batch
 
             for key in list(active):
                 health = next_results.get(
@@ -3558,6 +3620,7 @@ def probe_candidate_entries(
                     )
                     result["validation_mode"] = "established-two-probe"
                     result["prior_classification"] = prior_classification.get(key)
+                    result["established_final_probe_attempts"] = established_final_attempts.get(key, 1)
                     results[key] = result
 
         for key in active:
