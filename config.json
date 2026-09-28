@@ -995,7 +995,9 @@
       "repeat_max_seconds": 4,
       "attempts": 2,
       "required_passes": 1
-    }
+    },
+    "established_final_probe_retries": 2,
+    "established_final_probe_retry_delay_seconds": 3
   },
   "discovery": {
     "enabled": true,
