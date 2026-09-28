@@ -1709,15 +1709,16 @@ def _sanitize_ffmpeg_error(stderr: str, stream_url: str, limit: int = 600) -> st
             host = "redacted"
         return f"[url:{host}]"
 
-    text = re.sub(r"https?://[^\\s]+", redact_url, text)
+    text = re.sub(r"https?://[^\s]+", redact_url, text)
     text = re.sub(
-        r"(?i)\\b(token|sig|signature|auth|key)=([^&\\s]+)",
+        r"(?i)\b(token|sig|signature|auth|key)=([^&\s]+)",
         lambda match: f"{match.group(1)}=[redacted]",
         text,
     )
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     compact = " | ".join(lines[-6:])
-    return compact[-max(1, int(limit)): ]
+    return compact[-max(1, int(limit)):]
+
 
 def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     """Require repeated successful decoded connections for direct media."""
