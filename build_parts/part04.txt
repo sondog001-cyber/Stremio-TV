@@ -1700,16 +1700,24 @@ def _sanitize_ffmpeg_error(stderr: str, stream_url: str, limit: int = 600) -> st
         return ""
     if stream_url:
         text = text.replace(stream_url, "[stream-url]")
+
+    def redact_url(match: re.Match[str]) -> str:
+        raw = match.group(0)
+        try:
+            host = urllib.parse.urlsplit(raw).hostname or "redacted"
+        except Exception:
+            host = "redacted"
+        return f"[url:{host}]"
+
+    text = re.sub(r"https?://[^\\s]+", redact_url, text)
     text = re.sub(
-        r"https?://([^/\\s:]+)(?::\\d+)?[^\\s]*",
-        lambda match: f"[url:{match.group(1)}]",
+        r"(?i)\\b(token|sig|signature|auth|key)=([^&\\s]+)",
+        lambda match: f"{match.group(1)}=[redacted]",
         text,
     )
-    text = re.sub(r"(?i)(token|sig|signature|auth|key)=([^&\\s]+)", r"\\1=[redacted]", text)
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     compact = " | ".join(lines[-6:])
-    return compact[-max(1, int(limit)):]
-
+    return compact[-max(1, int(limit)): ]
 
 def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     """Require repeated successful decoded connections for direct media."""
