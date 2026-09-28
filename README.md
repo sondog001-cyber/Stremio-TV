@@ -10,7 +10,7 @@ A self-updating, Philadelphia-focused live-TV addon for Stremio. It combines a c
 - Favorites and category catalogs
 - Up to three playback choices per channel
 - Measured HLS resolution rather than source-label quality alone
-- Cross-build stream stability scoring and retry cooldowns
+- Cross-build stream stability scoring and retry cooldowns, including final decoder failures
 - Effective-URL deduplication and independent-provider backup preference
 - Exact channel-identity validation
 - Five-probe, 60-second burn-in for new/unproven candidates before promotion
@@ -39,7 +39,7 @@ If a credible complaint identifies a source or channel, add it to the appropriat
 
 ## Stream policy
 
-Only allow-listed channels are considered. Before publication, every candidate must pass the configured health checks. New, Quarantine, and Dead candidates are sampled at 0, 15, 30, 45, and 60 seconds before promotion; any failed intermediate probe rejects them. Previously established Stable or Backup URLs keep the lower-churn two-probe continuity check across the same validation window. HLS streams must expose a valid playlist and readable media segment, and live HLS windows must advance across the validation window. Direct non-HLS media must sustain at least 10 seconds of decoded video in at least 2 of 3 independent 12-second FFmpeg connections; immediately replayed 2–4 second clips hard-fail before stability scoring or selection. After selection, the chosen Primary is decoded end-to-end for a final QA pass across both HLS and direct transports. A failed Primary is removed and the next backup is tested/promoted; a channel with no decoded passing choice is omitted for that build. Confirmed decoder-visible playback defects can be exact-URL quarantined even when ordinary reachability checks pass. Failed and untested candidates remain diagnostic-only.
+Only allow-listed channels are considered. Before publication, every candidate must pass the configured health checks. New, Quarantine, and Dead candidates are sampled at 0, 15, 30, 45, and 60 seconds before promotion; any failed intermediate probe rejects them. Previously established Stable or Backup URLs keep the lower-churn two-probe continuity check across the same validation window. HLS streams must expose a valid playlist and readable media segment, and live HLS windows must advance across the validation window. Direct non-HLS media must sustain at least 10 seconds of decoded video in at least 2 of 3 independent 12-second FFmpeg connections; immediately replayed 2–4 second clips hard-fail before stability scoring or selection. After selection, the chosen Primary is decoded end-to-end for a final QA pass across both HLS and direct transports. A failed Primary is removed and the next backup is tested/promoted; a channel with no decoded passing choice is omitted for that build. Final decoder results feed back into the same cross-build stability sample for that build, so an HLS-reachable stream cannot remain Stable while repeatedly failing real playback. Confirmed decoder-visible playback defects can be exact-URL quarantined even when ordinary reachability checks pass. Failed and untested candidates remain diagnostic-only.
 
 Streams are classified across recent builds:
 
@@ -169,6 +169,8 @@ Build output includes `status.json` and structured reports under `site/diagnosti
 | `missing-source-diagnostics.json` | Actionable missing-channel classifications |
 | `stream-health.json` | Current candidate probe results |
 | `primary-playback-qa.json` | Final decoded Primary checks, promotions, and dropped channels |
+| `decoder-stability-feedback.json` | Final decoder pass/fail feedback applied to cross-build stability history |
+| `playback-classification.json` | Candidate/channel labels such as `hls-alive-decoder-dead` versus decoder-capable |
 | `daddylive-resolver.json` | Build-time signed-stream resolution status by exact target ID |
 | `stream-stability.json` | Cross-build URL reliability history |
 | `source-family-scoreboard.json` | Candidate, passing, selected, and recovery yield by source |
