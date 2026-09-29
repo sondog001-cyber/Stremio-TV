@@ -2031,8 +2031,21 @@ def apply_primary_playback_qa(
             if health.get("status") != "cooldown":
                 continue
             rescue_by_channel[marker_id].append(candidate)
+        def rescue_failure_rank(stream: dict[str, Any]) -> int:
+            detail = str(((stream.get("health") or {}).get("detail") or "")).lower()
+            if any(token in detail for token in ("timed out", "timeout", "connection reset", "temporarily unavailable")):
+                return 0
+            if any(token in detail for token in ("name or service not known", "no address associated")):
+                return 1
+            if "connection refused" in detail:
+                return 2
+            if any(token in detail for token in ("http 404", "http 403", "http 410")):
+                return 3
+            return 1
+
         for marker_id, candidates in rescue_by_channel.items():
             candidates.sort(key=lambda stream: (
+                rescue_failure_rank(stream),
                 int(((stream.get("stability") or {}).get("rank", 99)) or 99),
                 -int(((stream.get("stability") or {}).get("passes", 0)) or 0),
                 int(stream.get("priority", 999) or 999),
@@ -2072,11 +2085,19 @@ def apply_primary_playback_qa(
         if passing_index is None and rescue_enabled:
             channel_marker = canonical_tvg_id(str(channel.get("tvg_id") or ""))
             selected_urls = {str(stream.get("url") or "") for stream in streams}
-            rescue_candidates = [
-                candidate
-                for candidate in rescue_by_channel.get(channel_marker, [])
-                if str(candidate.get("url") or "") not in selected_urls
-            ][:rescue_max_candidates]
+            rescue_candidates: list[dict[str, Any]] = []
+            rescue_hosts: set[str] = set()
+            for candidate in rescue_by_channel.get(channel_marker, []):
+                if str(candidate.get("url") or "") in selected_urls:
+                    continue
+                host = stream_provider_host(candidate)
+                if host and host in rescue_hosts:
+                    continue
+                rescue_candidates.append(candidate)
+                if host:
+                    rescue_hosts.add(host)
+                if len(rescue_candidates) >= rescue_max_candidates:
+                    break
             for candidate in rescue_candidates:
                 first_health = _probe_stream(candidate, rescue_probe_timeout, True)
                 second_health: dict[str, Any] | None = None
@@ -3295,12 +3316,18 @@ def plan_priority_recovery_probes(
     max_urls = max(0, int(settings.get("max_forced_urls_per_build", 12)))
     min_retry_hours = max(0, int(settings.get("min_retry_hours", 6)))
     max_per_host = max(1, int(settings.get("max_per_host", 2)))
+    max_recently_present = max(0, int(settings.get("max_recently_present_per_build", 8)))
     favorite_patterns = config.get("favorites") or []
     prior_channels = previous_channel_state.get("channels") or {}
     missing_ids = {
         canonical_tvg_id(str(row.get("pattern") or ""))
         for row in prior_channels.values()
         if isinstance(row, dict) and not row.get("present") and row.get("pattern")
+    }
+    recently_present_ids = {
+        canonical_tvg_id(str(row.get("pattern") or ""))
+        for row in prior_channels.values()
+        if isinstance(row, dict) and row.get("present") and row.get("pattern")
     }
     restrict_to_prior_missing = bool(missing_ids)
     previous_streams = previous_stability.get("streams") or {}
@@ -3310,7 +3337,14 @@ def plan_priority_recovery_probes(
 
     for key, entry in cooldown_entries.items():
         channel_id = canonical_tvg_id(str(entry.get("tvg_id") or ""))
-        if restrict_to_prior_missing and channel_id not in missing_ids:
+        recovery_scope = (
+            "missing"
+            if channel_id in missing_ids
+            else "recently-present"
+            if channel_id in recently_present_ids
+            else None
+        )
+        if restrict_to_prior_missing and recovery_scope is None:
             deferred_not_missing += 1
             continue
         old = previous_streams.get(_stream_stability_key(entry))
@@ -3334,9 +3368,11 @@ def plan_priority_recovery_probes(
             "favorite": favorite,
             "last_probed_at": iso_z(last_probed) if last_probed else None,
             "age_hours": age_hours,
+            "recovery_scope": recovery_scope or "missing",
         })
 
     candidates.sort(key=lambda row: (
+        0 if row["recovery_scope"] == "missing" else 1,
         0 if row["philly"] else 1,
         0 if row["favorite"] else 1,
         row["last_probed_at"] or "",
@@ -3349,9 +3385,13 @@ def plan_priority_recovery_probes(
     selected_keys: set[tuple[str, tuple[tuple[str, str], ...]]] = set()
     selected_channels: set[str] = set()
     host_counts: dict[str, int] = defaultdict(int)
+    selected_recently_present = 0
     for candidate in candidates:
-        if len(selected) >= max_urls:
-            break
+        scope = candidate["recovery_scope"]
+        if scope == "missing" and sum(1 for row in selected if row.get("recovery_scope") == "missing") >= max_urls:
+            continue
+        if scope == "recently-present" and selected_recently_present >= max_recently_present:
+            continue
         if candidate["channel_id"] in selected_channels:
             continue
         if host_counts[candidate["hostname"]] >= max_per_host:
@@ -3360,6 +3400,8 @@ def plan_priority_recovery_probes(
         selected_keys.add(candidate["key"])
         selected_channels.add(candidate["channel_id"])
         host_counts[candidate["hostname"]] += 1
+        if scope == "recently-present":
+            selected_recently_present += 1
         selected.append({
             "channel_id": entry.get("tvg_id"),
             "name": entry.get("name"),
@@ -3371,6 +3413,7 @@ def plan_priority_recovery_probes(
             "favorite": candidate["favorite"],
             "last_probed_at": candidate["last_probed_at"],
             "age_hours": round(candidate["age_hours"], 1) if candidate["age_hours"] is not None else None,
+            "recovery_scope": scope,
             "status": "scheduled",
         })
 
@@ -3381,6 +3424,7 @@ def plan_priority_recovery_probes(
         "max_forced_urls_per_build": max_urls,
         "min_retry_hours": min_retry_hours,
         "max_per_host": max_per_host,
+        "max_recently_present_per_build": max_recently_present,
         "restricted_to_prior_missing": restrict_to_prior_missing,
         "prior_missing_channels": len(missing_ids),
         "cooldown_candidates": len(cooldown_entries),
@@ -3390,7 +3434,7 @@ def plan_priority_recovery_probes(
         "deferred_not_missing": deferred_not_missing,
         "selected": selected if enabled else [],
     }
-    if not enabled or max_urls == 0:
+    if not enabled or (max_urls == 0 and max_recently_present == 0):
         return set(), report
     return selected_keys, report
 
