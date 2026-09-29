@@ -958,7 +958,8 @@
       "enabled": true,
       "max_forced_urls_per_build": 12,
       "min_retry_hours": 6,
-      "max_per_host": 2
+      "max_per_host": 2,
+      "max_recently_present_per_build": 8
     },
     "burn_in": {
       "enabled": true,
