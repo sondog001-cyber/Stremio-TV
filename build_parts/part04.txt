@@ -1994,6 +1994,7 @@ def apply_primary_playback_qa(
     config: dict[str, Any],
     *,
     enabled: bool = True,
+    candidate_entries: list[dict[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Decode selected Primaries and automatically promote a passing backup."""
     settings = (config.get("stream_health") or {}).get("primary_playback_qa") or {}
@@ -2014,6 +2015,29 @@ def apply_primary_playback_qa(
         }
 
     max_workers = max(1, int(settings.get("max_workers", 10)))
+    rescue_settings = settings.get("controlled_rescue") or {}
+    rescue_enabled = bool(rescue_settings.get("enabled", False))
+    rescue_max_candidates = max(1, int(rescue_settings.get("max_candidates", 3)))
+    rescue_probe_timeout = max(1, int(rescue_settings.get("probe_timeout_seconds", 8)))
+    rescue_second_probe_delay = max(0, int(rescue_settings.get("second_probe_delay_seconds", 3)))
+
+    rescue_by_channel: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    if rescue_enabled:
+        for candidate in candidate_entries or []:
+            marker_id = canonical_tvg_id(str(candidate.get("tvg_id") or ""))
+            if not marker_id:
+                continue
+            health = candidate.get("health") or {}
+            if health.get("status") != "cooldown":
+                continue
+            rescue_by_channel[marker_id].append(candidate)
+        for marker_id, candidates in rescue_by_channel.items():
+            candidates.sort(key=lambda stream: (
+                int(((stream.get("stability") or {}).get("rank", 99)) or 99),
+                -int(((stream.get("stability") or {}).get("passes", 0)) or 0),
+                int(stream.get("priority", 999) or 999),
+                str(stream.get("source") or ""),
+            ))
 
     def inspect_channel(index: int, channel: dict[str, Any]) -> tuple[int, dict[str, Any]]:
         attempts: list[dict[str, Any]] = []
@@ -2043,6 +2067,76 @@ def apply_primary_playback_qa(
                 passing_qa = result.get("primary_playback_qa") or {}
                 break
 
+        rescued_stream: dict[str, Any] | None = None
+        rescue_attempts: list[dict[str, Any]] = []
+        if passing_index is None and rescue_enabled:
+            channel_marker = canonical_tvg_id(str(channel.get("tvg_id") or ""))
+            selected_urls = {str(stream.get("url") or "") for stream in streams}
+            rescue_candidates = [
+                candidate
+                for candidate in rescue_by_channel.get(channel_marker, [])
+                if str(candidate.get("url") or "") not in selected_urls
+            ][:rescue_max_candidates]
+            for candidate in rescue_candidates:
+                first_health = _probe_stream(candidate, rescue_probe_timeout, True)
+                second_health: dict[str, Any] | None = None
+                transport_ok = first_health.get("status") == "ok"
+                if transport_ok:
+                    if rescue_second_probe_delay:
+                        time.sleep(rescue_second_probe_delay)
+                    second_health = _probe_stream(candidate, rescue_probe_timeout, True)
+                    transport_ok = second_health.get("status") == "ok"
+                    if transport_ok:
+                        first_tail = first_health.get("hls_tail_sha256")
+                        second_tail = second_health.get("hls_tail_sha256")
+                        first_sequence = first_health.get("hls_media_sequence")
+                        second_sequence = second_health.get("hls_media_sequence")
+                        if (
+                            first_health.get("hls_is_live")
+                            and second_health.get("hls_is_live")
+                            and first_tail
+                            and second_tail
+                            and first_tail == second_tail
+                            and (first_sequence is None or second_sequence is None or first_sequence == second_sequence)
+                        ):
+                            transport_ok = False
+                            second_health = {
+                                **second_health,
+                                "status": "failed",
+                                "detail": "Rescue live HLS window did not advance",
+                                "continuity_failure": "stalled-live-hls-window",
+                            }
+
+                rescue_result = (
+                    _validate_primary_playback_stream(candidate, settings)
+                    if transport_ok
+                    else {
+                        "status": "failed",
+                        "detail": (second_health or first_health).get("detail") or "Rescue HLS validation failed",
+                        "continuity_failure": (second_health or first_health).get("continuity_failure") or "rescue-transport-failed",
+                    }
+                )
+                rescue_attempts.append({
+                    "source": candidate.get("source"),
+                    "family": candidate.get("family"),
+                    "provider_host": stream_provider_host(candidate),
+                    "url": candidate.get("url"),
+                    "stability_key": _stream_stability_key(candidate),
+                    "transport_probe_1": first_health,
+                    "transport_probe_2": second_health,
+                    "status": rescue_result.get("status"),
+                    "detail": rescue_result.get("detail"),
+                    "continuity_failure": rescue_result.get("continuity_failure"),
+                    "decoder_failure_class": rescue_result.get("decoder_failure_class"),
+                    "qa": rescue_result.get("primary_playback_qa"),
+                })
+                if rescue_result.get("status") == "ok":
+                    rescued_stream = dict(candidate)
+                    rescued_stream["health"] = dict(second_health or first_health)
+                    rescued_stream["primary_playback_qa"] = rescue_result.get("primary_playback_qa") or {}
+                    passing_qa = rescue_result.get("primary_playback_qa") or {}
+                    break
+
         return index, {
             "channel_id": channel.get("id"),
             "tvg_id": channel.get("tvg_id"),
@@ -2050,6 +2144,8 @@ def apply_primary_playback_qa(
             "passing_index": passing_index,
             "passing_qa": passing_qa,
             "attempts": attempts,
+            "rescue_attempts": rescue_attempts,
+            "rescued_stream": rescued_stream,
         }
 
     results_by_index: dict[int, dict[str, Any]] = {}
@@ -2079,12 +2175,24 @@ def apply_primary_playback_qa(
     rows: list[dict[str, Any]] = []
     primary_passed = 0
     backup_promoted = 0
+    rescued = 0
+    rescue_candidates_tested = 0
     dropped = 0
 
     for index, channel in enumerate(channels):
         row = results_by_index[index]
         passing_index = row.get("passing_index")
+        rescue_candidates_tested += len(row.get("rescue_attempts") or [])
         if passing_index is None:
+            rescued_stream = row.get("rescued_stream")
+            if rescued_stream:
+                updated = dict(channel)
+                updated["streams"] = [dict(rescued_stream)]
+                kept_channels.append(updated)
+                rescued += 1
+                row["action"] = "rescued-cooldown-candidate"
+                rows.append(row)
+                continue
             row["action"] = "dropped-channel"
             dropped += 1
             rows.append(row)
@@ -2117,11 +2225,19 @@ def apply_primary_playback_qa(
             "min_decoded_seconds": int(settings.get("min_decoded_seconds", 8)),
             "fps": int(settings.get("fps", 2)),
             "max_workers": max_workers,
+            "controlled_rescue": {
+                "enabled": rescue_enabled,
+                "max_candidates": rescue_max_candidates,
+                "probe_timeout_seconds": rescue_probe_timeout,
+                "second_probe_delay_seconds": rescue_second_probe_delay,
+            },
         },
         "summary": {
             "channels_tested": len(channels),
             "primary_passed": primary_passed,
             "backup_promoted": backup_promoted,
+            "channels_rescued": rescued,
+            "rescue_candidates_tested": rescue_candidates_tested,
             "channels_dropped": dropped,
             "channels_published": len(kept_channels),
         },
@@ -2130,7 +2246,8 @@ def apply_primary_playback_qa(
     log(
         "Primary playback QA: "
         f"tested={len(channels):,}, primary_passed={primary_passed:,}, "
-        f"backup_promoted={backup_promoted:,}, dropped={dropped:,}"
+        f"backup_promoted={backup_promoted:,}, rescued={rescued:,}, "
+        f"rescue_candidates_tested={rescue_candidates_tested:,}, dropped={dropped:,}"
     )
     return kept_channels, report
 
