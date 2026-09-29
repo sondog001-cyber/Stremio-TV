@@ -994,7 +994,13 @@
       "repeat_min_seconds": 2,
       "repeat_max_seconds": 4,
       "attempts": 2,
-      "required_passes": 1
+      "required_passes": 1,
+      "controlled_rescue": {
+        "enabled": true,
+        "max_candidates": 3,
+        "probe_timeout_seconds": 8,
+        "second_probe_delay_seconds": 3
+      }
     },
     "established_final_probe_retries": 2,
     "established_final_probe_retry_delay_seconds": 3
