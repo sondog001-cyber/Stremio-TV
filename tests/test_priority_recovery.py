@@ -49,7 +49,7 @@ class PriorityRecoveryTests(unittest.TestCase):
         self.assertEqual(report["deferred_too_recent"], 1)
         self.assertTrue(report["restricted_to_prior_missing"])
 
-    def test_limits_recovery_to_channels_missing_in_prior_state(self):
+    def test_recovery_includes_bounded_recently_present_channels(self):
         now = dt.datetime(2026, 9, 22, 12, tzinfo=dt.timezone.utc)
         missing = {"tvg_id": "Missing.us", "name": "Missing", "url": "https://a.test/m.m3u8"}
         present = {"tvg_id": "Present.us", "name": "Present", "url": "https://b.test/p.m3u8"}
@@ -69,10 +69,59 @@ class PriorityRecoveryTests(unittest.TestCase):
             cooldown_entries,
             {"streams": streams},
             state,
-            {"stream_health": {"priority_recovery": {"enabled": True}}},
+            {"stream_health": {"priority_recovery": {
+                "enabled": True,
+                "max_forced_urls_per_build": 12,
+                "max_recently_present_per_build": 1,
+            }}},
             now,
         )
-        self.assertEqual({key[0] for key in selected}, {missing["url"]})
+        self.assertEqual({key[0] for key in selected}, {missing["url"], present["url"]})
+        self.assertEqual(report["deferred_not_missing"], 0)
+        self.assertEqual(
+            {row["recovery_scope"] for row in report["selected"]},
+            {"missing", "recently-present"},
+        )
+
+    def test_recently_present_recovery_is_capped_and_untracked_channels_are_excluded(self):
+        now = dt.datetime(2026, 9, 22, 12, tzinfo=dt.timezone.utc)
+        entries = [
+            {"tvg_id": "Missing.us", "name": "Missing", "url": "https://m.test/1.m3u8"},
+            {"tvg_id": "Present1.us", "name": "Present 1", "url": "https://p1.test/1.m3u8"},
+            {"tvg_id": "Present2.us", "name": "Present 2", "url": "https://p2.test/1.m3u8"},
+            {"tvg_id": "Unknown.us", "name": "Unknown", "url": "https://u.test/1.m3u8"},
+        ]
+        cooldown_entries = {(entry["url"], ()): entry for entry in entries}
+        streams = {
+            build._stream_stability_key(entry): {
+                "classification": "Dead",
+                "last_probed_at": "2026-09-20T00:00:00Z",
+            }
+            for entry in entries
+        }
+        state = {"channels": {
+            "National:missing.us": {"pattern": "Missing.us", "present": False},
+            "National:present1.us": {"pattern": "Present1.us", "present": True},
+            "National:present2.us": {"pattern": "Present2.us", "present": True},
+        }}
+        selected, report = build.plan_priority_recovery_probes(
+            cooldown_entries,
+            {"streams": streams},
+            state,
+            {"stream_health": {"priority_recovery": {
+                "enabled": True,
+                "max_forced_urls_per_build": 12,
+                "max_recently_present_per_build": 1,
+            }}},
+            now,
+        )
+        selected_urls = {key[0] for key in selected}
+        self.assertIn("https://m.test/1.m3u8", selected_urls)
+        self.assertEqual(
+            len(selected_urls & {"https://p1.test/1.m3u8", "https://p2.test/1.m3u8"}),
+            1,
+        )
+        self.assertNotIn("https://u.test/1.m3u8", selected_urls)
         self.assertEqual(report["deferred_not_missing"], 1)
 
 
