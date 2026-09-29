@@ -84,6 +84,7 @@
             channels,
             config,
             enabled=not bool(fixtures),
+            candidate_entries=probed_entries,
         )
         decoder_stability_feedback = apply_primary_playback_feedback_to_stability(
             channels,
