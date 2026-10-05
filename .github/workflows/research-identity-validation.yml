@@ -2,6 +2,10 @@ name: Research Feed Identity Validation
 
 on:
   workflow_dispatch:
+  push:
+    branches: [research-identity-validation]
+    paths:
+      - ".github/workflows/research-identity-validation.yml"
 
 permissions:
   contents: read
