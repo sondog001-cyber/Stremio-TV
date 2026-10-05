@@ -89,17 +89,6 @@
       "priority": 15,
       "philly": false,
       "headers": {}
-    },
-    {
-      "tvg_id": "HGTV.us",
-      "name": "HGTV",
-      "url": "http://livex.pop-app.live/s4n/poplive/ch323/playlist.m3u8",
-      "quality": "HD",
-      "source": "IPTV-org issue #16050 exact-ID research lead",
-      "family": "pop-app-live",
-      "priority": 18,
-      "philly": false,
-      "headers": {}
     }
   ]
 }
