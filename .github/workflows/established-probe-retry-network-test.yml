@@ -2,7 +2,7 @@ name: Established Probe Retry Network Test
 
 on:
   push:
-    branches: [hgtv-final-qa-investigation]
+    branches: [research-identity-validation]
     paths:
       - ".github/workflows/established-probe-retry-network-test.yml"
       - "manual_sources.json"
@@ -106,6 +106,31 @@ jobs:
           Path("site/diagnostics/daddylive-media-structure.json").write_text(json.dumps({"streams":rows},indent=2))
           print(json.dumps({"tested":len(rows),"rows":rows},indent=2))
           PY
+      - name: Research-only identity probe
+        shell: python
+        run: |
+          import json, subprocess, urllib.request, urllib.parse, hashlib
+          targets=[
+            {"label":"Magnolia NexGen","expected":"MagnoliaNetwork.us","url":"https://streamer1.nexgen.bz/MAGNOLIA/index.m3u8"},
+            {"label":"Discovery historical public lead","expected":"DiscoveryChannel.us","url":"http://80.80.160.168/live/8/live.m3u8"},
+          ]
+          out=[]
+          for t in targets:
+            row={"label":t["label"],"expected":t["expected"],"host":urllib.parse.urlsplit(t["url"]).hostname}
+            try:
+              req=urllib.request.Request(t["url"],headers={"User-Agent":"Mozilla/5.0"})
+              with urllib.request.urlopen(req,timeout=12) as r:
+                body=r.read(262144); txt=body.decode("utf-8","replace")
+                row.update(http_status=getattr(r,"status",200),content_type=r.headers.get("Content-Type"),is_hls="#EXTM3U" in txt,playlist_lines=len(txt.splitlines()),has_endlist="#EXT-X-ENDLIST" in txt,playlist_sha256=hashlib.sha256(body).hexdigest())
+            except Exception as e: row["network_error"]=type(e).__name__+": "+str(e)[:180]
+            try:
+              p=subprocess.run(["ffprobe","-v","error","-show_entries","stream=index,codec_name,codec_type,width,height,r_frame_rate:format=format_name,duration","-of","json",t["url"]],capture_output=True,text=True,timeout=25)
+              row["ffprobe_rc"]=p.returncode
+              row["ffprobe"]=json.loads(p.stdout or "{}") if p.returncode==0 else {"error":(p.stderr or "")[-500:]}
+            except Exception as e: row["ffprobe_error"]=type(e).__name__+": "+str(e)[:180]
+            out.append(row)
+          open("site/diagnostics/identity-research.json","w").write(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
       - name: Report retry targets and coverage
         run: |
           python - <<'PY'
