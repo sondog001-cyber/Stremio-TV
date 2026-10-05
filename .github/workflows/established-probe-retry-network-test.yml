@@ -2,9 +2,10 @@ name: Established Probe Retry Network Test
 
 on:
   push:
-    branches: [established-probe-retry-deepdive]
+    branches: [hgtv-final-qa-investigation]
     paths:
       - ".github/workflows/established-probe-retry-network-test.yml"
+      - "manual_sources.json"
 
 permissions:
   contents: read
@@ -49,6 +50,59 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DADDYLIVE_RESOLVER_URL: http://127.0.0.1:3000
+      - name: Inspect DaddyLive media structure
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, subprocess, urllib.parse, urllib.request
+          from pathlib import Path
+          UA="Mozilla/5.0"
+          cfg=json.loads(Path("config.json").read_text())
+          health=json.loads(Path("site/diagnostics/stream-health.json").read_text())
+          rows=[]
+          for s in health:
+              if s.get("family")!="daddylive-resolver": continue
+              url=s.get("url") or ""
+              if not url.startswith(("http://","https://")): continue
+              hdr=s.get("headers") or {}
+              reqhdr={"User-Agent":hdr.get("User-Agent") or UA}
+              if hdr.get("Referer"): reqhdr["Referer"]=hdr["Referer"]
+              row={"tvg_id":s.get("tvg_id"),"health":(s.get("health") or {}).get("status"),"provider_host":urllib.parse.urlsplit(url).hostname}
+              try:
+                  req=urllib.request.Request(url,headers=reqhdr)
+                  with urllib.request.urlopen(req,timeout=12) as r:
+                      body=r.read(500000).decode("utf-8","ignore"); final=r.geturl()
+                      row["playlist_content_type"]=r.headers.get("Content-Type")
+                  row["playlist_kind"]="master" if "#EXT-X-STREAM-INF" in body else "media" if "#EXTINF" in body else "unknown"
+                  variants=[]; lines=[x.strip() for x in body.splitlines() if x.strip()]
+                  for i,line in enumerate(lines):
+                      if line.startswith("#EXT-X-STREAM-INF"):
+                          uri=lines[i+1] if i+1<len(lines) and not lines[i+1].startswith("#") else ""
+                          variants.append({"attributes":line.split(":",1)[-1],"host":urllib.parse.urlsplit(urllib.parse.urljoin(final,uri)).hostname if uri else None})
+                  row["variants"]=variants[:8]
+                  media_url=final
+                  if variants:
+                      for i,line in enumerate(lines):
+                          if line.startswith("#EXT-X-STREAM-INF") and i+1<len(lines):
+                              media_url=urllib.parse.urljoin(final,lines[i+1]); break
+                      req=urllib.request.Request(media_url,headers=reqhdr)
+                      with urllib.request.urlopen(req,timeout=12) as r: media=r.read(500000).decode("utf-8","ignore"); media_final=r.geturl()
+                  else: media=body; media_final=final
+                  ml=[x.strip() for x in media.splitlines() if x.strip()]
+                  seg=next((x for x in ml if not x.startswith("#")),None)
+                  if seg:
+                      su=urllib.parse.urljoin(media_final,seg)
+                      sr=urllib.request.Request(su,headers={**reqhdr,"Range":"bytes=0-65535"})
+                      with urllib.request.urlopen(sr,timeout=12) as rr:
+                          sample=rr.read(65536); row["segment_content_type"]=rr.headers.get("Content-Type"); row["segment_host"]=urllib.parse.urlsplit(rr.geturl()).hostname
+                      Path("/tmp/dl-segment.bin").write_bytes(sample)
+                      fp=subprocess.run(["ffprobe","-v","error","-show_entries","format=format_name:stream=codec_type,codec_name,codec_tag_string","-of","json","/tmp/dl-segment.bin"],capture_output=True,text=True,timeout=15)
+                      row["ffprobe"]=json.loads(fp.stdout or "{}") if fp.stdout.strip().startswith("{") else {"error":(fp.stderr or "")[-300:]}
+              except Exception as e: row["structure_error"]=str(e)[:300]
+              rows.append(row)
+          Path("site/diagnostics/daddylive-media-structure.json").write_text(json.dumps({"streams":rows},indent=2))
+          print(json.dumps({"tested":len(rows),"rows":rows},indent=2))
+          PY
       - name: Report retry targets and coverage
         run: |
           python - <<'PY'
