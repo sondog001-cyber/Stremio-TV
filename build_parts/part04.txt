@@ -1614,7 +1614,28 @@ def _probe_stream(stream: dict[str, Any], timeout: int, verify_segment: bool) ->
                     seg_headers["Range"] = "bytes=0-1023"
                     req = urllib.request.Request(segment_url, headers=seg_headers)
                     with urllib.request.urlopen(req, timeout=timeout) as resp:
-                        resp.read(1)
+                        seg_type = (resp.headers.get("Content-Type") or "").lower()
+                        seg_sample = resp.read(1024)
+                    # A live HLS playlist can be syntactically healthy while its
+                    # "segments" are actually placeholder/decoy images. Reject
+                    # those before burn-in/FFmpeg, but leave unknown binary media
+                    # alone so valid TS/fMP4 providers are not over-filtered.
+                    image_magic = (
+                        seg_sample.startswith(b"\\x89PNG\\r\\n\\x1a\\n")
+                        or seg_sample.startswith(b"\\xff\\xd8\\xff")
+                        or seg_sample.startswith((b"GIF87a", b"GIF89a"))
+                        or seg_sample.startswith(b"RIFF") and b"WEBP" in seg_sample[:16]
+                    )
+                    if seg_type.startswith("image/") or image_magic:
+                        return {
+                            "status": "failed",
+                            "detail": "HLS segment returned image content instead of live media",
+                            "http_status": status,
+                            "final_url": media_url,
+                            "latency_ms": round((time.monotonic() - started) * 1000),
+                            "continuity_failure": "non-media-hls",
+                            "segment_content_type": seg_type or None,
+                        }
 
             return {
                 "status": "ok",
