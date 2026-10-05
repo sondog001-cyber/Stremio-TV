@@ -6,6 +6,8 @@ on:
     paths:
       - ".github/workflows/established-probe-retry-network-test.yml"
       - "manual_sources.json"
+      - "build_parts/**"
+      - "tests/**"
 
 permissions:
   contents: read
