@@ -1012,5 +1012,40 @@ class PlaybackContinuityTests(unittest.TestCase):
         )
 
 
+
+class _FakeResponse:
+    def __init__(self, body, content_type, url):
+        self._body = body
+        self.headers = {"Content-Type": content_type}
+        self.status = 200
+        self._url = url
+    def __enter__(self): return self
+    def __exit__(self, *args): return False
+    def read(self, _limit=-1): return self._body
+    def geturl(self): return self._url
+
+
+class NonMediaHlsTests(unittest.TestCase):
+    def test_png_segment_is_rejected_as_non_media_hls(self):
+        playlist = b"#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:1\n#EXTINF:6,\nseg.ts\n"
+        responses = [
+            _FakeResponse(playlist, "application/vnd.apple.mpegurl", "https://example.test/live.m3u8"),
+            _FakeResponse(b"\\x89PNG\\r\\n\\x1a\\n" + b"x"*64, "image/png", "https://cdn.test/seg.ts"),
+        ]
+        with mock.patch.object(build.urllib.request, "urlopen", side_effect=responses):
+            result = build._probe_stream({"url":"https://example.test/live.m3u8","headers":{}}, 1, True)
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["continuity_failure"], "non-media-hls")
+
+    def test_binary_transport_segment_is_not_rejected(self):
+        playlist = b"#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:1\n#EXTINF:6,\nseg.ts\n"
+        responses = [
+            _FakeResponse(playlist, "application/vnd.apple.mpegurl", "https://example.test/live.m3u8"),
+            _FakeResponse(b"\\x47" + b"x"*1023, "video/mp2t", "https://cdn.test/seg.ts"),
+        ]
+        with mock.patch.object(build.urllib.request, "urlopen", side_effect=responses):
+            result = build._probe_stream({"url":"https://example.test/live.m3u8","headers":{}}, 1, True)
+        self.assertEqual(result["status"], "ok")
+
 if __name__ == "__main__":
     unittest.main()
