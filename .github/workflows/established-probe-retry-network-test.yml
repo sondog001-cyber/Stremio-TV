@@ -8,6 +8,7 @@ on:
       - "manual_sources.json"
       - "build_parts/**"
       - "tests/**"
+      - "config.json"
 
 permissions:
   contents: read
