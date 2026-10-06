@@ -1,0 +1,54 @@
+name: Family Recovery Research
+on:
+  push:
+    branches:
+      - research-identity-validation
+    paths:
+      - ".github/workflows/family-recovery.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Run family recovery tests
+        shell: bash
+        run: |
+          set +e
+          python assemble_build.py
+          python - <<'PY'
+          import json,time
+          import build
+          candidates=[
+            {"tvg_id":"FX.us","name":"FX 4.30","url":"http://4.30.180.36:8420/fx/index.m3u8?token=test","family":"4.30","headers":{}},
+            {"tvg_id":"HGTV.us","name":"HGTV 4.30","url":"http://4.30.180.36:8420/hgtv/index.m3u8?token=test","family":"4.30","headers":{}},
+            {"tvg_id":"DiscoveryChannel.us","name":"Discovery 4.30","url":"http://4.30.180.36:8420/discovery/index.m3u8?token=test","family":"4.30","headers":{}},
+            {"tvg_id":"OWN.us","name":"OWN 4.30","url":"http://4.30.180.36:8420/own/index.m3u8?token=test","family":"4.30","headers":{}},
+            {"tvg_id":"Reelz.us","name":"Reelz fl51","url":"http://fl51.moveonjoy.com/REELZ/index.m3u8","family":"moveonjoy-fl51","headers":{}},
+            {"tvg_id":"StarzComedy.us","name":"Starz Comedy fl51","url":"http://fl51.moveonjoy.com/STARZ_COMEDY/index.m3u8","family":"moveonjoy-fl51","headers":{}}
+          ]
+          out=[]
+          for s in candidates:
+            row={"tvg_id":s["tvg_id"],"name":s["name"],"family":s["family"],"probes":[]}
+            count=6 if s["name"]=="FX 4.30" else 2
+            delay=20 if count==6 else 2
+            for i in range(count):
+              row["probes"].append(build._probe_stream(s,timeout=8,verify_segment=True))
+              if i<count-1: time.sleep(delay)
+            if all(p.get("status")=="ok" for p in row["probes"]):
+              dur=120 if s["name"]=="FX 4.30" else 60
+              row["burn_in"]=build._validate_direct_media_survival(s,{"enabled":True,"duration_seconds":dur,"min_decoded_seconds":100 if dur==120 else 50,"fps":2,"timeout_seconds":150 if dur==120 else 80,"detect_repeated_clips":True,"repeat_min_seconds":2,"repeat_max_seconds":4,"attempts":1,"required_passes":1})
+            out.append(row)
+          open("family-recovery.json","w").write(json.dumps(out,indent=2,default=str))
+          print(json.dumps(out,indent=2,default=str))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: family-recovery
+          path: family-recovery.json
+          retention-days: 3
