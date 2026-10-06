@@ -102,8 +102,41 @@ jobs:
           Path("full-qa-research.json").write_text(json.dumps(out,indent=2,default=str))
           print(json.dumps(out,indent=2,default=str))
           PY
+      - name: Diagnose repairable 403 candidates
+        shell: python
+        run: |
+          import json, urllib.request, urllib.error
+          targets = [
+            ("HGTV.us","nexgen","https://streamer1.nexgen.bz/HGTV/index.m3u8"),
+            ("DiscoveryChannel.us","nexgen","https://streamer1.nexgen.bz/DISCOVERY/index.m3u8"),
+            ("TLC.us","nexgen","https://streamer1.nexgen.bz/TLC/index.m3u8"),
+            ("FX.us","nexgen","https://streamer1.nexgen.bz/FX/index.m3u8"),
+            ("FXMovieChannel.us","moveonjoy","http://fl2.moveonjoy.com/FX_MOVIE/index.m3u8"),
+            ("FXX.us","moveonjoy","http://fl2.moveonjoy.com/FXX/index.m3u8"),
+            ("TLC.us","moveonjoy","http://fl2.moveonjoy.com/TLC/index.m3u8"),
+            ("WeatherChannel.us","akamai","https://weather-lh.akamaihd.net/i/twc_1@92006/master.m3u8"),
+            ("FX.us","4.30","http://4.30.180.36:8420/fx/index.m3u8?token=test"),
+          ]
+          variants=[
+            ("baseline",{}),
+            ("browser",{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/153 Safari/537.36","Accept":"application/vnd.apple.mpegurl,application/x-mpegURL,*/*"}),
+            ("vlc",{"User-Agent":"VLC/3.0.21 LibVLC/3.0.21","Accept":"*/*"}),
+          ]
+          out=[]
+          for tvg,fam,url in targets:
+            for name,h in variants:
+              row={"tvg_id":tvg,"family":fam,"variant":name,"scheme":url.split(':',1)[0]}
+              try:
+                req=urllib.request.Request(url,headers=h)
+                with urllib.request.urlopen(req,timeout=12) as r:
+                  b=r.read(4096); row.update(status=getattr(r,'status',200),final_url=r.geturl(),content_type=r.headers.get('Content-Type'),is_hls=b.lstrip().startswith(b'#EXTM3U'))
+              except urllib.error.HTTPError as e: row.update(status=e.code,error=str(e))
+              except Exception as e: row.update(status=None,error=type(e).__name__+': '+str(e)[:160])
+              out.append(row)
+          open('403-repair-matrix.json','w').write(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
       - uses: actions/upload-artifact@v4
         with:
           name: identity-research
-          path: identity-research.json
+          path: |\n            identity-research.json\n            403-repair-matrix.json
           retention-days: 3
