@@ -35,6 +35,15 @@ jobs:
             {"label":"HGTV 212 East family","expected":"HGTV.us","url":"http://212.102.60.231/HGTV/index.m3u8"},
             {"label":"HGTV 143 family","expected":"HGTV.us","url":"http://143.244.60.30/HGTV/index.m3u8"},
           ]
+          # Repair sweep: stale-host mappings from the public 40.160.24.x family.
+          for host in ["40.160.24.52","40.160.24.53","40.160.24.55","40.160.24.56","40.160.24.58"]:
+            for label, expected, path in [
+              ("HGTV repair", "HGTV.us", "HGTV"),
+              ("FXM repair", "FXMovieChannel.us", "FXM"),
+              ("Reelz repair", "Reelz.us", "REELZ"),
+              ("TV Land repair", "TVLand.us", "TV_LAND"),
+            ]:
+              targets.append({"label":label+" "+host,"expected":expected,"url":"http://"+host+"/"+path+"/index.m3u8"})
           out=[]
           for t in targets:
             row={k:v for k,v in t.items() if k!="url"}
