@@ -33,7 +33,8 @@ jobs:
             {"label":"Travel 89 family","expected":"TravelChannel.us","url":"http://89.105.221.127/TravelChannel/index.m3u8?token=test"},
             {"label":"HGTV 4.30 family","expected":"HGTV.us","url":"http://4.30.180.36:8420/hgtv/index.m3u8?token=test"},
             {"label":"Discovery 23.237 family","expected":"DiscoveryChannel.us","url":"http://23.237.104.106:8080/USA_DISCOVERY/index.m3u8"},
-          ]          out=[]
+          ]
+          out=[]
           for t in targets:
             row={k:v for k,v in t.items() if k!="url"}
             row["host"]=urllib.parse.urlparse(t["url"]).hostname
