@@ -83,8 +83,8 @@ jobs:
               p2=build._probe_stream(s, timeout=8, verify_segment=True)
               row["probe2"]=p2
               if p1.get("status")=="ok" and p2.get("status")=="ok":
-                row["burn_in"]=build._validate_direct_media_survival(s,duration_seconds=60,min_decoded_seconds=50,fps=2,timeout_seconds=80,detect_repeated_clips=True,repeat_min_seconds=2,repeat_max_seconds=4,attempts=1,required_passes=1)
-                row["final_qa"]=build._validate_direct_media_survival(s,duration_seconds=10,min_decoded_seconds=8,fps=2,timeout_seconds=25,detect_repeated_clips=True,repeat_min_seconds=2,repeat_max_seconds=4,attempts=2,required_passes=1)
+                row["burn_in"]=build._validate_direct_media_survival(s,{"enabled":True,"duration_seconds":60,"min_decoded_seconds":50,"fps":2,"timeout_seconds":80,"detect_repeated_clips":True,"repeat_min_seconds":2,"repeat_max_seconds":4,"attempts":1,"required_passes":1})
+                row["final_qa"]=build._validate_direct_media_survival(s,{"enabled":True,"duration_seconds":10,"min_decoded_seconds":8,"fps":2,"timeout_seconds":25,"detect_repeated_clips":True,"repeat_min_seconds":2,"repeat_max_seconds":4,"attempts":2,"required_passes":1})
             except Exception as e:
               row["error"]=type(e).__name__+": "+str(e)[:300]
             out.append(row)
