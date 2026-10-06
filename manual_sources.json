@@ -89,6 +89,17 @@
       "priority": 15,
       "philly": false,
       "headers": {}
+    },
+    {
+      "tvg_id": "MagnoliaNetwork.us",
+      "name": "Magnolia Network",
+      "url": "http://190.197.41.183/MAGNOLIA_NETWORK/index.m3u8",
+      "quality": "HD",
+      "source": "Fresh public Magnolia Network East lead; independent full-QA pass",
+      "family": "public-190-197-magnolia",
+      "priority": 12,
+      "philly": false,
+      "headers": {}
     }
   ]
 }
