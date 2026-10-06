@@ -1,0 +1,47 @@
+name: 403 Repair Research
+on:
+  push:
+    branches: [research-identity-validation]
+    paths: [".github/workflows/repair-403.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test public request variants
+        shell: python
+        run: |
+          import json, urllib.request, urllib.error
+          targets=[
+            ("HGTV.us","nexgen","https://streamer1.nexgen.bz/HGTV/index.m3u8"),
+            ("DiscoveryChannel.us","nexgen","https://streamer1.nexgen.bz/DISCOVERY/index.m3u8"),
+            ("TLC.us","nexgen","https://streamer1.nexgen.bz/TLC/index.m3u8"),
+            ("FX.us","nexgen","https://streamer1.nexgen.bz/FX/index.m3u8"),
+            ("FXMovieChannel.us","moveonjoy","http://fl2.moveonjoy.com/FX_MOVIE/index.m3u8"),
+            ("FXX.us","moveonjoy","http://fl2.moveonjoy.com/FXX/index.m3u8"),
+            ("TLC.us","moveonjoy","http://fl2.moveonjoy.com/TLC/index.m3u8"),
+            ("WeatherChannel.us","akamai","https://weather-lh.akamaihd.net/i/twc_1@92006/master.m3u8"),
+            ("FX.us","4.30","http://4.30.180.36:8420/fx/index.m3u8?token=test")]
+          variants=[("baseline",{}),("browser",{"User-Agent":"Mozilla/5.0","Accept":"application/vnd.apple.mpegurl,*/*"}),("vlc",{"User-Agent":"VLC/3.0.21 LibVLC/3.0.21","Accept":"*/*"})]
+          out=[]
+          for tvg,fam,url in targets:
+            for name,h in variants:
+              r={"tvg_id":tvg,"family":fam,"variant":name}
+              try:
+                q=urllib.request.Request(url,headers=h)
+                with urllib.request.urlopen(q,timeout=12) as x:
+                  b=x.read(4096); r.update(status=getattr(x,"status",200),final_url=x.geturl(),content_type=x.headers.get("Content-Type"),is_hls=b.lstrip().startswith(b"#EXTM3U"))
+              except urllib.error.HTTPError as e: r.update(status=e.code,error=str(e))
+              except Exception as e: r.update(status=None,error=type(e).__name__+": "+str(e)[:160])
+              out.append(r)
+          open("repair-403.json","w").write(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repair-403
+          path: repair-403.json
+          retention-days: 3
