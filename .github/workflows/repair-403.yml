@@ -40,8 +40,24 @@ jobs:
               out.append(r)
           open("repair-403.json","w").write(json.dumps(out,indent=2))
           print(json.dumps(out,indent=2))
+      - name: Long-run 4.30 FX stability
+        shell: bash
+        run: |
+          set +e
+          python assemble_build.py
+          python - <<'PY'
+          import json,time,build
+          s={"tvg_id":"FX.us","name":"FX","url":"http://4.30.180.36:8420/fx/index.m3u8?token=test","family":"research-4-30","headers":{}}
+          out={"probes":[]}
+          for i in range(6):
+            out["probes"].append(build._probe_stream(s,timeout=8,verify_segment=True))
+            if i<5: time.sleep(20)
+          out["burn_in"]=build._validate_direct_media_survival(s,{"enabled":True,"duration_seconds":120,"min_decoded_seconds":100,"fps":2,"timeout_seconds":150,"detect_repeated_clips":True,"repeat_min_seconds":2,"repeat_max_seconds":4,"attempts":1,"required_passes":1})
+          open("fx-4-30-longevity.json","w").write(json.dumps(out,indent=2,default=str))
+          print(json.dumps(out,indent=2,default=str))
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: repair-403
-          path: repair-403.json
+          path: |\n            repair-403.json\n            fx-4-30-longevity.json
           retention-days: 3
