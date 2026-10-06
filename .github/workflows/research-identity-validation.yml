@@ -7,6 +7,10 @@ on:
     paths:
       - ".github/workflows/research-identity-validation.yml"
 
+concurrency:
+  group: research-identity-validation
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
