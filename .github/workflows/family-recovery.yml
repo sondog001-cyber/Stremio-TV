@@ -29,7 +29,7 @@ jobs:
             {"tvg_id":"HGTV.us","name":"HGTV 4.30","url":"http://4.30.180.36:8420/hgtv/index.m3u8?token=test","family":"4.30","headers":{}},
             {"tvg_id":"DiscoveryChannel.us","name":"Discovery 4.30","url":"http://4.30.180.36:8420/discovery/index.m3u8?token=test","family":"4.30","headers":{}},
             {"tvg_id":"OWN.us","name":"OWN 4.30","url":"http://4.30.180.36:8420/own/index.m3u8?token=test","family":"4.30","headers":{}},
-            {"tvg_id":"Reelz.us","name":"Reelz fl51","url":"http://fl51.moveonjoy.com/REELZ/index.m3u8","family":"moveonjoy-fl51","headers":{}},
+            {"tvg_id":"FX.us","name":"FX 23.237","url":"http://23.237.104.106:8080/USA_FX/index.m3u8","family":"23.237","headers":{}},\n            {"tvg_id":"FXX.us","name":"FXX 23.237","url":"http://23.237.104.106:8080/USA_FXX/index.m3u8","family":"23.237","headers":{}},\n            {"tvg_id":"HGTV.us","name":"HGTV 179","url":"http://179.60.51.134:8888/HGTV/index.m3u8","family":"179.60","headers":{}},\n            {"tvg_id":"FX.us","name":"FX 179","url":"http://179.60.51.134:8888/FX/index.m3u8","family":"179.60","headers":{}},\n            {"tvg_id":"FoxSports2.us","name":"FS2 179","url":"http://179.60.51.134:8888/FOXSPORTS2/index.m3u8","family":"179.60","headers":{}},\n            {"tvg_id":"InvestigationDiscovery.us","name":"ID 179","url":"http://179.60.51.134:8888/ID-DISCOVERY/index.m3u8","family":"179.60","headers":{}},\n            {"tvg_id":"Reelz.us","name":"Reelz fl51","url":"http://fl51.moveonjoy.com/REELZ/index.m3u8","family":"moveonjoy-fl51","headers":{}},
             {"tvg_id":"StarzComedy.us","name":"Starz Comedy fl51","url":"http://fl51.moveonjoy.com/STARZ_COMEDY/index.m3u8","family":"moveonjoy-fl51","headers":{}}
           ]
           out=[]
