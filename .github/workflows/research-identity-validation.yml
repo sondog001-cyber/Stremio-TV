@@ -27,11 +27,13 @@ jobs:
         run: |
           import json, subprocess, urllib.request, urllib.parse, hashlib
           targets = [
-            {"label":"Magnolia NexGen","expected":"MagnoliaNetwork.us","url":"https://streamer1.nexgen.bz/MAGNOLIA/index.m3u8"},
-            {"label":"Discovery historical public lead","expected":"DiscoveryChannel.us","url":"http://80.80.160.168/live/8/live.m3u8"},
-            {"label":"Investigation Discovery historical SD lead","expected":"InvestigationDiscovery.us","url":"http://216.31.255.235/hls-live/livepkgr/_definst_/liveevent/id_sd.m3u8"},
-          ]
-          out=[]
+            {"label":"Magnolia fresh family","expected":"MagnoliaNetwork.us","url":"http://190.197.41.183/MAGNOLIA_NETWORK/index.m3u8"},
+            {"label":"Discovery 89 family","expected":"DiscoveryChannel.us","url":"http://89.105.221.127/Discovery/index.m3u8?token=test"},
+            {"label":"TLC 89 family","expected":"TLC.us","url":"http://89.105.221.127/tlc/index.m3u8?token=test"},
+            {"label":"Travel 89 family","expected":"TravelChannel.us","url":"http://89.105.221.127/TravelChannel/index.m3u8?token=test"},
+            {"label":"HGTV 4.30 family","expected":"HGTV.us","url":"http://4.30.180.36:8420/hgtv/index.m3u8?token=test"},
+            {"label":"Discovery 23.237 family","expected":"DiscoveryChannel.us","url":"http://23.237.104.106:8080/USA_DISCOVERY/index.m3u8"},
+          ]          out=[]
           for t in targets:
             row={k:v for k,v in t.items() if k!="url"}
             row["host"]=urllib.parse.urlparse(t["url"]).hostname
