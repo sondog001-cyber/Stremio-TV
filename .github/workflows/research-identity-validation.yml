@@ -78,9 +78,9 @@ jobs:
           for s in targets:
             row={"tvg_id":s["tvg_id"],"family":s["family"]}
             try:
-              p1=build._probe_stream(s, timeout=8)
+              p1=build._probe_stream(s, timeout=8, verify_segment=True)
               row["probe1"]=p1
-              p2=build._probe_stream(s, timeout=8)
+              p2=build._probe_stream(s, timeout=8, verify_segment=True)
               row["probe2"]=p2
               if p1.get("status")=="ok" and p2.get("status")=="ok":
                 row["burn_in"]=build._validate_direct_media_survival(s,duration_seconds=60,min_decoded_seconds=50,fps=2,timeout_seconds=80,detect_repeated_clips=True,repeat_min_seconds=2,repeat_max_seconds=4,attempts=1,required_passes=1)
