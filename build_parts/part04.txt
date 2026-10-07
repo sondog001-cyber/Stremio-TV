@@ -3571,6 +3571,8 @@ def probe_candidate_entries(
             rule = family_pacing.get(family) if isinstance(family_pacing, dict) else None
             if isinstance(rule, dict) and bool(rule.get("enabled", True)):
                 delay = max(0.0, float(rule.get("delay_seconds", 0)))
+                if family == "tvnow":
+                    delay = max(delay, 30.0)
                 paced.append((key, entry, delay))
             else:
                 parallel[key] = entry
