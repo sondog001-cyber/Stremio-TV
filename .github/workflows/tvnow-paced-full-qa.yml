@@ -1,0 +1,102 @@
+name: TVNow Paced Full QA
+on:
+  push:
+    branches: [research-identity-validation]
+    paths: [".github/workflows/tvnow-paced-full-qa.yml"]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Paced QA
+        shell: python
+        run: |
+          import urllib.request, urllib.error, urllib.parse, json, hashlib, subprocess, time
+          REF="https://tvnow.st/"
+          UA="Mozilla/5.0"
+          targets=[
+            ("DiscoveryChannel.us","Discovery Channel","https://cache0.wonvt.st/live/1ro2ows1kment903evirn/master.m3u8"),
+            ("HGTV.us","HGTV","https://cache0.wonvt.st/live/1cq92wz0u14lg817j43sa/master.m3u8"),
+            ("InvestigationDiscovery.us","Investigation Discovery","https://cache0.wonvt.st/live/0ps7mz30pzsnvq1aw630m/master.m3u8"),
+            ("FoxSports2.us","Fox Sports 2","https://cache0.wonvt.st/live/13r6cob1fh05tc1261qhx/master.m3u8"),
+            ("MLBNetwork.us","MLB Network","https://cache0.wonvt.st/live/0s8stho175fs0z1w0nugo/master.m3u8"),
+            ("NBCSportsPhiladelphia.us","NBC Sports Philadelphia","https://cache0.wonvt.st/live/0qaqqgz0udblhk17bfx8t/master.m3u8"),
+            ("OWN.us","OWN","https://cache0.wonvt.st/live/1kmzbpw0x6hyj60gnwomr/master.m3u8"),
+            ("TLC.us","TLC","https://cache0.wonvt.st/live/1d71n4f00wthy417fl2g4/master.m3u8"),
+            ("TravelChannel.us","Travel Channel","https://cache0.wonvt.st/live/1sfof101ifqzke0fuw3tz/master.m3u8")
+          ]
+          H={"User-Agent":UA,"Referer":REF}
+          def get(url,limit=65536):
+            try:
+              q=urllib.request.Request(url,headers=H)
+              with urllib.request.urlopen(q,timeout=15) as r:
+                return {"ok":True,"status":r.status,"final":r.geturl(),"ct":r.headers.get("Content-Type"),"body":r.read(limit)}
+            except urllib.error.HTTPError as e:return {"ok":False,"status":e.code,"error":str(e)}
+            except Exception as e:return {"ok":False,"status":None,"error":type(e).__name__+": "+str(e)}
+          def typ(b):
+            if b.startswith(b"#EXTM3U"): return "hls"
+            if b.startswith(b"\x89PNG\r\n\x1a\n"): return "png"
+            if b.startswith(b"RIFF") and b[8:12]==b"WEBP": return "webp"
+            if b and b[0]==0x47: return "mpegts"
+            return "other:"+b[:12].hex()
+          def first_media(txt,base):
+            for ln in txt.splitlines():
+              s=ln.strip()
+              if s and not s.startswith("#"):
+                return urllib.parse.urljoin(base,s)
+          def probe(url):
+            p=get(url)
+            o={k:v for k,v in p.items() if k!="body"}
+            if p.get("ok"):
+              b=p["body"]; txt=b.decode("utf-8","replace")
+              o.update({"type":typ(b),"is_hls":txt.lstrip().startswith("#EXTM3U"),"sha256":hashlib.sha256(b).hexdigest()})
+              m=first_media(txt,p["final"])
+              if m:
+                s=get(m,262144)
+                so={k:v for k,v in s.items() if k!="body"}
+                if s.get("ok"):
+                  sb=s["body"]; so.update({"type":typ(sb),"bytes":len(sb),"sha256":hashlib.sha256(sb).hexdigest()})
+                o["segment"]=so
+            return o
+          def info(url):
+            hdr=f"Referer: {REF}\r\n"
+            cmd=["ffprobe","-v","error","-headers",hdr,"-user_agent",UA,"-show_entries","stream=codec_type,codec_name,width,height,r_frame_rate","-of","json",url]
+            try:
+              z=subprocess.run(cmd,capture_output=True,text=True,timeout=35)
+              return {"exit":z.returncode,"json":json.loads(z.stdout or "{}"),"stderr_tail":z.stderr[-1000:]}
+            except Exception as e:return {"error":type(e).__name__+": "+str(e)}
+          def ff(url,sec,to):
+            hdr=f"Referer: {REF}\r\n"
+            cmd=["ffmpeg","-hide_banner","-loglevel","warning","-headers",hdr,"-user_agent",UA,"-i",url,"-t",str(sec),"-vf","fps=2","-f","framemd5","-"]
+            try:
+              z=subprocess.run(cmd,capture_output=True,text=True,timeout=to)
+              h=[x.rsplit(",",1)[-1].strip() for x in z.stdout.splitlines() if x and not x.startswith("#") and "," in x]
+              return {"exit":z.returncode,"frames":len(h),"decoded_seconds":round(len(h)/2,1),"unique_frames":len(set(h)),"repeat_ratio":round(1-len(set(h))/len(h),4) if h else None,"stderr_tail":z.stderr[-1500:]}
+            except Exception as e:return {"error":type(e).__name__+": "+str(e)}
+          out=[]
+          for tvg,name,url in targets:
+            row={"tvg_id":tvg,"name":name,"url":url}
+            row["probe1"]=probe(url)
+            time.sleep(8)
+            row["probe2"]=probe(url)
+            good=all(row[k].get("status")==200 and row[k].get("is_hls") and row[k].get("segment",{}).get("status")==200 and row[k].get("segment",{}).get("type")=="mpegts" for k in ("probe1","probe2"))
+            row["direct_media_ok"]=good
+            if good:
+              row["media_info"]=info(url)
+              row["burn_in_60s"]=ff(url,60,95)
+              time.sleep(3)
+              row["final_10s"]=ff(url,10,35)
+            print(json.dumps(row,indent=2),flush=True)
+            out.append(row)
+            time.sleep(8)
+          open("tvnow-paced-full-qa.json","w").write(json.dumps(out,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tvnow-paced-full-qa
+          path: tvnow-paced-full-qa.json
+          retention-days: 3
