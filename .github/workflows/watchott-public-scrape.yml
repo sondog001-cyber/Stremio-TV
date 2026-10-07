@@ -22,7 +22,7 @@ jobs:
       - name: Capture public Watchott requests
         shell: bash
         run: |
-          cat > /tmp/watchott-scrape.js <<'NODE'
+          cat > watchott-scrape.js <<'NODE'
           const { chromium } = require('playwright-core');
           const fs = require('fs');
 
@@ -218,7 +218,7 @@ jobs:
             process.exitCode = 1;
           });
           NODE
-          node /tmp/watchott-scrape.js
+          node watchott-scrape.js
 
       - uses: actions/upload-artifact@v4
         if: always()
