@@ -1,0 +1,239 @@
+name: TVNow Gentle Single-Channel QA
+on:
+  push:
+    branches: [research-identity-validation]
+    paths: [".github/workflows/tvnow-gentle-single.yml"]
+permissions:
+  contents: read
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: QA Discovery
+        shell: python
+        run: |
+          import urllib.request, urllib.error, urllib.parse, json, hashlib, subprocess, time
+          TVG="DiscoveryChannel.us"; NAME="Discovery Channel"; URL="https://cache0.wonvt.st/live/1ro2ows1kment903evirn/master.m3u8"
+          REF="https://tvnow.st/"; UA="Mozilla/5.0"
+          H={"User-Agent":UA,"Referer":REF}
+          def get(url,limit=65536):
+            try:
+              q=urllib.request.Request(url,headers=H)
+              with urllib.request.urlopen(q,timeout=15) as r:
+                return {"ok":True,"status":r.status,"final":r.geturl(),"ct":r.headers.get("Content-Type"),"body":r.read(limit)}
+            except urllib.error.HTTPError as e:return {"ok":False,"status":e.code,"error":str(e)}
+            except Exception as e:return {"ok":False,"status":None,"error":type(e).__name__+": "+str(e)}
+          def typ(b):
+            if b.startswith(b"#EXTM3U"): return "hls"
+            if b and b[0]==0x47: return "mpegts"
+            if b.startswith(b"\x89PNG\r\n\x1a\n"): return "png"
+            if b.startswith(b"RIFF") and b[8:12]==b"WEBP": return "webp"
+            return "other:"+b[:12].hex()
+          def probe():
+            p=get(URL); o={k:v for k,v in p.items() if k!="body"}
+            if p.get("ok"):
+              txt=p["body"].decode("utf-8","replace"); o["is_hls"]=txt.lstrip().startswith("#EXTM3U"); o["type"]=typ(p["body"])
+              m=next((urllib.parse.urljoin(p["final"],x.strip()) for x in txt.splitlines() if x.strip() and not x.strip().startswith("#")),None)
+              if m:
+                s=get(m,262144); so={k:v for k,v in s.items() if k!="body"}
+                if s.get("ok"): so["type"]=typ(s["body"]); so["bytes"]=len(s["body"])
+                o["segment"]=so
+            return o
+          def ff(sec,to):
+            hdr=f"Referer: {REF}\r\n"
+            cmd=["ffmpeg","-hide_banner","-loglevel","warning","-headers",hdr,"-user_agent",UA,"-i",URL,"-t",str(sec),"-map","0:v:0","-an","-vf","fps=2","-f","framemd5","-"]
+            try:
+              z=subprocess.run(cmd,capture_output=True,text=True,timeout=to)
+              hashes=[l.rsplit(",",1)[-1].strip() for l in z.stdout.splitlines() if l and not l.startswith("#") and "," in l]
+              return {"exit":z.returncode,"video_frames":len(hashes),"video_seconds":round(len(hashes)/2,1),"unique_frames":len(set(hashes)),"repeat_ratio":round(1-len(set(hashes))/len(hashes),4) if hashes else None,"stderr_tail":z.stderr[-1800:]}
+            except Exception as e:return {"error":type(e).__name__+": "+str(e)}
+          row={"tvg_id":TVG,"name":NAME,"url":URL}
+          row["probe1"]=probe()
+          time.sleep(25)
+          row["probe2"]=probe()
+          good=all(row[k].get("status")==200 and row[k].get("is_hls") and row[k].get("segment",{}).get("status")==200 and row[k].get("segment",{}).get("type")=="mpegts" for k in ("probe1","probe2"))
+          row["direct_media_ok"]=good
+          if good:
+            time.sleep(30)
+            row["burn_in_60s"]=ff(60,100)
+            time.sleep(30)
+            row["final_10s"]=ff(10,40)
+          print(json.dumps(row,indent=2))
+          open("discovery.json","w").write(json.dumps(row,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tvnow-discovery-gentle
+          path: discovery.json
+          retention-days: 3
+
+  fs2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: QA FS2
+        shell: python
+        run: |
+          import urllib.request, urllib.error, urllib.parse, json, subprocess, time
+          TVG="FoxSports2.us"; NAME="Fox Sports 2"; URL="https://cache0.wonvt.st/live/13r6cob1fh05tc1261qhx/master.m3u8"
+          REF="https://tvnow.st/"; UA="Mozilla/5.0"; H={"User-Agent":UA,"Referer":REF}
+          def get(url,limit=65536):
+            try:
+              q=urllib.request.Request(url,headers=H)
+              with urllib.request.urlopen(q,timeout=15) as r:return {"ok":True,"status":r.status,"final":r.geturl(),"body":r.read(limit)}
+            except urllib.error.HTTPError as e:return {"ok":False,"status":e.code,"error":str(e)}
+            except Exception as e:return {"ok":False,"status":None,"error":type(e).__name__+": "+str(e)}
+          def typ(b):
+            if b.startswith(b"#EXTM3U"): return "hls"
+            if b and b[0]==0x47: return "mpegts"
+            if b.startswith(b"\x89PNG\r\n\x1a\n"): return "png"
+            if b.startswith(b"RIFF") and b[8:12]==b"WEBP": return "webp"
+            return "other:"+b[:12].hex()
+          def probe():
+            p=get(URL); o={k:v for k,v in p.items() if k!="body"}
+            if p.get("ok"):
+              txt=p["body"].decode("utf-8","replace"); o["is_hls"]=txt.lstrip().startswith("#EXTM3U"); o["type"]=typ(p["body"])
+              m=next((urllib.parse.urljoin(p["final"],x.strip()) for x in txt.splitlines() if x.strip() and not x.strip().startswith("#")),None)
+              if m:
+                s=get(m,262144); so={k:v for k,v in s.items() if k!="body"}
+                if s.get("ok"): so["type"]=typ(s["body"]); so["bytes"]=len(s["body"])
+                o["segment"]=so
+            return o
+          def ff(sec,to):
+            hdr=f"Referer: {REF}\r\n"
+            cmd=["ffmpeg","-hide_banner","-loglevel","warning","-headers",hdr,"-user_agent",UA,"-i",URL,"-t",str(sec),"-map","0:v:0","-an","-vf","fps=2","-f","framemd5","-"]
+            try:
+              z=subprocess.run(cmd,capture_output=True,text=True,timeout=to)
+              hashes=[l.rsplit(",",1)[-1].strip() for l in z.stdout.splitlines() if l and not l.startswith("#") and "," in l]
+              return {"exit":z.returncode,"video_frames":len(hashes),"video_seconds":round(len(hashes)/2,1),"unique_frames":len(set(hashes)),"repeat_ratio":round(1-len(set(hashes))/len(hashes),4) if hashes else None,"stderr_tail":z.stderr[-1800:]}
+            except Exception as e:return {"error":type(e).__name__+": "+str(e)}
+          row={"tvg_id":TVG,"name":NAME,"url":URL}
+          row["probe1"]=probe(); time.sleep(25); row["probe2"]=probe()
+          good=all(row[k].get("status")==200 and row[k].get("is_hls") and row[k].get("segment",{}).get("status")==200 and row[k].get("segment",{}).get("type")=="mpegts" for k in ("probe1","probe2"))
+          row["direct_media_ok"]=good
+          if good:
+            time.sleep(30); row["burn_in_60s"]=ff(60,100); time.sleep(30); row["final_10s"]=ff(10,40)
+          print(json.dumps(row,indent=2)); open("fs2.json","w").write(json.dumps(row,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tvnow-fs2-gentle
+          path: fs2.json
+          retention-days: 3
+
+  tlc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: QA TLC
+        shell: python
+        run: |
+          import urllib.request, urllib.error, urllib.parse, json, subprocess, time
+          TVG="TLC.us"; NAME="TLC"; URL="https://cache0.wonvt.st/live/1d71n4f00wthy417fl2g4/master.m3u8"
+          REF="https://tvnow.st/"; UA="Mozilla/5.0"; H={"User-Agent":UA,"Referer":REF}
+          def get(url,limit=65536):
+            try:
+              q=urllib.request.Request(url,headers=H)
+              with urllib.request.urlopen(q,timeout=15) as r:return {"ok":True,"status":r.status,"final":r.geturl(),"body":r.read(limit)}
+            except urllib.error.HTTPError as e:return {"ok":False,"status":e.code,"error":str(e)}
+            except Exception as e:return {"ok":False,"status":None,"error":type(e).__name__+": "+str(e)}
+          def typ(b):
+            if b.startswith(b"#EXTM3U"): return "hls"
+            if b and b[0]==0x47: return "mpegts"
+            if b.startswith(b"\x89PNG\r\n\x1a\n"): return "png"
+            if b.startswith(b"RIFF") and b[8:12]==b"WEBP": return "webp"
+            return "other:"+b[:12].hex()
+          def probe():
+            p=get(URL); o={k:v for k,v in p.items() if k!="body"}
+            if p.get("ok"):
+              txt=p["body"].decode("utf-8","replace"); o["is_hls"]=txt.lstrip().startswith("#EXTM3U"); o["type"]=typ(p["body"])
+              m=next((urllib.parse.urljoin(p["final"],x.strip()) for x in txt.splitlines() if x.strip() and not x.strip().startswith("#")),None)
+              if m:
+                s=get(m,262144); so={k:v for k,v in s.items() if k!="body"}
+                if s.get("ok"): so["type"]=typ(s["body"]); so["bytes"]=len(s["body"])
+                o["segment"]=so
+            return o
+          def ff(sec,to):
+            hdr=f"Referer: {REF}\r\n"
+            cmd=["ffmpeg","-hide_banner","-loglevel","warning","-headers",hdr,"-user_agent",UA,"-i",URL,"-t",str(sec),"-map","0:v:0","-an","-vf","fps=2","-f","framemd5","-"]
+            try:
+              z=subprocess.run(cmd,capture_output=True,text=True,timeout=to)
+              hashes=[l.rsplit(",",1)[-1].strip() for l in z.stdout.splitlines() if l and not l.startswith("#") and "," in l]
+              return {"exit":z.returncode,"video_frames":len(hashes),"video_seconds":round(len(hashes)/2,1),"unique_frames":len(set(hashes)),"repeat_ratio":round(1-len(set(hashes))/len(hashes),4) if hashes else None,"stderr_tail":z.stderr[-1800:]}
+            except Exception as e:return {"error":type(e).__name__+": "+str(e)}
+          row={"tvg_id":TVG,"name":NAME,"url":URL}
+          row["probe1"]=probe(); time.sleep(25); row["probe2"]=probe()
+          good=all(row[k].get("status")==200 and row[k].get("is_hls") and row[k].get("segment",{}).get("status")==200 and row[k].get("segment",{}).get("type")=="mpegts" for k in ("probe1","probe2"))
+          row["direct_media_ok"]=good
+          if good:
+            time.sleep(30); row["burn_in_60s"]=ff(60,100); time.sleep(30); row["final_10s"]=ff(10,40)
+          print(json.dumps(row,indent=2)); open("tlc.json","w").write(json.dumps(row,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tvnow-tlc-gentle
+          path: tlc.json
+          retention-days: 3
+
+  travel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: QA Travel
+        shell: python
+        run: |
+          import urllib.request, urllib.error, urllib.parse, json, subprocess, time
+          TVG="TravelChannel.us"; NAME="Travel Channel"; URL="https://cache0.wonvt.st/live/1sfof101ifqzke0fuw3tz/master.m3u8"
+          REF="https://tvnow.st/"; UA="Mozilla/5.0"; H={"User-Agent":UA,"Referer":REF}
+          def get(url,limit=65536):
+            try:
+              q=urllib.request.Request(url,headers=H)
+              with urllib.request.urlopen(q,timeout=15) as r:return {"ok":True,"status":r.status,"final":r.geturl(),"body":r.read(limit)}
+            except urllib.error.HTTPError as e:return {"ok":False,"status":e.code,"error":str(e)}
+            except Exception as e:return {"ok":False,"status":None,"error":type(e).__name__+": "+str(e)}
+          def typ(b):
+            if b.startswith(b"#EXTM3U"): return "hls"
+            if b and b[0]==0x47: return "mpegts"
+            if b.startswith(b"\x89PNG\r\n\x1a\n"): return "png"
+            if b.startswith(b"RIFF") and b[8:12]==b"WEBP": return "webp"
+            return "other:"+b[:12].hex()
+          def probe():
+            p=get(URL); o={k:v for k,v in p.items() if k!="body"}
+            if p.get("ok"):
+              txt=p["body"].decode("utf-8","replace"); o["is_hls"]=txt.lstrip().startswith("#EXTM3U"); o["type"]=typ(p["body"])
+              m=next((urllib.parse.urljoin(p["final"],x.strip()) for x in txt.splitlines() if x.strip() and not x.strip().startswith("#")),None)
+              if m:
+                s=get(m,262144); so={k:v for k,v in s.items() if k!="body"}
+                if s.get("ok"): so["type"]=typ(s["body"]); so["bytes"]=len(s["body"])
+                o["segment"]=so
+            return o
+          def ff(sec,to):
+            hdr=f"Referer: {REF}\r\n"
+            cmd=["ffmpeg","-hide_banner","-loglevel","warning","-headers",hdr,"-user_agent",UA,"-i",URL,"-t",str(sec),"-map","0:v:0","-an","-vf","fps=2","-f","framemd5","-"]
+            try:
+              z=subprocess.run(cmd,capture_output=True,text=True,timeout=to)
+              hashes=[l.rsplit(",",1)[-1].strip() for l in z.stdout.splitlines() if l and not l.startswith("#") and "," in l]
+              return {"exit":z.returncode,"video_frames":len(hashes),"video_seconds":round(len(hashes)/2,1),"unique_frames":len(set(hashes)),"repeat_ratio":round(1-len(set(hashes))/len(hashes),4) if hashes else None,"stderr_tail":z.stderr[-1800:]}
+            except Exception as e:return {"error":type(e).__name__+": "+str(e)}
+          row={"tvg_id":TVG,"name":NAME,"url":URL}
+          row["probe1"]=probe(); time.sleep(25); row["probe2"]=probe()
+          good=all(row[k].get("status")==200 and row[k].get("is_hls") and row[k].get("segment",{}).get("status")==200 and row[k].get("segment",{}).get("type")=="mpegts" for k in ("probe1","probe2"))
+          row["direct_media_ok"]=good
+          if good:
+            time.sleep(30); row["burn_in_60s"]=ff(60,100); time.sleep(30); row["final_10s"]=ff(10,40)
+          print(json.dumps(row,indent=2)); open("travel.json","w").write(json.dumps(row,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tvnow-travel-gentle
+          path: travel.json
+          retention-days: 3
