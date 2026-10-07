@@ -107,3 +107,5 @@ jobs:
           name: tvnow-direct-full-qa
           path: tvnow-direct-full-qa.json
           retention-days: 3
+
+# trigger full QA
