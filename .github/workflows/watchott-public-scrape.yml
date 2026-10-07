@@ -1,0 +1,230 @@
+name: Watchott Public Scrape
+on:
+  push:
+    branches: [research-identity-validation]
+    paths: [".github/workflows/watchott-public-scrape.yml"]
+permissions:
+  contents: read
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install browser helper
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright-core@1.55.0 >/dev/null 2>&1
+          which google-chrome || which google-chrome-stable || which chromium || true
+
+      - name: Capture public Watchott requests
+        shell: bash
+        run: |
+          cat > /tmp/watchott-scrape.js <<'NODE'
+          const { chromium } = require('playwright-core');
+          const fs = require('fs');
+
+          (async () => {
+            const candidates = [
+              '/usr/bin/google-chrome',
+              '/usr/bin/google-chrome-stable',
+              '/usr/bin/chromium',
+              '/usr/bin/chromium-browser'
+            ];
+            const executablePath = candidates.find(p => fs.existsSync(p));
+            if (!executablePath) throw new Error('No Chrome/Chromium found');
+
+            const browser = await chromium.launch({
+              executablePath,
+              headless: true,
+              args: ['--no-sandbox', '--disable-dev-shm-usage']
+            });
+            const context = await browser.newContext({
+              userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/153 Safari/537.36',
+              viewport: { width: 1440, height: 1000 }
+            });
+
+            const allRequests = new Set();
+            const allResponses = [];
+            const interesting = [];
+            const targets = [
+              'HGTV',
+              'Discovery Channel',
+              'Investigation Discovery',
+              'TLC',
+              'Travel Channel',
+              'MLB Network',
+              'Fox Sports 2',
+              'FS2',
+              'Reelz'
+            ];
+
+            function hook(page, label) {
+              page.on('request', req => {
+                const u = req.url();
+                allRequests.add(u);
+                if (/m3u8|premium|edge\.|embed|player|stream|hls|\.ts(?:\?|$)|\.m3u(?:\?|$)/i.test(u)) {
+                  interesting.push({ label, type: 'request', method: req.method(), url: u });
+                }
+              });
+              page.on('response', async res => {
+                const u = res.url();
+                const ct = (res.headers()['content-type'] || '');
+                if (/m3u8|premium|edge\.|embed|player|stream|hls/i.test(u) || /mpegurl|video|dash/i.test(ct)) {
+                  allResponses.push({ label, status: res.status(), contentType: ct, url: u });
+                }
+              });
+            }
+
+            const page = await context.newPage();
+            hook(page, 'home');
+
+            let homeStatus = null;
+            try {
+              const resp = await page.goto('https://iptv.watchott.org/', { waitUntil: 'domcontentloaded', timeout: 45000 });
+              homeStatus = resp ? resp.status() : null;
+            } catch (e) {
+              console.log('goto error:', String(e));
+            }
+            await page.waitForTimeout(5000);
+
+            // Use the publicly published access password through the normal UI.
+            const pwSelectors = [
+              'input[type="password"]',
+              'input[placeholder*="password" i]',
+              'input[placeholder*="key" i]',
+              'input[name*="password" i]',
+              'input[name*="key" i]'
+            ];
+            let unlocked = false;
+            for (const sel of pwSelectors) {
+              const loc = page.locator(sel).first();
+              if (await loc.count()) {
+                try {
+                  if (await loc.isVisible()) {
+                    await loc.fill('FREE-MEDIA');
+                    await loc.press('Enter').catch(() => {});
+                    await page.waitForTimeout(2500);
+                    unlocked = true;
+                    break;
+                  }
+                } catch {}
+              }
+            }
+            if (!unlocked) {
+              const inputs = page.locator('input');
+              if (await inputs.count()) {
+                try {
+                  await inputs.first().fill('FREE-MEDIA');
+                  await inputs.first().press('Enter').catch(() => {});
+                  await page.waitForTimeout(2500);
+                } catch {}
+              }
+            }
+
+            // Try ordinary unlock buttons if Enter was insufficient.
+            for (const name of ['Unlock','Enter','Access','Submit','Continue']) {
+              const b = page.getByRole('button', { name: new RegExp(name, 'i') }).first();
+              try {
+                if (await b.count() && await b.isVisible()) {
+                  await b.click({ timeout: 3000 });
+                  await page.waitForTimeout(2500);
+                  break;
+                }
+              } catch {}
+            }
+
+            await page.waitForTimeout(3000);
+            const bodyText = await page.locator('body').innerText().catch(() => '');
+            const html = await page.content().catch(() => '');
+
+            const domLinks = await page.evaluate(() => {
+              const out = [];
+              for (const el of document.querySelectorAll('a,iframe,video,source,script,link')) {
+                const v = el.href || el.src || '';
+                if (v) out.push({ tag: el.tagName, url: v });
+              }
+              return out;
+            }).catch(() => []);
+
+            const htmlUrls = [...new Set((html.match(/https?:\\?\/\\?\/[^"'<>\\s]+/g) || []).map(x => x.replace(/\\\//g,'/')))];
+
+            const targetResults = [];
+            for (const target of targets) {
+              const p = await context.newPage();
+              hook(p, target);
+              let result = { target, found: false, clicked: false, pageUrl: null, error: null };
+              try {
+                await p.goto('https://iptv.watchott.org/', { waitUntil: 'domcontentloaded', timeout: 45000 });
+                await p.waitForTimeout(2500);
+
+                // Re-enter public password only if gate is visible in this page/context.
+                const pw = p.locator('input[type="password"], input[placeholder*="password" i], input[placeholder*="key" i]').first();
+                if (await pw.count() && await pw.isVisible()) {
+                  await pw.fill('FREE-MEDIA');
+                  await pw.press('Enter').catch(() => {});
+                  await p.waitForTimeout(2000);
+                }
+
+                const textLoc = p.getByText(target, { exact: false }).first();
+                if (await textLoc.count()) {
+                  result.found = true;
+                  if (await textLoc.isVisible()) {
+                    await textLoc.click({ timeout: 5000 }).catch(() => {});
+                    result.clicked = true;
+                    await p.waitForTimeout(7000);
+                  }
+                }
+                result.pageUrl = p.url();
+                result.iframes = await p.locator('iframe').evaluateAll(els => els.map(x => x.src).filter(Boolean)).catch(() => []);
+                result.media = await p.locator('video,source').evaluateAll(els => els.map(x => x.src).filter(Boolean)).catch(() => []);
+              } catch (e) {
+                result.error = String(e).slice(0,500);
+              }
+              targetResults.push(result);
+              await p.close();
+            }
+
+            const output = {
+              homeStatus,
+              finalUrl: page.url(),
+              bodyText: bodyText.slice(0, 30000),
+              domLinks,
+              htmlUrls,
+              targetResults,
+              interesting: [...new Map(interesting.map(x => [x.url, x])).values()],
+              responses: [...new Map(allResponses.map(x => [x.url, x])).values()],
+              allRequests: [...allRequests]
+            };
+            fs.writeFileSync('watchott-public-scrape.json', JSON.stringify(output, null, 2));
+            fs.writeFileSync('watchott-body.txt', bodyText);
+            console.log(JSON.stringify({
+              homeStatus,
+              finalUrl: page.url(),
+              bodyChars: bodyText.length,
+              domLinks: domLinks.length,
+              htmlUrls: htmlUrls.length,
+              interesting: output.interesting.length,
+              responses: output.responses.length,
+              totalRequests: allRequests.size,
+              targets: targetResults
+            }, null, 2));
+
+            await browser.close();
+          })().catch(e => {
+            console.error(e);
+            process.exitCode = 1;
+          });
+          NODE
+          node /tmp/watchott-scrape.js
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: watchott-public-scrape
+          path: |
+            watchott-public-scrape.json
+            watchott-body.txt
+          retention-days: 3
