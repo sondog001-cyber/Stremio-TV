@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with native EPG, decoded playback QA, exact stream identity guards, and prioritized recovery hunting.",
-    "version": "0.6.9"
+    "version": "0.7.0"
   },
   "sources": {
     "playlists": [
@@ -466,7 +466,8 @@
       "daddylive",
       "tv247",
       "usair",
-      "thetvapp"
+      "thetvapp",
+      "tvnow"
     ],
     "canonical_id_aliases": {
       "MSNBC.us": "MSNOW.us",
@@ -819,6 +820,7 @@
     "primary_family": "iptv-org",
     "fallback_families": [
       "free-tv",
+      "tvnow",
       "official-page",
       "localbtv-relay",
       "moveonjoy",
