@@ -1,0 +1,204 @@
+name: Watchott API Deep Scrape
+on:
+  push:
+    branches: [research-identity-validation]
+    paths: [".github/workflows/watchott-api-deep-scrape.yml"]
+permissions:
+  contents: read
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install browser helper
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright-core@1.55.0 >/dev/null 2>&1
+      - name: Extract Watchott public API inventory
+        shell: bash
+        run: |
+          cat > watchott-api-scrape.js <<'NODE'
+          const { chromium } = require('playwright-core');
+          const fs = require('fs');
+
+          (async () => {
+            const browser = await chromium.launch({
+              executablePath: '/usr/bin/google-chrome',
+              headless: true,
+              args: ['--no-sandbox','--disable-dev-shm-usage']
+            });
+            const context = await browser.newContext({
+              userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/153 Safari/537.36'
+            });
+            const page = await context.newPage();
+
+            const apiResponses = [];
+            page.on('response', async res => {
+              const u = res.url();
+              if (u.includes('iptv.watchott.org/api/') || u.includes('layla.wtf/api/')) {
+                let body = '';
+                try { body = await res.text(); } catch {}
+                apiResponses.push({
+                  url: u,
+                  status: res.status(),
+                  contentType: res.headers()['content-type'] || '',
+                  body: body.slice(0, 200000)
+                });
+              }
+            });
+
+            const resp = await page.goto('https://iptv.watchott.org/', {
+              waitUntil: 'domcontentloaded',
+              timeout: 45000
+            });
+            await page.waitForTimeout(3000);
+
+            const input = page.locator('input[type="password"], input[placeholder*="password" i], input[placeholder*="key" i], input').first();
+            if (await input.count() && await input.isVisible()) {
+              await input.fill('FREE-MEDIA');
+              await input.press('Enter').catch(() => {});
+              await page.waitForTimeout(2500);
+            }
+            for (const name of ['Unlock','Enter','Access','Submit','Continue']) {
+              const b = page.getByRole('button',{name:new RegExp(name,'i')}).first();
+              try {
+                if (await b.count() && await b.isVisible()) {
+                  await b.click({timeout:2000});
+                  await page.waitForTimeout(1500);
+                  break;
+                }
+              } catch {}
+            }
+
+            await page.waitForTimeout(3000);
+
+            const channelFetch = await page.evaluate(async () => {
+              try {
+                const r = await fetch('/api/dlhd-channels', { credentials: 'include' });
+                return { status:r.status, contentType:r.headers.get('content-type')||'', text:await r.text() };
+              } catch (e) {
+                return { status:null, error:String(e), text:'' };
+              }
+            });
+
+            const scriptSrc = await page.evaluate(() => {
+              const scripts=[...document.querySelectorAll('script[src]')].map(s=>s.src);
+              return scripts.find(x=>x.includes('/assets/index-') && x.endsWith('.js')) || null;
+            });
+
+            let bundle = {status:null,text:'',url:scriptSrc};
+            if (scriptSrc) {
+              bundle = await page.evaluate(async src => {
+                try {
+                  const r=await fetch(src);
+                  return {status:r.status,url:src,text:await r.text()};
+                } catch(e) {
+                  return {status:null,url:src,error:String(e),text:''};
+                }
+              }, scriptSrc);
+            }
+
+            const endpoints = [...new Set(
+              (bundle.text.match(/\/api\/[A-Za-z0-9_\-./?=&:]+/g) || [])
+            )].sort();
+
+            const absoluteUrls = [...new Set(
+              (bundle.text.match(/https?:\/\/[^"'\x60\\\s)]+/g) || [])
+            )].filter(u => /watchott|layla|dlhd|daddy|stream|hls|m3u8|player|embed|premium/i.test(u));
+
+            const snippets = [];
+            for (const needle of ['dlhd','premium','m3u8','layla','player','stream','channel']) {
+              let start=0, count=0;
+              const lower=bundle.text.toLowerCase();
+              while (count<20) {
+                const i=lower.indexOf(needle,start);
+                if (i<0) break;
+                snippets.push({needle, text:bundle.text.slice(Math.max(0,i-220), Math.min(bundle.text.length,i+420))});
+                start=i+needle.length;
+                count++;
+              }
+            }
+
+            let parsedChannels = null;
+            try { parsedChannels = JSON.parse(channelFetch.text); } catch {}
+
+            const targetNames=['HGTV','Discovery','Investigation Discovery','TLC','Travel','MLB','Fox Sports 2','FS2','Reelz','OWN','Magnolia'];
+            const targetMatches=[];
+            function walk(v,path='root'){
+              if (Array.isArray(v)) return v.forEach((x,i)=>walk(x,path+'['+i+']'));
+              if (!v || typeof v!=='object') return;
+              const flat=JSON.stringify(v);
+              for(const name of targetNames){
+                if(flat.toLowerCase().includes(name.toLowerCase())){
+                  targetMatches.push({name,path,value:v});
+                  break;
+                }
+              }
+              for(const [k,x] of Object.entries(v)) if(x && typeof x==='object') walk(x,path+'.'+k);
+            }
+            if(parsedChannels) walk(parsedChannels);
+
+            const bodyText=await page.locator('body').innerText().catch(()=>'');
+
+            const out={
+              homeStatus: resp ? resp.status() : null,
+              finalUrl: page.url(),
+              bodyText,
+              channelFetch:{
+                status:channelFetch.status,
+                contentType:channelFetch.contentType,
+                textLength:channelFetch.text.length,
+                parseOK:parsedChannels!==null
+              },
+              parsedChannels,
+              targetMatches:targetMatches.slice(0,500),
+              apiResponses,
+              bundle:{
+                url:bundle.url,
+                status:bundle.status,
+                textLength:bundle.text.length,
+                endpoints,
+                absoluteUrls,
+                snippets
+              }
+            };
+
+            fs.writeFileSync('watchott-api-deep-scrape.json',JSON.stringify(out,null,2));
+            fs.writeFileSync('watchott-channels-raw.txt',channelFetch.text);
+            fs.writeFileSync('watchott-bundle-endpoints.txt',endpoints.join('\n')+'\n\n'+absoluteUrls.join('\n'));
+
+            console.log(JSON.stringify({
+              homeStatus:out.homeStatus,
+              finalUrl:out.finalUrl,
+              bodyText:bodyText.slice(0,500),
+              channelStatus:channelFetch.status,
+              channelBytes:channelFetch.text.length,
+              parsed:parsedChannels!==null,
+              targetMatches:out.targetMatches.length,
+              apiResponses:apiResponses.map(x=>({url:x.url,status:x.status,bytes:x.body.length})),
+              bundleUrl:bundle.url,
+              bundleStatus:bundle.status,
+              bundleBytes:bundle.text.length,
+              endpoints,
+              absoluteUrls
+            },null,2));
+
+            await browser.close();
+          })().catch(e => {
+            console.error(e);
+            process.exitCode=1;
+          });
+          NODE
+          node watchott-api-scrape.js
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: watchott-api-deep-scrape
+          path: |
+            watchott-api-deep-scrape.json
+            watchott-channels-raw.txt
+            watchott-bundle-endpoints.txt
+          retention-days: 3
