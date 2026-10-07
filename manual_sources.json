@@ -100,6 +100,227 @@
       "priority": 12,
       "philly": false,
       "headers": {}
+    },
+    {
+      "tvg_id": "DiscoveryChannel.us",
+      "name": "Discovery Channel",
+      "url": "https://cache0.wonvt.st/live/1ro2ows1kment903evirn/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "FXMovieChannel.us",
+      "name": "FX Movie Channel",
+      "url": "https://cache0.wonvt.st/live/0ci3u9o0q5y25d0b0p7rp/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "FoxSports2.us",
+      "name": "Fox Sports 2",
+      "url": "https://cache0.wonvt.st/live/13r6cob1fh05tc1261qhx/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "HGTV.us",
+      "name": "HGTV",
+      "url": "https://cache0.wonvt.st/live/1cq92wz0u14lg817j43sa/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "InvestigationDiscovery.us",
+      "name": "Investigation Discovery",
+      "url": "https://cache0.wonvt.st/live/0ps7mz30pzsnvq1aw630m/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "MLBNetwork.us",
+      "name": "MLB Network",
+      "url": "https://cache0.wonvt.st/live/0s8stho175fs0z1w0nugo/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "NBCSportsPhiladelphia.us",
+      "name": "NBC Sports Philadelphia",
+      "url": "https://cache0.wonvt.st/live/0qaqqgz0udblhk17bfx8t/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "OWN.us",
+      "name": "OWN",
+      "url": "https://cache0.wonvt.st/live/1kmzbpw0x6hyj60gnwomr/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "Reelz.us",
+      "name": "Reelz",
+      "url": "https://cache0.wonvt.st/live/0k8zpg50jakid00dp8vqm/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "TLC.us",
+      "name": "TLC",
+      "url": "https://cache0.wonvt.st/live/1d71n4f00wthy417fl2g4/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "TravelChannel.us",
+      "name": "Travel Channel",
+      "url": "https://cache0.wonvt.st/live/1sfof101ifqzke0fuw3tz/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "FX.us",
+      "name": "FX",
+      "url": "https://cache0.wonvt.st/live/00l0xp41smdo1b07fldzv/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "FXX.us",
+      "name": "FXX",
+      "url": "https://cache0.wonvt.st/live/110fynw1a68kro18sxusr/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "IFC.us",
+      "name": "IFC",
+      "url": "https://cache0.wonvt.st/live/18fnw800u8dhll0y42an5/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "Showtime.us",
+      "name": "Showtime",
+      "url": "https://cache0.wonvt.st/live/1az2pv01wqk8zi11yns1c/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "TVLand.us",
+      "name": "TV Land",
+      "url": "https://cache0.wonvt.st/live/1d9d5fm15shhb30dnkvt0/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
+    },
+    {
+      "tvg_id": "WeatherChannel.us",
+      "name": "The Weather Channel",
+      "url": "https://cache0.wonvt.st/live/1cv5p151mn95pv0j0kebn/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow public US direct HLS",
+      "family": "tvnow",
+      "priority": 6,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/"
+      }
     }
   ]
 }
