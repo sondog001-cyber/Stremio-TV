@@ -12,12 +12,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Build validator
-        run: python assemble_build.py && cp build.py build_research.py
       - name: Validate TVPass public channel pages
         shell: python
         run: |
-          import json, urllib.request, urllib.error, time, build_research as build
+          import json, urllib.request, urllib.error, time
           targets=[
             ("HGTV.us","HGTV","https://tvpass.org/live/HGTVEast/hd"),
             ("Reelz.us","Reelz","https://tvpass.org/live/Reelz/hd"),
@@ -48,49 +46,9 @@ jobs:
             out.append(item)
           open("tvpass-resolution.json","w").write(json.dumps(out,indent=2))
           print(json.dumps(out,indent=2))
-      - name: Full QA on directly resolved HLS only
-        shell: python
-        run: |
-          import json, urllib.request, re, build_research as build
-          targets=[
-            ("HGTV.us","HGTV","https://tvpass.org/live/HGTVEast/hd"),
-            ("Reelz.us","Reelz","https://tvpass.org/live/Reelz/hd"),
-            ("DiscoveryChannel.us","Discovery","https://tvpass.org/live/Discovery/hd"),
-            ("TLC.us","TLC","https://tvpass.org/live/TLC/hd"),
-            ("TravelChannel.us","Travel","https://tvpass.org/live/Travel/hd"),
-            ("FXX.us","FXX","https://tvpass.org/live/FXX/hd"),
-            ("FX.us","FX","https://tvpass.org/live/FX/hd"),
-            ("TVLand.us","TV Land","https://tvpass.org/live/TVLand/hd"),
-          ]
-          headers={"User-Agent":"Mozilla/5.0","Referer":"https://tvpass.org/","Origin":"https://tvpass.org"}
-          results=[]
-          for tvg,name,page in targets:
-            rec={"tvg_id":tvg,"name":name,"page_url":page}
-            try:
-              q=urllib.request.Request(page,headers=headers)
-              with urllib.request.urlopen(q,timeout=12) as x:
-                body=x.read(300000).decode("utf-8","replace")
-              urls=re.findall(r'https?://[^"\'<>\\ ]+?\.m3u8(?:\?[^"\'<>\\ ]*)?',body)
-              urls=list(dict.fromkeys(urls))
-              rec["hls_candidates_found"]=len(urls)
-              if urls:
-                u=urls[0]
-                s={"tvg_id":tvg,"name":name,"url":u,"family":"tvpass-research","headers":headers}
-                rec["resolved_host"]=urllib.request.urlparse(u).netloc if hasattr(urllib.request,"urlparse") else u.split("/")[2]
-                rec["probe1"]=build._probe_stream(s,timeout=10,verify_segment=True)
-                rec["probe2"]=build._probe_stream(s,timeout=10,verify_segment=True)
-                rec["burn_in"]=build._validate_direct_media_survival(s,{"enabled":True,"duration_seconds":60,"min_decoded_seconds":50,"fps":2,"timeout_seconds":90,"detect_repeated_clips":True,"repeat_min_seconds":2,"repeat_max_seconds":4,"attempts":1,"required_passes":1})
-                rec["final"]=build._validate_direct_media_survival(s,{"enabled":True,"duration_seconds":10,"min_decoded_seconds":8,"fps":2,"timeout_seconds":25,"detect_repeated_clips":True,"repeat_min_seconds":2,"repeat_max_seconds":4,"attempts":1,"required_passes":1})
-              else:
-                rec["qa"]="not-run-no-direct-hls"
-            except Exception as e: rec["error"]=type(e).__name__+": "+str(e)[:300]
-            results.append(rec)
-            print(json.dumps(rec,default=str))
-          open("tvpass-qa.json","w").write(json.dumps(results,indent=2,default=str))
       - uses: actions/upload-artifact@v4
         with:
           name: tvpass-research
           path: |
             tvpass-resolution.json
-            tvpass-qa.json
           retention-days: 3
