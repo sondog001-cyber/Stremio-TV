@@ -1,0 +1,108 @@
+name: USA East Successor QA
+on:
+  push:
+    branches: [research-identity-validation]
+    paths: [".github/workflows/usa-east-successor-qa.yml"]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure ffmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Full QA
+        shell: python
+        run: |
+          import urllib.request, urllib.error, json, time, subprocess, hashlib
+          targets=[
+            {
+              "tvg_id":"DiscoveryChannel.us",
+              "name":"Discovery Channel East",
+              "url":"http://84.17.50.102/discovery/index.m3u8",
+              "identity":"Repeated public listings explicitly label this exact URL Discovery EAST SD USA"
+            },
+            {
+              "tvg_id":"TravelChannel.us",
+              "name":"Travel Channel East",
+              "url":"http://84.17.50.102/travel/index.m3u8",
+              "identity":"Repeated 2026 public listings explicitly label this exact URL Travel Channel East USA"
+            },
+            {
+              "tvg_id":"TLC.us",
+              "name":"TLC East candidate A",
+              "url":"http://41.205.64.66/TLC/index.m3u8",
+              "identity":"Repeated 2026 public listings explicitly label this exact URL TLC EAST HD USA"
+            },
+            {
+              "tvg_id":"TLC.us",
+              "name":"TLC East candidate B",
+              "url":"http://41.223.30.230/TLC/index.m3u8",
+              "identity":"Repeated 2026 public listings explicitly label this exact URL TLC EAST HD USA"
+            }
+          ]
+          def probe(url):
+            try:
+              q=urllib.request.Request(url,headers={"User-Agent":"Mozilla/5.0","Accept":"*/*"})
+              with urllib.request.urlopen(q,timeout=15) as x:
+                b=x.read(32768)
+                return {
+                  "status":x.status,
+                  "final_url":x.geturl(),
+                  "content_type":x.headers.get("Content-Type"),
+                  "bytes":len(b),
+                  "sha256":hashlib.sha256(b).hexdigest(),
+                  "is_hls":b.lstrip().startswith(b"#EXTM3U"),
+                  "sample":b[:500].decode("utf-8","replace")
+                }
+            except urllib.error.HTTPError as e:
+              return {"status":e.code,"error":str(e)}
+            except Exception as e:
+              return {"status":None,"error":type(e).__name__+": "+str(e)[:250]}
+          def media_info(url):
+            cmd=["ffprobe","-v","error","-user_agent","Mozilla/5.0","-show_entries","stream=index,codec_type,codec_name,width,height,r_frame_rate","-of","json",url]
+            try:
+              z=subprocess.run(cmd,capture_output=True,text=True,timeout=30)
+              return {"exit":z.returncode,"json":json.loads(z.stdout or "{}"),"stderr_tail":z.stderr[-1500:]}
+            except Exception as e:
+              return {"error":type(e).__name__+": "+str(e)}
+          def ff(url,seconds,timeout):
+            cmd=["ffmpeg","-hide_banner","-loglevel","info","-user_agent","Mozilla/5.0","-i",url,"-t",str(seconds),"-vf","fps=2,framemd5","-f","framemd5","-"]
+            try:
+              z=subprocess.run(cmd,capture_output=True,text=True,timeout=timeout)
+              hashes=[line.rsplit(",",1)[-1].strip() for line in z.stdout.splitlines() if line and not line.startswith("#") and "," in line]
+              return {
+                "exit":z.returncode,
+                "frames":len(hashes),
+                "decoded_seconds":round(len(hashes)/2,1),
+                "unique_frames":len(set(hashes)),
+                "repeat_ratio":round(1-(len(set(hashes))/len(hashes)),4) if hashes else None,
+                "stderr_tail":z.stderr[-2000:]
+              }
+            except Exception as e:
+              return {"error":type(e).__name__+": "+str(e)}
+          out=[]
+          for t in targets:
+            row=dict(t)
+            row["probe1"]=probe(t["url"])
+            time.sleep(5)
+            row["probe2"]=probe(t["url"])
+            if row["probe1"].get("status")==200 and row["probe2"].get("status")==200 and row["probe1"].get("is_hls") and row["probe2"].get("is_hls"):
+              row["media_info"]=media_info(t["url"])
+              row["burn_in_60s"]=ff(t["url"],60,95)
+              time.sleep(3)
+              row["final_10s"]=ff(t["url"],10,35)
+            out.append(row)
+            print(json.dumps(row,indent=2))
+          open("usa-east-successor-qa.json","w").write(json.dumps(out,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: usa-east-successor-qa
+          path: usa-east-successor-qa.json
+          retention-days: 3
