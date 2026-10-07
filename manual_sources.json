@@ -112,7 +112,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "FXMovieChannel.us",
@@ -125,7 +127,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "FoxSports2.us",
@@ -138,7 +142,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "HGTV.us",
@@ -151,7 +157,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "InvestigationDiscovery.us",
@@ -164,7 +172,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "MLBNetwork.us",
@@ -177,7 +187,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "NBCSportsPhiladelphia.us",
@@ -190,7 +202,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "OWN.us",
@@ -203,7 +217,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "Reelz.us",
@@ -216,7 +232,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "TLC.us",
@@ -229,7 +247,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "TravelChannel.us",
@@ -242,7 +262,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "FX.us",
@@ -255,7 +277,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "FXX.us",
@@ -268,7 +292,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "IFC.us",
@@ -281,7 +307,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "Showtime.us",
@@ -294,7 +322,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "TVLand.us",
@@ -307,7 +337,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
       "tvg_id": "WeatherChannel.us",
@@ -320,7 +352,9 @@
       "philly": false,
       "headers": {
         "Referer": "https://tvnow.st/"
-      }
+      },
+      "local_verified_override": true,
+      "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     }
   ]
 }
