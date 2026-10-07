@@ -1,0 +1,170 @@
+name: Watchott DLHD Direct Variant Test
+on:
+  push:
+    branches: [research-identity-validation]
+    paths: [".github/workflows/watchott-dlhd-direct-variants.yml"]
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Start pinned resolver
+        shell: bash
+        run: |
+          set -e
+          rm -rf /tmp/daddylive-resolver
+          git clone --quiet https://github.com/sharoon7171/daddylive-stream-resolver.git /tmp/daddylive-resolver
+          cd /tmp/daddylive-resolver
+          git checkout --quiet 5064460e16ca78f191473753b5696dea54ea134a
+          npm ci --silent
+          nohup npm start >/tmp/daddylive-resolver.log 2>&1 &
+          for i in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          tail -100 /tmp/daddylive-resolver.log
+          exit 1
+      - name: Resolve every direct player variant
+        shell: python
+        run: |
+          import urllib.request, urllib.error, urllib.parse, json, time, re, hashlib, concurrent.futures
+
+          base="http://127.0.0.1:3000"
+          servers=["stream","cast","watch","plus","casting","player"]
+          channels=[
+            ("HGTV.us","HGTV",382),
+            ("InvestigationDiscovery.us","Investigation Discovery",324),
+            ("FoxSports2.us","Fox Sports 2 USA",758),
+            ("TVLand.us","TV Land",342),
+            ("Showtime.us","Showtime USA",333),
+            ("StarzComedy.us","Starz Comedy",971),
+            ("IFC.us","IFC TV USA",656),
+          ]
+
+          def vlc_headers(cmd):
+            h={}
+            m=re.search(r":http-user-agent='([^']+)'",cmd or "")
+            if m: h["User-Agent"]=m.group(1)
+            m=re.search(r":http-referrer='([^']+)'",cmd or "")
+            if m: h["Referer"]=m.group(1)
+            return h
+
+          def get(url,headers=None,limit=131072,timeout=15):
+            q=urllib.request.Request(url,headers=headers or {"User-Agent":"Mozilla/5.0"})
+            with urllib.request.urlopen(q,timeout=timeout) as r:
+              b=r.read(limit)
+              return r.status,r.geturl(),r.headers.get("Content-Type") or "",b
+
+          def classify(b,ct=""):
+            if b.startswith(b"\x89PNG\r\n\x1a\n"): return "png"
+            if len(b)>=12 and b[:4]==b"RIFF" and b[8:12]==b"WEBP": return "webp"
+            if b.startswith(b"GIF8"): return "gif"
+            if b.startswith(b"\xff\xd8\xff"): return "jpeg"
+            if len(b)>188 and b[0]==0x47 and b[188]==0x47: return "mpeg-ts"
+            if len(b)>=12 and b[4:8]==b"ftyp": return "isobmff"
+            low=ct.lower()
+            if "image/" in low: return "image-content-type"
+            return "unknown"
+
+          def first_uri(text):
+            for line in text.splitlines():
+              line=line.strip()
+              if line and not line.startswith("#"): return line
+            return None
+
+          def inspect_hls(url,headers):
+            out={}
+            try:
+              st,final,ct,b=get(url,headers,131072,15)
+              out["playlist_status"]=st; out["playlist_url"]=final; out["playlist_content_type"]=ct
+              out["playlist_sha256"]=hashlib.sha256(b).hexdigest()
+              txt=b.decode("utf-8","replace")
+              out["is_hls"]=txt.lstrip().startswith("#EXTM3U")
+              if not out["is_hls"]:
+                out["payload_kind"]=classify(b,ct)
+                return out
+              uri=first_uri(txt)
+              if not uri: return out
+              child=urllib.parse.urljoin(final,uri)
+              # Follow one master-playlist level.
+              st2,final2,ct2,b2=get(child,headers,131072,15)
+              txt2=b2.decode("utf-8","replace")
+              if txt2.lstrip().startswith("#EXTM3U"):
+                out["variant_status"]=st2; out["variant_url"]=final2
+                uri2=first_uri(txt2)
+                if not uri2: return out
+                child=urllib.parse.urljoin(final2,uri2)
+                st3,final3,ct3,b3=get(child,headers,131072,15)
+                out["segment_status"]=st3; out["segment_url_host"]=urllib.parse.urlparse(final3).hostname
+                out["segment_content_type"]=ct3; out["segment_kind"]=classify(b3,ct3)
+                out["segment_bytes_sampled"]=len(b3)
+                out["segment_magic"]=b3[:16].hex()
+              else:
+                out["segment_status"]=st2; out["segment_url_host"]=urllib.parse.urlparse(final2).hostname
+                out["segment_content_type"]=ct2; out["segment_kind"]=classify(b2,ct2)
+                out["segment_bytes_sampled"]=len(b2)
+                out["segment_magic"]=b2[:16].hex()
+            except Exception as e:
+              out["inspect_error"]=type(e).__name__+": "+str(e)[:300]
+            return out
+
+          def run_one(item):
+            tvg,name,cid,server=item
+            row={"tvg_id":tvg,"name":name,"channel_id":cid,"server":server}
+            started=time.monotonic()
+            try:
+              q=urllib.parse.urlencode({"channel":cid,"server":server})
+              st,final,ct,b=get(base+"/api/resolve?"+q,{"User-Agent":"Mozilla/5.0","Accept":"application/json"},1000000,25)
+              payload=json.loads(b.decode("utf-8"))
+              direct=str(payload.get("direct") or "")
+              headers=vlc_headers(str(payload.get("vlc") or ""))
+              row.update({
+                "resolve_status":st,
+                "direct_host":urllib.parse.urlparse(direct).hostname if direct else None,
+                "is_hls":payload.get("isHls"),
+                "expires_at":payload.get("expiresAt"),
+                "has_referer":bool(headers.get("Referer")),
+                "has_user_agent":bool(headers.get("User-Agent")),
+              })
+              if direct.startswith(("http://","https://")):
+                row["media"]=inspect_hls(direct,headers)
+            except urllib.error.HTTPError as e:
+              row["resolve_status"]=e.code; row["error"]="HTTP "+str(e.code)
+            except Exception as e:
+              row["error"]=type(e).__name__+": "+str(e)[:300]
+            row["elapsed_seconds"]=round(time.monotonic()-started,2)
+            return row
+
+          work=[(tvg,name,cid,s) for tvg,name,cid in channels for s in servers]
+          rows=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=6) as ex:
+            for row in ex.map(run_one,work):
+              rows.append(row)
+              print(json.dumps(row,indent=2))
+          summary={}
+          for s in servers:
+            vals=[r for r in rows if r["server"]==s]
+            summary[s]={
+              "resolved":sum(1 for r in vals if r.get("resolve_status")==200),
+              "mpeg_ts":sum(1 for r in vals if (r.get("media") or {}).get("segment_kind")=="mpeg-ts"),
+              "isobmff":sum(1 for r in vals if (r.get("media") or {}).get("segment_kind")=="isobmff"),
+              "png":sum(1 for r in vals if (r.get("media") or {}).get("segment_kind")=="png"),
+              "webp":sum(1 for r in vals if (r.get("media") or {}).get("segment_kind")=="webp"),
+              "other":sum(1 for r in vals if r.get("resolve_status")==200 and (r.get("media") or {}).get("segment_kind") not in {"mpeg-ts","isobmff","png","webp"}),
+            }
+          out={"source":"Watchott fresh DLHD IDs + pinned direct resolver","architecture":"direct upstream only; /api/live proxy intentionally not tested","summary":summary,"results":rows}
+          open("watchott-dlhd-direct-variants.json","w").write(json.dumps(out,indent=2))
+          print("SUMMARY",json.dumps(summary,indent=2))
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: watchott-dlhd-direct-variants
+          path: watchott-dlhd-direct-variants.json
+          retention-days: 3
