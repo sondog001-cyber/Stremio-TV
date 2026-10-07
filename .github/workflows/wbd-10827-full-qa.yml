@@ -1,0 +1,60 @@
+name: 108.27 WBD Mirror Full QA
+on:
+  push:
+    branches: [research-identity-validation]
+    paths: [".github/workflows/wbd-10827-full-qa.yml"]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Full transport QA
+        shell: python
+        run: |
+          import urllib.request, urllib.error, json, time, subprocess, hashlib
+          targets=[
+            ("DiscoveryChannel.us","Discovery Channel (US)","http://108.27.148.22/Discovery/index.m3u8"),
+            ("TLC.us","TLC","http://108.27.148.22/TLC/index.m3u8"),
+          ]
+          def probe(url):
+            try:
+              q=urllib.request.Request(url,headers={"User-Agent":"Mozilla/5.0","Accept":"*/*"})
+              with urllib.request.urlopen(q,timeout=15) as x:
+                b=x.read(32768)
+                return {"status":x.status,"final_url":x.geturl(),"content_type":x.headers.get("Content-Type"),"bytes":len(b),"sha256":hashlib.sha256(b).hexdigest(),"is_hls":b.lstrip().startswith(b"#EXTM3U"),"sample":b[:500].decode("utf-8","replace")}
+            except urllib.error.HTTPError as e:return {"status":e.code,"error":str(e)}
+            except Exception as e:return {"status":None,"error":type(e).__name__+": "+str(e)[:250]}
+          def media_info(url):
+            cmd=["ffprobe","-v","error","-user_agent","Mozilla/5.0","-show_entries","stream=index,codec_type,codec_name,width,height,r_frame_rate","-of","json",url]
+            try:
+              z=subprocess.run(cmd,capture_output=True,text=True,timeout=30)
+              return {"exit":z.returncode,"json":json.loads(z.stdout or "{}"),"stderr_tail":z.stderr[-1500:]}
+            except Exception as e:return {"error":type(e).__name__+": "+str(e)}
+          def ff(url,seconds,timeout):
+            cmd=["ffmpeg","-hide_banner","-loglevel","info","-user_agent","Mozilla/5.0","-i",url,"-t",str(seconds),"-vf","fps=2,framemd5","-f","framemd5","-"]
+            try:
+              z=subprocess.run(cmd,capture_output=True,text=True,timeout=timeout)
+              hashes=[line.rsplit(",",1)[-1].strip() for line in z.stdout.splitlines() if line and not line.startswith("#") and "," in line]
+              return {"exit":z.returncode,"frames":len(hashes),"decoded_seconds":round(len(hashes)/2,1),"unique_frames":len(set(hashes)),"repeat_ratio":round(1-(len(set(hashes))/len(hashes)),4) if hashes else None,"stderr_tail":z.stderr[-2000:]}
+            except Exception as e:return {"error":type(e).__name__+": "+str(e)}
+          out=[]
+          for tvg,name,url in targets:
+            row={"tvg_id":tvg,"name":name,"source_url":url,"identity_status":"public source labels Discovery as US; TLC exact US identity still requires confirmation"}
+            row["probe1"]=probe(url); time.sleep(5); row["probe2"]=probe(url)
+            if row["probe1"].get("status")==200 and row["probe2"].get("status")==200 and row["probe1"].get("is_hls") and row["probe2"].get("is_hls"):
+              row["media_info"]=media_info(url)
+              row["burn_in_60s"]=ff(url,60,95)
+              time.sleep(3)
+              row["final_10s"]=ff(url,10,35)
+            out.append(row); print(json.dumps(row,indent=2))
+          open("wbd-10827-full-qa.json","w").write(json.dumps(out,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wbd-10827-full-qa
+          path: wbd-10827-full-qa.json
+          retention-days: 3
