@@ -1,0 +1,85 @@
+name: HGTV Direct Play Differential
+on:
+  push:
+    branches: [research-identity-validation]
+    paths: [".github/workflows/hgtv-directplay-differential.yml"]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Compare direct-play variants
+        shell: python
+        run: |
+          import urllib.request, urllib.error, urllib.parse, json, subprocess, hashlib, re, time, gzip, io
+          UAS=[
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+          ]
+          variants=[
+            {"name":"zeko-jxoxk","url":"https://zekonew.newkso.ru/zeko/premium382/mono.m3u8","headers":{"Referer":"https://jxoxkplay.xyz/","Origin":"https://jxoxkplay.xyz","User-Agent":UAS[0]}},
+            {"name":"zeko-forcedtoplay","url":"https://zekonew.newkso.ru/zeko/premium382/mono.m3u8","headers":{"Referer":"https://forcedtoplay.xyz/","Origin":"https://forcedtoplay.xyz","User-Agent":UAS[1]}},
+            {"name":"xyz-jx","url":"https://xyzdddd.mizhls.ru/lb/premium382/index.m3u8","headers":{"Referer":"https://ilovetoplay.xyz/","Origin":"https://ilovetoplay.xyz","User-Agent":UAS[0]}},
+            {"name":"zeko-noheaders","url":"https://zekonew.newkso.ru/zeko/premium382/mono.m3u8","headers":{"User-Agent":UAS[0]}}
+          ]
+          def req(url,headers,limit=131072):
+            try:
+              q=urllib.request.Request(url,headers=headers)
+              with urllib.request.urlopen(q,timeout=15) as r:
+                b=r.read(limit)
+                return {"ok":True,"status":r.status,"url":r.geturl(),"ct":r.headers.get("Content-Type"),"ce":r.headers.get("Content-Encoding"),"body":b}
+            except urllib.error.HTTPError as e:
+              return {"ok":False,"status":e.code,"error":str(e)}
+            except Exception as e:
+              return {"ok":False,"status":None,"error":type(e).__name__+": "+str(e)}
+          def magic(b):
+            if b.startswith(b"\x89PNG\r\n\x1a\n"): return "png"
+            if b.startswith(b"RIFF") and b[8:12]==b"WEBP": return "webp"
+            if b.startswith(b"\x47"): return "mpegts-sync"
+            if b.startswith(b"\x1f\x8b"): return "gzip"
+            return b[:16].hex()
+          def first_media(text,base):
+            for line in text.splitlines():
+              s=line.strip()
+              if s and not s.startswith("#"):
+                return urllib.parse.urljoin(base,s)
+          def ffprobe(url,h):
+            ua=h.get("User-Agent","")
+            hdr="".join(f"{k}: {v}\r\n" for k,v in h.items() if k.lower()!="user-agent")
+            cmd=["ffprobe","-v","error","-user_agent",ua,"-headers",hdr,"-show_entries","stream=codec_type,codec_name,width,height","-of","json",url]
+            try:
+              z=subprocess.run(cmd,capture_output=True,text=True,timeout=35)
+              return {"exit":z.returncode,"stdout":z.stdout[:3000],"stderr":z.stderr[-1500:]}
+            except Exception as e:return {"error":type(e).__name__+": "+str(e)}
+          out=[]
+          for v in variants:
+            row={"name":v["name"],"url":v["url"]}
+            p=req(v["url"],v["headers"])
+            row["playlist"]={k:(val if k!="body" else None) for k,val in p.items()}
+            if p.get("ok"):
+              b=p["body"]; row["playlist"]["magic"]=magic(b); row["playlist"]["sha256"]=hashlib.sha256(b).hexdigest()
+              text=b.decode("utf-8","replace")
+              row["playlist"]["is_hls"]=text.lstrip().startswith("#EXTM3U")
+              seg=first_media(text,p.get("url",v["url"]))
+              row["first_media_url"]=seg
+              if seg:
+                s=req(seg,v["headers"],262144)
+                row["segment"]={k:(val if k!="body" else None) for k,val in s.items()}
+                if s.get("ok"):
+                  sb=s["body"]; row["segment"]["magic"]=magic(sb); row["segment"]["bytes"]=len(sb); row["segment"]["sha256"]=hashlib.sha256(sb).hexdigest()
+                  if magic(sb)=="png":
+                    row["segment"]["png_has_ts_sync"]=b"\x47" in sb[:65536]
+                    row["segment"]["png_has_gzip"]=b"\x1f\x8b" in sb[:65536]
+              row["ffprobe"]=ffprobe(v["url"],v["headers"])
+            print(json.dumps(row,indent=2)); out.append(row); time.sleep(2)
+          open("hgtv-directplay-differential.json","w").write(json.dumps(out,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hgtv-directplay-differential
+          path: hgtv-directplay-differential.json
+          retention-days: 3
