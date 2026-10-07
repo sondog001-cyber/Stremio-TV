@@ -1,0 +1,53 @@
+name: TVNow Missing Channel Scan
+on:
+  push:
+    branches: [research-identity-validation]
+    paths: [".github/workflows/tvnow-missing-scan.yml"]
+permissions:
+  contents: read
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan TVNow public US catalog
+        shell: python
+        run: |
+          import urllib.request, json, re
+          targets=[
+            "Discovery Channel","FX Movie Channel","Fox Sports 2","HGTV",
+            "Investigation Discovery","MLB Network","NBC Sports Philadelphia",
+            "OWN","Reelz","Smithsonian Channel","TLC","Travel Channel",
+            "FX","FXX","IFC","RFD-TV","Showtime","Starz Comedy",
+            "Starz Encore Spanish","TV Land","The Weather Channel",
+            "Bravo","Magnolia Network"
+          ]
+          def fold(s):
+            return re.sub(r'[^a-z0-9]+','',s.lower())
+          req=urllib.request.Request("https://tvnow.st/api/channels",headers={"User-Agent":"Mozilla/5.0","Accept":"application/json"})
+          with urllib.request.urlopen(req,timeout=20) as r:
+            data=json.load(r)
+          channels=data.get("channels",[])
+          out=[]
+          for t in targets:
+            ft=fold(t)
+            hits=[]
+            for c in channels:
+              name=str(c.get("name") or "")
+              slug=str(c.get("slug") or "")
+              fn=fold(name); fs=fold(slug)
+              if ft==fn or ft==fs or ft in fn or fn in ft or ft in fs or fs in ft:
+                hits.append({
+                  "target":t,"name":name,"slug":slug,
+                  "category":c.get("category"),"playback":c.get("playback")
+                })
+            if hits:
+              out.extend(hits)
+          print(json.dumps({"count":len(channels),"matches":out},indent=2))
+          open("tvnow-missing-scan.json","w").write(json.dumps({"count":len(channels),"matches":out},indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tvnow-missing-scan
+          path: tvnow-missing-scan.json
+          retention-days: 3
