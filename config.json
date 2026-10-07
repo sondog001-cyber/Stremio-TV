@@ -1006,7 +1006,13 @@
       }
     },
     "established_final_probe_retries": 2,
-    "established_final_probe_retry_delay_seconds": 3
+    "established_final_probe_retry_delay_seconds": 3,
+    "family_pacing": {
+      "tvnow": {
+        "enabled": true,
+        "delay_seconds": 8
+      }
+    }
   },
   "discovery": {
     "enabled": true,
