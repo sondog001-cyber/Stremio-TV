@@ -1,0 +1,64 @@
+name: HGTV Direct Play Fast Differential
+on:
+  push:
+    branches: [research-identity-validation]
+    paths: [".github/workflows/hgtv-directplay-fast.yml"]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe current HGTV variants
+        shell: python
+        run: |
+          import urllib.request, urllib.error, urllib.parse, json, hashlib, subprocess, shutil, time
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36"
+          variants=[
+            ("zeko-jxoxk","https://zekonew.newkso.ru/zeko/premium382/mono.m3u8",{"Referer":"https://jxoxkplay.xyz/","Origin":"https://jxoxkplay.xyz","User-Agent":UA}),
+            ("zeko-forced","https://zekonew.newkso.ru/zeko/premium382/mono.m3u8",{"Referer":"https://forcedtoplay.xyz/","Origin":"https://forcedtoplay.xyz","User-Agent":UA}),
+            ("xyz-ilove","https://xyzdddd.mizhls.ru/lb/premium382/index.m3u8",{"Referer":"https://ilovetoplay.xyz/","Origin":"https://ilovetoplay.xyz","User-Agent":UA}),
+            ("zeko-none","https://zekonew.newkso.ru/zeko/premium382/mono.m3u8",{"User-Agent":UA})
+          ]
+          def get(url,h,limit):
+            try:
+              q=urllib.request.Request(url,headers=h)
+              with urllib.request.urlopen(q,timeout=12) as r:
+                return {"ok":True,"status":r.status,"final":r.geturl(),"ct":r.headers.get("Content-Type"),"body":r.read(limit)}
+            except urllib.error.HTTPError as e:return {"ok":False,"status":e.code,"error":str(e)}
+            except Exception as e:return {"ok":False,"status":None,"error":type(e).__name__+": "+str(e)}
+          def typ(b):
+            if b.startswith(b"\x89PNG\r\n\x1a\n"): return "png"
+            if b.startswith(b"RIFF") and b[8:12]==b"WEBP": return "webp"
+            if b.startswith(b"\x1f\x8b"): return "gzip"
+            if b and b[0]==0x47: return "mpegts-sync"
+            return "other:"+b[:12].hex()
+          def first_media(txt,base):
+            for ln in txt.splitlines():
+              s=ln.strip()
+              if s and not s.startswith("#"):
+                return urllib.parse.urljoin(base,s)
+          out=[]
+          for name,url,h in variants:
+            row={"name":name,"url":url}
+            p=get(url,h,65536)
+            row["playlist"]={k:v for k,v in p.items() if k!="body"}
+            if p.get("ok"):
+              b=p["body"]; txt=b.decode("utf-8","replace")
+              row["playlist"].update({"type":typ(b),"is_hls":txt.lstrip().startswith("#EXTM3U"),"bytes":len(b),"sha256":hashlib.sha256(b).hexdigest()})
+              m=first_media(txt,p["final"])
+              row["first_media"]=m
+              if m:
+                s=get(m,h,262144)
+                row["segment"]={k:v for k,v in s.items() if k!="body"}
+                if s.get("ok"):
+                  sb=s["body"]; row["segment"].update({"type":typ(sb),"bytes":len(sb),"sha256":hashlib.sha256(sb).hexdigest(),"contains_gzip":b"\x1f\x8b" in sb[:131072],"contains_ts_sync":b"\x47" in sb[:131072]})
+            out.append(row); print(json.dumps(row,indent=2)); time.sleep(1)
+          open("hgtv-directplay-fast.json","w").write(json.dumps(out,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hgtv-directplay-fast
+          path: hgtv-directplay-fast.json
+          retention-days: 3
