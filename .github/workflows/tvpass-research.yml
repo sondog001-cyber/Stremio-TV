@@ -13,11 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build validator
-        run: python assemble_build.py
+        run: python assemble_build.py && cp build.py build_research.py
       - name: Validate TVPass public channel pages
         shell: python
         run: |
-          import json, urllib.request, urllib.error, time, build
+          import json, urllib.request, urllib.error, time, build_research as build
           targets=[
             ("HGTV.us","HGTV","https://tvpass.org/live/HGTVEast/hd"),
             ("Reelz.us","Reelz","https://tvpass.org/live/Reelz/hd"),
@@ -51,7 +51,7 @@ jobs:
       - name: Full QA on directly resolved HLS only
         shell: python
         run: |
-          import json, urllib.request, re, build
+          import json, urllib.request, re, build_research as build
           targets=[
             ("HGTV.us","HGTV","https://tvpass.org/live/HGTVEast/hd"),
             ("Reelz.us","Reelz","https://tvpass.org/live/Reelz/hd"),
