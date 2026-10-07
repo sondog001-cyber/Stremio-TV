@@ -3559,19 +3559,42 @@ def probe_candidate_entries(
             f"{len(forced_keys):,}/{len(cooldown_entries):,} cooldown candidates"
         )
 
+    family_pacing = settings.get("family_pacing") or {}
+
     def run_probe_batch(batch: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]]) -> dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]]:
         batch_results: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_map = {
-                executor.submit(_probe_stream, entry, timeout, verify_segment): key
-                for key, entry in batch.items()
-            }
-            for future in concurrent.futures.as_completed(future_map):
-                key = future_map[future]
-                try:
-                    batch_results[key] = future.result()
-                except Exception as exc:
-                    batch_results[key] = {"status": "failed", "detail": str(exc)[:180]}
+        paced: list[tuple[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any], float]] = []
+        parallel: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]] = {}
+
+        for key, entry in batch.items():
+            family = str(entry.get("family") or "").strip().lower()
+            rule = family_pacing.get(family) if isinstance(family_pacing, dict) else None
+            if isinstance(rule, dict) and bool(rule.get("enabled", True)):
+                delay = max(0.0, float(rule.get("delay_seconds", 0)))
+                paced.append((key, entry, delay))
+            else:
+                parallel[key] = entry
+
+        if parallel:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                future_map = {
+                    executor.submit(_probe_stream, entry, timeout, verify_segment): key
+                    for key, entry in parallel.items()
+                }
+                for future in concurrent.futures.as_completed(future_map):
+                    key = future_map[future]
+                    try:
+                        batch_results[key] = future.result()
+                    except Exception as exc:
+                        batch_results[key] = {"status": "failed", "detail": str(exc)[:180]}
+
+        for paced_index, (key, entry, delay) in enumerate(paced):
+            if paced_index and delay:
+                time.sleep(delay)
+            try:
+                batch_results[key] = _probe_stream(entry, timeout, verify_segment)
+            except Exception as exc:
+                batch_results[key] = {"status": "failed", "detail": str(exc)[:180]}
         return batch_results
 
     def transient_established_probe_failure(health: dict[str, Any]) -> bool:
