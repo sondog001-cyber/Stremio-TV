@@ -1,0 +1,59 @@
+name: Successor Host QA
+on:
+  push:
+    branches: [research-identity-validation]
+    paths: [".github/workflows/successor-host-qa.yml"]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe MoveOnJoy replacement family
+        shell: python
+        run: |
+          import urllib.request,urllib.error,json,time,subprocess
+          base="http://moj-rep.tv.debridio.com:8080/"
+          paths={
+            "DiscoveryChannel.us":"USA_DISCOVERY/index.m3u8",
+            "InvestigationDiscovery.us":"USA_ID/index.m3u8",
+            "HGTV.us":"USA_HGTV/index.m3u8",
+            "FoxSports2.us":"USA_FS2/index.m3u8",
+            "FX.us":"USA_FX/index.m3u8",
+            "FXX.us":"USA_FXX/index.m3u8",
+            "MLBNetwork.us":"USA_MLB_NETWORK/index.m3u8",
+            "OWN.us":"USA_OWN/index.m3u8",
+            "Reelz.us":"USA_REELZ/index.m3u8",
+            "Showtime.us":"USA_SHOWTIME/index.m3u8",
+            "StarzComedy.us":"USA_STARZ_COMEDY/index.m3u8",
+            "IFC.us":"USA_IFC/index.m3u8"
+          }
+          out=[]
+          for tvg,p in paths.items():
+            url=base+p; row={"tvg_id":tvg,"url":url,"probes":[]}
+            for n in range(2):
+              r={}
+              try:
+                q=urllib.request.Request(url,headers={"User-Agent":"Mozilla/5.0"})
+                with urllib.request.urlopen(q,timeout=10) as x:
+                  b=x.read(16384); r={"status":x.status,"final_url":x.geturl(),"content_type":x.headers.get("Content-Type"),"hls":b.lstrip().startswith(b"#EXTM3U"),"bytes":len(b),"sample":b[:160].decode("utf-8","replace")}
+              except urllib.error.HTTPError as e:r={"status":e.code,"error":str(e)}
+              except Exception as e:r={"status":None,"error":type(e).__name__+": "+str(e)[:180]}
+              row["probes"].append(r)
+              time.sleep(3)
+            if all(x.get("status")==200 and x.get("hls") for x in row["probes"]):
+              cmd=["ffmpeg","-hide_banner","-loglevel","error","-user_agent","Mozilla/5.0","-i",url,"-t","60","-f","null","-"]
+              try:
+                z=subprocess.run(cmd,capture_output=True,text=True,timeout=85)
+                row["burn_in"]={"exit":z.returncode,"stderr":z.stderr[-1200:]}
+              except Exception as e: row["burn_in"]={"error":type(e).__name__+": "+str(e)}
+            out.append(row)
+          open("successor-host-qa.json","w").write(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: successor-host-qa
+          path: successor-host-qa.json
+          retention-days: 3
