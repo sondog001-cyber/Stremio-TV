@@ -1,0 +1,63 @@
+name: A1X Full QA
+on:
+  push:
+    branches: [research-identity-validation]
+    paths: [".github/workflows/a1x-full-qa.yml"]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: A1X resolution and playback QA
+        shell: python
+        run: |
+          import urllib.request, urllib.error, json, time, subprocess, hashlib
+          targets=[
+            ("FoxSports2.us","FS2","https://a1xs.vip/40000022"),
+            ("MLBNetwork.us","MLB Network","https://a1xs.vip/40000030"),
+            ("NBCSportsPhiladelphia.us","NBC Sports Philadelphia","https://a1xs.vip/400051"),
+          ]
+          def probe(url):
+            r={}
+            try:
+              q=urllib.request.Request(url,headers={"User-Agent":"Mozilla/5.0","Accept":"*/*"})
+              with urllib.request.urlopen(q,timeout=15) as x:
+                b=x.read(32768)
+                r={"status":x.status,"final_url":x.geturl(),"content_type":x.headers.get("Content-Type"),"bytes":len(b),"sha256":hashlib.sha256(b).hexdigest(),"is_hls":b.lstrip().startswith(b"#EXTM3U"),"sample":b[:300].decode("utf-8","replace")}
+            except urllib.error.HTTPError as e:r={"status":e.code,"error":str(e)}
+            except Exception as e:r={"status":None,"error":type(e).__name__+": "+str(e)[:250]}
+            return r
+          def ff(url,seconds,timeout):
+            cmd=["ffmpeg","-hide_banner","-loglevel","info","-user_agent","Mozilla/5.0","-i",url,"-t",str(seconds),"-vf","fps=2,framemd5","-f","framemd5","-"]
+            try:
+              z=subprocess.run(cmd,capture_output=True,text=True,timeout=timeout)
+              hashes=[]
+              for line in z.stdout.splitlines():
+                if line and not line.startswith("#") and "," in line:
+                  hashes.append(line.rsplit(",",1)[-1].strip())
+              repeat_ratio=0
+              if hashes:
+                repeat_ratio=1-(len(set(hashes))/len(hashes))
+              return {"exit":z.returncode,"frames":len(hashes),"unique_frames":len(set(hashes)),"repeat_ratio":round(repeat_ratio,4),"stderr_tail":z.stderr[-2000:]}
+            except Exception as e:return {"error":type(e).__name__+": "+str(e)}
+          out=[]
+          for tvg,name,url in targets:
+            row={"tvg_id":tvg,"name":name,"source_url":url}
+            row["probe1"]=probe(url); time.sleep(5); row["probe2"]=probe(url)
+            row["resolved_consistently"]=row["probe1"].get("final_url")==row["probe2"].get("final_url") and row["probe1"].get("status")==200 and row["probe2"].get("status")==200
+            if row["probe1"].get("status")==200 and row["probe2"].get("status")==200:
+              row["burn_in_60s"]=ff(url,60,95)
+              time.sleep(3)
+              row["final_10s"]=ff(url,10,30)
+            out.append(row); print(json.dumps(row,indent=2))
+          open("a1x-full-qa.json","w").write(json.dumps(out,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: a1x-full-qa
+          path: a1x-full-qa.json
+          retention-days: 3
