@@ -592,7 +592,7 @@ def stream_provider_host(stream: dict[str, Any]) -> str:
 def stream_priority(
     stream: dict[str, Any],
     preference_rules: list[dict[str, str]] | None = None,
-) -> tuple[int, int, int, int, int, int, int, int, int, str]:
+) -> tuple[int, int, int, int, int, int, int, int, int, int, str]:
     """Lower tuple is better.
 
     Content identity remains the first guardrail, then cross-build stability
@@ -614,6 +614,9 @@ def stream_priority(
     # More successful builds break ties inside the same class.
     stability_passes_rank = -int(stability.get("passes", 0))
     stability_samples_rank = -int(stability.get("samples", 0))
+    # Prior real decoder successes break stability ties; untested is neutral.
+    decoder_result = str(stability.get("last_decoder_result") or "").lower()
+    decoder_rank = 0 if decoder_result in {"passed", "pass", "ok"} else 2 if decoder_result in {"failed", "fail"} else 1
     preference_rank, _preference_label = _stream_preference_match(stream, preference_rules or [])
 
     source_rank = int(stream.get("priority", 50))
@@ -623,6 +626,7 @@ def stream_priority(
     return (
         content_rank,
         stability_rank,
+        decoder_rank,
         stability_passes_rank,
         stability_samples_rank,
         preference_rank,
