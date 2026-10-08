@@ -3082,6 +3082,8 @@ def apply_stream_stability(
         }
         entry_score["consecutive_failures"] = consecutive_failures
         entry_score["next_probe_at"] = next_probe_at
+        entry_score["last_decoder_result"] = old.get("last_decoder_result")
+        entry_score["decoder_consecutive_failures"] = int(old.get("decoder_consecutive_failures", 0) or 0)
         for linked in linked_by_key[key]:
             linked["stability"] = dict(entry_score)
 
