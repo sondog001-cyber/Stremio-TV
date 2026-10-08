@@ -1995,6 +1995,21 @@ def _validate_primary_playback_stream(
             "primary_playback_qa": survival,
         }
 
+    if stream.get("local_verified_override"):
+        return {
+            "status": "ok",
+            "detail": "Published by local verification override after CI playback failure",
+            "primary_playback_qa": {
+                "local_verified_override": True,
+                "passed": True,
+                "ci_playback_status": result.get("status"),
+                "ci_playback_detail": result.get("detail"),
+                "ci_continuity_failure": result.get("continuity_failure"),
+                "ci_decoder_failure_class": result.get("decoder_failure_class"),
+                "ci_direct_media_survival": survival,
+            },
+        }
+
     failure = result.get("continuity_failure")
     mapped_failure = (
         "primary-playback-repeated-clip"
@@ -2346,6 +2361,23 @@ def apply_primary_playback_feedback_to_stability(
                 continue
 
             previous_classification = str(record.get("classification") or "Unknown")
+            if bool((attempt.get("qa") or {}).get("local_verified_override")):
+                rows.append({
+                    "tvg_id": channel.get("tvg_id"),
+                    "name": channel.get("name"),
+                    "source": attempt.get("source"),
+                    "family": attempt.get("family"),
+                    "provider_host": attempt.get("provider_host"),
+                    "url": attempt.get("url"),
+                    "stability_key": key,
+                    "decoder_status": "local-verified-override",
+                    "decoder_detail": attempt.get("detail"),
+                    "continuity_failure": (attempt.get("qa") or {}).get("ci_continuity_failure"),
+                    "classification_before": previous_classification,
+                    "classification_after": previous_classification,
+                    "history": record.get("history") or [],
+                })
+                continue
             passed = attempt.get("status") == "ok"
             history = [bool(value) for value in (record.get("history") or [])][-history_size:]
             if history:
@@ -4041,8 +4073,18 @@ def probe_candidate_entries(
         entry
         for entry in entries
         if (entry.get("health") or {}).get("status") == "ok"
+        or bool(entry.get("local_verified_override"))
     ]
-    log(f"Passed-only policy: keeping {len(healthy):,}/{len(entries):,} curated candidates")
+    local_verified_kept = sum(
+        1
+        for entry in healthy
+        if entry.get("local_verified_override")
+        and (entry.get("health") or {}).get("status") != "ok"
+    )
+    log(
+        f"Passed-only policy: keeping {len(healthy):,}/{len(entries):,} curated candidates"
+        + (f"; local-verified exceptions={local_verified_kept:,}" if local_verified_kept else "")
+    )
     return healthy, rows, stability_state
 
 
