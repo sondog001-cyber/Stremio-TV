@@ -3622,13 +3622,22 @@ def probe_candidate_entries(
                     except Exception as exc:
                         batch_results[key] = {"status": "failed", "detail": str(exc)[:180]}
 
+        tvnow_consecutive_429 = 0
         for paced_index, (key, entry, delay) in enumerate(paced):
+            family = str(entry.get("family") or "").strip().lower()
             if paced_index and delay:
-                time.sleep(delay)
+                time.sleep(delay + (min(60, tvnow_consecutive_429 * 15) if family == "tvnow" else 0))
             try:
                 batch_results[key] = _probe_stream(entry, timeout, verify_segment)
             except Exception as exc:
                 batch_results[key] = {"status": "failed", "detail": str(exc)[:180]}
+            if family == "tvnow":
+                result = batch_results[key]
+                detail = str(result.get("detail") or "")
+                limited = str(result.get("http_status") or "") == "429" or "HTTP Error 429" in detail or "HTTP 429" in detail
+                tvnow_consecutive_429 = min(4, tvnow_consecutive_429 + 1) if limited else 0
+                result["rate_limited"] = limited
+                result["qa_probe_spacing_seconds"] = delay
         return batch_results
 
     def transient_established_probe_failure(health: dict[str, Any]) -> bool:
@@ -4223,6 +4232,14 @@ def build_host_redundancy_diagnostics(channels: list[dict[str, Any]]) -> dict[st
             "name": channel.get("name"),
             "stream_count": len(streams),
             "provider_hosts": unique_hosts,
+            "provider_families": sorted({str(stream.get("family") or "unknown") for stream in streams}),
+            "primary_family": str((streams[0] if streams else {}).get("family") or "unknown"),
+            "locally_verified_count": sum(bool(stream.get("local_verified_override")) for stream in streams),
+            "normal_qa_stream_count": sum(
+                (stream.get("health") or {}).get("status") == "ok"
+                and not bool(stream.get("local_verified_override"))
+                for stream in streams
+            ),
             "independent_provider_count": len(unique_hosts),
             "fragile_single_provider": len(streams) > 1 and len(unique_hosts) < 2,
             "has_independent_backup": len(unique_hosts) >= 2,
