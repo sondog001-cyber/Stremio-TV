@@ -3626,7 +3626,7 @@ def probe_candidate_entries(
         for paced_index, (key, entry, delay) in enumerate(paced):
             family = str(entry.get("family") or "").strip().lower()
             if paced_index and delay:
-                time.sleep(delay + (min(60, tvnow_consecutive_429 * 15) if family == "tvnow" else 0))
+                time.sleep(delay + (min(15, tvnow_consecutive_429 * 5) if family == "tvnow" else 0))
             try:
                 batch_results[key] = _probe_stream(entry, timeout, verify_segment)
             except Exception as exc:
