@@ -4094,6 +4094,74 @@ def label_channel_streams(channels: list[dict[str, Any]]) -> None:
             stream["display_role"] = "Primary" if index == 0 else f"Backup {index}"
 
 
+def build_tvnow_qa_diagnostics(
+    health_rows: list[dict[str, Any]],
+    source_ordering_rows: list[dict[str, Any]],
+    primary_playback_qa: dict[str, Any],
+) -> dict[str, Any]:
+    """Expose CI health, real playback and local overrides independently."""
+    roles = {
+        str(stream.get("url") or ""): (str(channel.get("tvg_id") or ""), stream.get("role"))
+        for channel in source_ordering_rows
+        for stream in channel.get("streams", [])
+        if str(stream.get("family") or "").lower() == "tvnow"
+    }
+    attempts = {
+        str(channel.get("tvg_id") or ""): attempt
+        for channel in primary_playback_qa.get("channels", [])
+        for attempt in channel.get("attempts", [])
+        if str(attempt.get("family") or "").lower() == "tvnow"
+    }
+    channels = []
+    for row in health_rows:
+        if str(row.get("family") or "").lower() != "tvnow":
+            continue
+        health = row.get("health") or {}
+        detail = str(health.get("detail") or "")
+        http_status = health.get("http_status")
+        rate_limited = http_status == 429 or "HTTP 429" in detail or "429 Too Many Requests" in detail
+        attempt = attempts.get(str(row.get("tvg_id") or ""), {})
+        qa = attempt.get("qa") or {}
+        locally_overridden = bool(qa.get("local_verified_override"))
+        playback_status = (
+            "locally-verified-override" if locally_overridden
+            else "normal-qa-passed" if attempt.get("status") == "ok"
+            else "not-selected" if not attempt else "normal-qa-failed"
+        )
+        channels.append({
+            "tvg_id": row.get("tvg_id"),
+            "name": row.get("name"),
+            "url": row.get("url"),
+            "role": roles.get(str(row.get("url") or ""), ("", None))[1],
+            "published": str(row.get("url") or "") in roles,
+            "local_verified_tag": bool(row.get("local_verified_override")),
+            "normal_health_status": health.get("status"),
+            "health_detail": detail,
+            "rate_limited": rate_limited,
+            "http_status": http_status,
+            "playback_status": playback_status,
+            "normal_playback_passed": attempt.get("status") == "ok" and not locally_overridden,
+            "override_used_for_playback": locally_overridden,
+            "stability": (row.get("stability") or {}).get("classification"),
+            "stability_passes": (row.get("stability") or {}).get("passes"),
+            "stability_samples": (row.get("stability") or {}).get("samples"),
+        })
+    counts = Counter(item["playback_status"] for item in channels)
+    return {
+        "version": 1,
+        "source_family": "tvnow",
+        "note": "Local override publication is not a normal CI QA pass; HTTP 429 is an upstream rate limit.",
+        "summary": {
+            "candidates": len(channels),
+            "published": sum(bool(x["published"]) for x in channels),
+            "normal_health_passed": sum(x["normal_health_status"] == "ok" for x in channels),
+            "rate_limited": sum(x["rate_limited"] for x in channels),
+            "playback_statuses": dict(counts),
+        },
+        "channels": channels,
+    }
+
+
 def build_source_ordering_diagnostics(
     channels: list[dict[str, Any]],
     config: dict[str, Any],
