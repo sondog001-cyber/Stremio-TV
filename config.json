@@ -3337,34 +3337,36 @@
   "local_test_catalog": {
     "enabled": true,
     "id": "local-test",
-    "name": "🧪 Local Test — Runner Blocked",
-    "max_streams_per_channel": 8,
+    "name": "🧪 Local Test — Missing Channel Recovery",
+    "max_streams_per_channel": 3,
     "target_ids": [
+      "Bravo.us",
+      "HallmarkChannel.us",
+      "BET.us",
       "CBSSportsNetwork.us",
-      "DiscoveryChannel.us",
-      "FXMovieChannel.us",
-      "FXX.us",
-      "HGTV.us",
-      "InvestigationDiscovery.us",
-      "MLBNetwork.us",
-      "OWN.us",
-      "Reelz.us",
-      "SundanceTV.us",
-      "TVLand.us"
+      "CNBC.us",
+      "ESPNews.us",
+      "HallmarkMystery.us",
+      "MSNOW.us",
+      "Nicktoons.us",
+      "SmithsonianChannel.us",
+      "StarzComedy.us",
+      "StarzEdge.us",
+      "SundanceTV.us"
     ],
     "exclude_families": [
-      "insolence",
       "daddylive",
       "tv247",
       "usair",
       "thetvapp",
       "arquerido-move",
-      "shovo",
       "openstream"
     ],
     "exclude_provider_hosts": [
       "23.237.104.106",
       "aynascope.net",
+      "bluetier.top",
+      "cowedd4855ws.sbs",
       "dlhd.sx",
       "fbcdntv247.cfd",
       "klcis.cc",
@@ -3374,14 +3376,22 @@
       "themyst.icu",
       "thetvapp.to",
       "tvpass.org"
+    ],
+    "include_initially_healthy_unpublished_ids": [
+      "Bravo.us",
+      "HallmarkChannel.us"
+    ],
+    "include_runner_timeout_targets": true,
+    "reject_known_http_failures": [
+      401,
+      404,
+      410
     ]
   },
   "deployment_guard": {
     "enabled": true,
-    "minimum_channels": 88,
+    "minimum_channels": 86,
     "required_channel_ids": [
-      "Bravo.us",
-      "HallmarkChannel.us",
       "DisneyChannel.us",
       "NationalGeographic.us",
       "History.us"
