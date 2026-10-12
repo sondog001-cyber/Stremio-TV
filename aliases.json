@@ -7,6 +7,7 @@
     "FX.us@EastHD": "FX.HD.us2",
     "VICETV.us": "Vice.HD.us2",
     "DisneyChannel.us@East": "Disney.Channel.HD.us2",
+    "DisneyChannel.us": "Disney.Channel.HD.us2",
     "DisneyXD.us@East": "Disney.XD.HD.us2",
     "Nickelodeon.us@East": "Nickelodeon.HD.us2",
     "Nicktoons.us@East": "Nicktoons.us2",
@@ -14,6 +15,9 @@
     "StarzEncoreSpanish.us@East": "Starz.Encore.Español.SD.us2",
     "StarzKidsFamily.us@East": "Starz.Kids.HD.us2",
     "NationalGeographic.us@East": "National.Geographic.HD.us2",
+    "NationalGeographic.us": "National.Geographic.HD.us2",
+    "History.us": "History.HD.us2",
+    "History.us@East": "History.HD.us2",
     "MTV.us@East": "MTV.-.Music.Television.HD.us2",
     "TurnerClassicMovies.us": "Turner.Classic.Movies.HD.us2"
   },
