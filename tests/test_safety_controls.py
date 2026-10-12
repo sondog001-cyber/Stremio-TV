@@ -99,6 +99,31 @@ class SafetyControlsTests(unittest.TestCase):
             },
         )
 
+    def test_user_failed_current_localtest_batch_retired_exactly(self):
+        import json
+        from pathlib import Path
+        config = json.loads((Path(__file__).resolve().parents[1] / "config.json").read_text())
+        failed = [
+            "http://206.212.244.63/114/index.m3u8",
+            "http://httpstreamer01.dc1.airlinktt.co/hlsnmia02/live/smil:BET.smil/playlist.m3u8",
+            "http://74.48.44.156:1234/stream/asd/546/master.m3u8",
+            "http://206.212.244.63/151/index.m3u8",
+            "http://206.212.244.63/41/index.m3u8",
+            "http://206.212.244.63/86/index.m3u8",
+            "http://168.228.44.241:9998/play/a0e0/index.m3u8",
+        ]
+        self.assertTrue(set(failed).issubset(set(config["safety_controls"]["disabled_urls"])))
+        entries = [
+            {"tvg_id": "BET.us", "url": url, "headers": {}} for url in failed
+        ] + [
+            {"tvg_id": "BET.us", "url": "https://fresh.example/bet.m3u8", "headers": {}},
+            {"tvg_id": "Test.us", "url": "http://206.212.244.63/other.m3u8", "headers": {}},
+        ]
+        kept, rejected = build.apply_safety_controls(entries, config)
+        self.assertEqual({e["url"] for e in rejected}, set(failed))
+        self.assertTrue(all(e["reason"] == "url-kill-switch" for e in rejected))
+        self.assertEqual(len(kept), 2)
+
     def test_channel_kill_switch_removes_every_candidate(self):
         entries = [
             {"tvg_id": "FXX.us", "url": "https://a.example/fxx.m3u8", "headers": {}},
