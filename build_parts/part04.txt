@@ -4945,12 +4945,22 @@ def build_local_test_channels(
             include_runner_timeout and explicitly_pinned
             and bool(re.search(r"(?:timed out|timeout)", failure_detail, re.I))
         )
-        if not (is_initially_healthy_unpublished or local_access_signal or runner_timeout_signal):
-            continue
-        reject = _coverage_local_test_rejection(entry, excluded_http_codes, dt.datetime.now(UTC))
+        # Report why pinned missing-channel candidates are excluded, even
+        # if the earlier health gate would also have skipped them (e.g. 404).
+        reject = (
+            _coverage_local_test_rejection(entry, excluded_http_codes, dt.datetime.now(UTC))
+            if explicitly_pinned else ""
+        )
         if reject:
             rejected_source_reasons[reject] += 1
             continue
+        if not (is_initially_healthy_unpublished or local_access_signal or runner_timeout_signal):
+            continue
+        if not explicitly_pinned:
+            reject = _coverage_local_test_rejection(entry, excluded_http_codes, dt.datetime.now(UTC))
+            if reject:
+                rejected_source_reasons[reject] += 1
+                continue
         if is_initially_healthy_unpublished:
             initially_healthy_unpublished_count += 1
         item = dict(entry)
