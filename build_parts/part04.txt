@@ -1808,7 +1808,7 @@ def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, 
     if headers:
         base_command.extend([
             "-headers",
-            "".join(f"{key}: {value}\\r\\n" for key, value in headers.items()),
+            "".join(f"{key}: {value}\r\n" for key, value in headers.items()),
         ])
     base_command.extend([
         "-i",
@@ -4064,6 +4064,7 @@ def probe_candidate_entries(
             "provider_host": stream_provider_host(entry),
             "stability_key": _stream_stability_key(entry),
             "health": entry.get("health"),
+            "local_verified_override": bool(entry.get("local_verified_override")),
             "stability": entry.get("stability"),
             "discovery_issue": entry.get("discovery_issue"),
             "content_note": entry.get("content_note"),
@@ -4153,6 +4154,13 @@ def build_tvnow_qa_diagnostics(
             "playback_status": playback_status,
             "normal_playback_passed": attempt.get("status") == "ok" and not locally_overridden,
             "override_used_for_playback": locally_overridden,
+            "ci_decoder_failure_class": qa.get("ci_decoder_failure_class") if locally_overridden else attempt.get("decoder_failure_class"),
+            "ci_decoder_detail": qa.get("ci_playback_detail") if locally_overridden else attempt.get("detail"),
+            "ci_decoded_frames": max(
+                [int(a.get("decoded_frames") or 0) for a in
+                 ((qa.get("ci_direct_media_survival") or {}).get("attempts") or [])],
+                default=0,
+            ) if locally_overridden else None,
             "stability": (row.get("stability") or {}).get("classification"),
             "stability_passes": (row.get("stability") or {}).get("passes"),
             "stability_samples": (row.get("stability") or {}).get("samples"),
