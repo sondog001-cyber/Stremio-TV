@@ -176,6 +176,9 @@ Build output includes `status.json` and structured reports under `site/diagnosti
 | `source-family-scoreboard.json` | Candidate, passing, selected, and recovery yield by source |
 | `source-ordering.json` | Primary/backup selection details |
 | `host-redundancy.json` | Independent-provider and fragile-mirror coverage |
+| `resilience-hunt-queue.json` | Priority missing-channel and independent-backup source hunt targets |
+| `five-build-reliability.json` | Five-build decoder and local-override reliability history |
+| `v08-reliability-watchdog.json` | Read-only coverage, backup, override and host concentration alerts |
 | `quality-measurements.json` | Declared and measured stream quality |
 | `philly-recovery.json` | Philadelphia runner/client verification state |
 | `targeted-source-scans.json` | Targeted public source-scan results |
@@ -184,6 +187,10 @@ Build output includes `status.json` and structured reports under `site/diagnosti
 | `epg-unmatched.json` | Remaining guide mismatches |
 
 Each generated response includes the addon version, UTC build timestamp, build ID, and source revision so a deployed result can be traced to its exact build.
+
+## Reliability roadmap
+
+The [v0.8.0 reliability milestone](research/milestone-v0.8.0.md) prioritizes multi-build playback quality, independent upstream backups, and regression monitoring. The watchdog runs during normal builds and writes a GitHub Actions job summary; it does not change stream selection, block deployment, or count local-verified overrides as normal decoder success.
 
 ## Security and legal notes
 
