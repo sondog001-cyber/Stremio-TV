@@ -945,7 +945,8 @@
       ]
     },
     "primary_deprioritized_source_contains": [
-      "SourPatchKid"
+      "SourPatchKid",
+      "DaddyLive Player 6 direct HLS"
     ],
     "primary_deprioritized_url_contains": [
       "/SourPatchKid/"
