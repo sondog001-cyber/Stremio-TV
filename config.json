@@ -469,6 +469,10 @@
       "thetvapp",
       "tvnow"
     ],
+    "published_tvg_id_pins": {
+      "DisneyChannel.us": "DisneyChannel.us",
+      "NationalGeographic.us": "NationalGeographic.us"
+    },
     "canonical_id_aliases": {
       "MSNBC.us": "MSNOW.us",
       "AandE.us": "AE.us",
