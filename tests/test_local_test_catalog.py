@@ -241,13 +241,15 @@ class LocalTestCatalogTests(unittest.TestCase):
             candidate("CNBC.us", "https://user:secret@provider.example/cnbc.m3u8"),
             candidate("CNBC.us", "https://example.test/api/proxy/cnbc.m3u8"),
             candidate("CNBC.us", "https://public.example/cnbc.m3u8?username=x&password=y"),
+            candidate("CNBC.us", "http://xtream.example:25461/userpass/secret/48152"),
+            candidate("CNBC.us", "https://gateway.workers.dev/?id=CNBC"),
             candidate("CNBC.us", "https://public.example/cnbc.m3u8"),
         ]
         channels, report = build.build_local_test_channels(entries, [], self.config)
         self.assertEqual(len(channels), 1)
         self.assertEqual([s["url"] for s in channels[0]["streams"]],
                          ["https://public.example/cnbc.m3u8"])
-        self.assertEqual(sum(report["summary"]["rejected_source_reasons"].values()), 3)
+        self.assertEqual(sum(report["summary"]["rejected_source_reasons"].values()), 5)
 
     def test_local_test_stream_preserves_request_headers(self):
         stream = candidate(
