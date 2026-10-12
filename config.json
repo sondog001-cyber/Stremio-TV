@@ -3378,6 +3378,13 @@
   },
   "deployment_guard": {
     "enabled": true,
-    "minimum_channels": 65
+    "minimum_channels": 88,
+    "required_channel_ids": [
+      "Bravo.us",
+      "HallmarkChannel.us",
+      "DisneyChannel.us",
+      "NationalGeographic.us",
+      "History.us"
+    ]
   }
 }
