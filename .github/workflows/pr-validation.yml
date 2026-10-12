@@ -13,6 +13,7 @@ on:
       - "manual_sources.json"
       - "research-sources.json"
       - "requirements.txt"
+      - "reliability_watchdog.py"
       - ".github/workflows/pr-validation.yml"
 
 permissions:
