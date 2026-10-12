@@ -4231,6 +4231,196 @@ def build_source_ordering_diagnostics(
     return rows
 
 
+def _load_previous_five_build_reliability() -> dict[str, Any]:
+    """Read only the previous published scorecard; diagnostics cannot block builds."""
+    base = derive_public_base()
+    if not base:
+        return {}
+    url = base.rstrip("/") + "/diagnostics/five-build-reliability.json"
+    try:
+        req = urllib.request.Request(
+            url + "?build=" + urllib.parse.quote(os.getenv("GITHUB_RUN_ID") or str(int(time.time()))),
+            headers={"User-Agent": USER_AGENT, "Accept": "application/json", "Cache-Control": "no-cache"},
+        )
+        with urllib.request.urlopen(req, timeout=6) as response:
+            data = json.loads(response.read(500_000).decode("utf-8"))
+        if isinstance(data, dict) and isinstance(data.get("history"), list):
+            return data
+    except urllib.error.HTTPError as exc:
+        if exc.code != 404:
+            log(f"WARNING: five-build scorecard previous state: HTTP {exc.code}")
+    except Exception as exc:
+        log(f"WARNING: five-build scorecard previous state: {str(exc)[:150]}")
+    return {}
+
+
+def build_five_build_reliability(
+    channels: list[dict[str, Any]],
+    channel_changes: dict[str, Any],
+    playback_qa: dict[str, Any],
+    redundancy: dict[str, Any],
+    tvnow_qa: dict[str, Any],
+    missing_diagnostics: dict[str, Any],
+    build_info: dict[str, Any],
+    *,
+    previous: dict[str, Any] | None = None,
+    enabled: bool = True,
+) -> dict[str, Any]:
+    """Five-build true-decoder scorecard; overrides never masquerade as CI passes."""
+    prior = previous if previous is not None else (_load_previous_five_build_reliability() if enabled else {})
+    previous_history = prior.get("history") if isinstance(prior, dict) else []
+    previous_history = previous_history if isinstance(previous_history, list) else []
+
+    normal_decoder = 0
+    overrides = 0
+    failed_decoder = 0
+    per_channel_decoder: dict[str, str] = {}
+    for ch in playback_qa.get("channels") or []:
+        ch_id = str(ch.get("tvg_id") or "")
+        attempt_statuses = []
+        for attempt in ch.get("attempts") or []:
+            was_overridden = bool((attempt.get("qa") or {}).get("local_verified_override"))
+            if was_overridden:
+                overrides += 1
+                attempt_statuses.append("local-override")
+            elif attempt.get("status") == "ok":
+                normal_decoder += 1
+                attempt_statuses.append("normal-pass")
+            else:
+                failed_decoder += 1
+                attempt_statuses.append("failed")
+        per_channel_decoder[ch_id] = (
+            "normal-pass" if "normal-pass" in attempt_statuses
+            else "local-override" if "local-override" in attempt_statuses
+            else "failed" if attempt_statuses else "not-tested"
+        )
+
+    present_ids = sorted(str(x.get("tvg_id") or "") for x in channels if x.get("tvg_id"))
+    lost_ids = sorted(str(x.get("channel_id") or "") for x in channel_changes.get("lost_this_build") or [] if x.get("channel_id"))
+    recovered_ids = sorted(str(x.get("channel_id") or "") for x in channel_changes.get("recovered_this_build") or [] if x.get("channel_id"))
+    tv_summary = tvnow_qa.get("summary") or {}
+    snapshot = {
+        "build_id": str(build_info.get("build_id") or ""),
+        "built_at": str(build_info.get("built_at") or ""),
+        "published": len(channels),
+        "published_tvg_ids": present_ids,
+        "missing": max(0, int(channel_changes.get("expected_channels") or 111) - len(channels)),
+        "normal_decoder_passes": normal_decoder,
+        "decoder_failures": failed_decoder,
+        "local_playback_overrides": overrides,
+        "tvnow_normal_health_passes": int(tv_summary.get("normal_health_passed") or 0),
+        "tvnow_normal_decoder_passes": sum(bool(row.get("normal_playback_passed")) for row in tvnow_qa.get("channels") or []),
+        "tvnow_decoder_overrides": sum(bool(row.get("override_used_for_playback")) for row in tvnow_qa.get("channels") or []),
+        "tvnow_rate_limits": int(tv_summary.get("rate_limited") or 0),
+        "independent_backup_channels": int((redundancy.get("summary") or {}).get("with_independent_backup") or 0),
+        "single_stream_channels": int((redundancy.get("summary") or {}).get("single_stream") or 0),
+        "recovered_ids": recovered_ids,
+        "lost_ids": lost_ids,
+    }
+    history = [
+        item for item in previous_history
+        if isinstance(item, dict) and str(item.get("build_id") or "") != snapshot["build_id"]
+    ][-4:] + [snapshot]
+    history = history[-5:]
+
+    loss_counter = Counter(
+        str(channel_id)
+        for item in history
+        for channel_id in (item.get("lost_ids") or [])
+    )
+    coverage_consistency = set(present_ids)
+    for item in history[:-1]:
+        coverage_consistency &= set(item.get("published_tvg_ids") or [])
+
+    channel_by_id = {str(ch.get("tvg_id") or ""): ch for ch in channels}
+    backup_priorities = []
+    for row in redundancy.get("channels") or []:
+        if row.get("has_independent_backup"):
+            continue
+        ch_id = str(row.get("tvg_id") or "")
+        channel = channel_by_id.get(ch_id, {})
+        stream_count = int(row.get("stream_count") or 0)
+        historical_losses = loss_counter.get(ch_id, 0)
+        is_philly = bool(channel.get("philly"))
+        is_sports = str(channel.get("category") or "").lower() == "sports"
+        tagged = int(row.get("locally_verified_count") or 0) > 0
+        score = (
+            40 + (25 if stream_count == 1 else 10) +
+            min(30, historical_losses * 15) +
+            (15 if tagged else 0) +
+            (15 if is_philly else 0) +
+            (10 if is_sports else 0)
+        )
+        backup_priorities.append({
+            "tvg_id": ch_id,
+            "name": row.get("name"),
+            "priority_score": score,
+            "stream_count": stream_count,
+            "primary_family": row.get("primary_family"),
+            "provider_hosts": row.get("provider_hosts") or [],
+            "locally_verified": tagged,
+            "recent_losses": historical_losses,
+            "philly": is_philly,
+            "sports": is_sports,
+            "normal_decoder_result": per_channel_decoder.get(ch_id, "not-tested"),
+            "need": "Independent, authorized exact-identity upstream backup",
+        })
+    backup_priorities.sort(key=lambda x: (-x["priority_score"], -x["recent_losses"], x["tvg_id"]))
+
+    missing_queue = []
+    for row in missing_diagnostics.get("channels") or []:
+        bucket = str(row.get("bucket") or "")
+        if bucket in {"complete", "insufficient_quality_mix", "missing_quality_metadata"}:
+            continue
+        ch_id = str(row.get("tvg_id") or "")
+        losses = loss_counter.get(ch_id, 0)
+        missing_queue.append({
+            "tvg_id": ch_id,
+            "bucket": bucket,
+            "candidate_count": int(row.get("candidate_count") or 0),
+            "recent_losses": losses,
+            "public_search_eligible": bool(row.get("public_search_eligible")),
+            "next_action": row.get("action"),
+            "priority_score": losses * 40 + (
+                25 if bucket == "failed_probes" else
+                20 if bucket == "quarantined_or_cooldown" else
+                15 if bucket == "runner_or_geo_blocked" else 10
+            ),
+        })
+    missing_queue.sort(key=lambda x: (-x["priority_score"], x["tvg_id"]))
+
+    scorecard = {
+        "version": 1,
+        "updated_at": snapshot["built_at"],
+        "summary": {
+            "builds_observed": len(history),
+            "five_build_history_complete": len(history) == 5,
+            "five_consecutive_builds_at_least_90": len(history) == 5 and all(int(x.get("published") or 0) >= 90 for x in history),
+            "published_latest": len(channels),
+            "consistently_published_in_window": len(coverage_consistency),
+            "normal_decoder_passes_latest": normal_decoder,
+            "locally_overridden_playback_attempts_latest": overrides,
+            "reported_primary_passes_are_not_normal_decoder_passes": True,
+            "lost_events_in_window": sum(len(x.get("lost_ids") or []) for x in history),
+            "independent_backup_channels": snapshot["independent_backup_channels"],
+        },
+        "history": history,
+        "recovery_priorities": missing_queue,
+        "independent_backup_priorities": backup_priorities[:30],
+        "tvnow_decoder_diagnosis": {
+            "normal_health_passes": snapshot["tvnow_normal_health_passes"],
+            "normal_decoder_passes": snapshot["tvnow_normal_decoder_passes"],
+            "decoder_overrides": snapshot["tvnow_decoder_overrides"],
+            "decoder_failure_classes": dict(Counter(
+                str(x.get("ci_decoder_failure_class") or "unclassified")
+                for x in tvnow_qa.get("channels") or []
+                if x.get("override_used_for_playback")
+            )),
+        },
+    }
+    return scorecard
+
+
 def build_host_redundancy_diagnostics(channels: list[dict[str, Any]]) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     for channel in channels:
