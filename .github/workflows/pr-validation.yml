@@ -14,6 +14,7 @@ on:
       - "research-sources.json"
       - "requirements.txt"
       - "reliability_watchdog.py"
+      - "upstream_exposure.py"
       - ".github/workflows/pr-validation.yml"
 
 permissions:
