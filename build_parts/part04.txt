@@ -4813,6 +4813,22 @@ def _coverage_local_test_rejection(
         return "malformed URL"
     if re.search(r"(?:^|[?&])(?:username|password|user|pass)=", parts.query, re.I):
         return "embedded account credential parameters"
+    # Opaque paid-account / Xtream-style URLs in public playlists are not
+    # authorization to republish access tokens from the path itself.
+    path_components = [part for part in parts.path.split("/") if part]
+    if (
+        (parts.port not in (None, 80, 443, 8080, 8443, 9443) and
+         len(path_components) >= 3 and
+         path_components[-1].isdecimal())
+        or (
+            len(path_components) >= 4 and
+            path_components[0].lower() in {"live", "movie", "series"} and
+            path_components[-1].split(".")[0].isdecimal()
+        )
+    ):
+        return "embedded account credentials in IPTV access path"
+    if parts.hostname.endswith(".workers.dev") or parts.hostname in {"jmp2.uk"}:
+        return "redirect/proxy gateway not direct upstream"
     lower = parts.path.lower()
     if any(x in lower for x in ("/api/proxy", "/api/live")):
         return "proxy/restream endpoint"
