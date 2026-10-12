@@ -15,6 +15,7 @@ on:
       - "research-sources.json"
       - "requirements.txt"
       - "reliability_watchdog.py"
+      - "upstream_exposure.py"
       - ".github/workflows/build-and-deploy.yml"
   schedule:
     - cron: "7 */2 * * *"
@@ -77,6 +78,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DADDYLIVE_RESOLVER_URL: http://127.0.0.1:3000
+      - name: Rank shared-host failure and independent-backup risks (advisory)
+        continue-on-error: true
+        run: python upstream_exposure.py
       - name: Report v0.8 reliability risks (advisory)
         continue-on-error: true
         run: python reliability_watchdog.py
