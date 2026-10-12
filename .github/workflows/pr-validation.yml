@@ -15,6 +15,8 @@ on:
       - "requirements.txt"
       - "reliability_watchdog.py"
       - "upstream_exposure.py"
+      - "research/qa_daddylive_players.py"
+      - "research/qa_daddylive_sustained.py"
       - ".github/workflows/pr-validation.yml"
 
 permissions:
@@ -38,3 +40,45 @@ jobs:
         run: python -m py_compile build.py
       - name: Run builder tests
         run: python -m unittest discover -s tests -v
+      - name: Install FFmpeg and Node for isolated DaddyLive experiment
+        if: github.head_ref == 'research-daddylive-all-six-players-20261012'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          node --version
+          ffmpeg -version | head -n 1
+      - name: Start existing pinned six-player resolver (research only)
+        if: github.head_ref == 'research-daddylive-all-six-players-20261012'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/sharoon7171/daddylive-stream-resolver.git /tmp/daddylive-research
+          cd /tmp/daddylive-research
+          git checkout --quiet 5064460e16ca78f191473753b5696dea54ea134a
+          npm ci --silent
+          PORT=3000 nohup npm start > /tmp/daddylive-research.log 2>&1 &
+          for n in $(seq 1 40); do
+            if curl -fsS --max-time 2 http://127.0.0.1:3000/ > /dev/null; then
+              echo "Local six-player resolver ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Pinned resolver did not start; no network QA attempted"
+          tail -n 20 /tmp/daddylive-research.log || true
+          exit 1
+      - name: Run 100-second direct-HLS Player 6 sustained and loop QA
+        if: github.head_ref == 'research-daddylive-all-six-players-20261012'
+        timeout-minutes: 15
+        shell: bash
+        run: python research/qa_daddylive_sustained.py
+      - name: Upload research-only DaddyLive QA report
+        if: always() && github.head_ref == 'research-daddylive-all-six-players-20261012'
+        uses: actions/upload-artifact@v7
+        with:
+          name: daddylive-sustained-player6-review
+          path: |
+            qa-results/daddylive-player6-sustained.json
+            qa-results/identity-thumbnails/*.jpg
+          if-no-files-found: warn
+          retention-days: 7
