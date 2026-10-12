@@ -44,3 +44,41 @@ Last confirmed successful live deployment #38316450648: **87/111** channels. Pos
 
 ## Bottom line
 **Six potential discovery projects identified; zero new direct-video upstreams have yet passed QA**. Direct requests to IPTV Nexus live US JSON and online M3U endpoints were not accessible from the research browser, so per-channel returned URLs and health claims are still **unverified**. doms9's live October 12 log explicitly lists **both** CBS Sports Network and Smithsonian Channel as HTTP 503 at cdnlivetv.tv. That is not a stream-coverage gain. Research kept off production and local-test catalogs. Target future work by actual exact missing ID and new final-origin host, not playlist quantity.
+
+
+## In-depth follow-up: IPTV Nexus vs Rebel IPTV (Oct 12)
+
+### IPTV Nexus — actual upstream provenance
+- Read live upstream config: [config/sources.yml](https://github.com/dearbulut/iptv/blob/main/config/sources.yml). **Enabled sources:** iptv-org API and `config/discovered.m3u` (auto-discovery list).
+- Fetched current `config/discovered.m3u`: **exactly `#EXTM3U\n`** (zero entries). This provides **zero** candidate media URLs for any of the 24 missing channels.
+- Read [config/discovery.yml](https://github.com/dearbulut/iptv/blob/main/config/discovery.yml): only **iptv-org country index** and **iptv-org category index** are enabled. The community index example is disabled.
+- Samsung, Pluto and Plex in sources.yml are **commented out**, not running as new IPTV Nexus source families. (Most FAST sources already indexed independently by our own addon.)
+- The `state` branch contains 8.8 MB health.json and discovery.json. `discovery.json` is a persisted rejection-hash list, not a media URL source. GitHub's file API declined to return the large health.json contents in the available runtime.
+- Requested these public static Nexus endpoints:
+  `https://dearbulut.github.io/iptv/api/v1/index.json`,
+  `.../by-country/us.json`,
+  `.../channels/Bravo.us.json`, and
+  `.../playlists/country/us.m3u`.
+  **All were inaccessible to the available research client.** Therefore there was *no media origin extraction* from its live API; no per-channel freshness, working source, or source count can be confirmed.
+- **Verdict:** The only observable enabled origins are IPTV-org; auto-discovered source count **0**, original distinct media origin gain **0 observed**. Re-evaluate Nexus when its public API is accessible or config/discovered.m3u contains entries. A novel **monitoring implementation** is not itself a novel provider.
+
+### Rebel IPTV — actual upstream provenance
+- Checked [repository root](https://github.com/rebeliptv/iptv): it contains `README.md`, release notes, screenshots, license, GitHub metadata; **no open src directory, scraper implementations, channel database, or public direct-origin M3U**.
+- [README](https://github.com/rebeliptv/iptv/blob/master/README.md) explicitly states **all streams are fully proxied and upstreams hidden**; provides self-hosted Docker server, user playlists and sources, and authenticated playlist/EPG API. Promises 450+ channels but **does not establish identities or public upstream media URLs**.
+- Proxy/MPEG-TS restreaming, auth/API keys, local HDHomeRun server support **do not meet our direct-upstream-only policy** and don't provide an inspectable upstream origin to deduplicate.
+- No documented usable route in the public repository for extracting its original sources without running its proprietary container and inspecting private backend behavior. We did not attempt access bypass, decompilation or circumventing protected streams.
+- **Verdict:** **0 extractable upstream URLs** from the public repository. Treat as an architecture/feature reference only unless its maintainers release independently public direct origins.
+
+### Exact missing-ID source comparison result
+| Source | Bravo.us | CBSSportsNetwork.us | SmithsonianChannel.us | ESPNews.us | Other missing IDs |
+|---|---|---|---|---|---|
+| Nexus configured new `discovered.m3u` | 0 | 0 | 0 | 0 | 0 |
+| Nexus health/US production API | inaccessible | inaccessible | inaccessible | inaccessible | inaccessible |
+| Rebel public repo direct-origin URLs | none available | none available | none available | none available | none available |
+
+**Meaning:** We extracted the upstream configuration and found **zero new feed URLs** in the observable Nexus discovery output; Rebel does not publish direct-source data. This is a **source-level negative finding**, not a verification of every stream hidden in their hosted deployments. No comparison against the project's 11 killed URL paths is needed for a zero-entry dataset.
+
+### Useful follow-up
+1. If Nexus API becomes accessible, query **only the canonical 24 missing IDs**, traverse `streams[].url` in each returned channel JSON, normalize URL host+path (discard volatile tokens), dedupe against existing sources, and tag `sources[]` provenance (iptv-org-only vs novel).
+2. For Rebel, obtain a maintainer-published origin list **with permission**; no proxy playback from its proprietary server.
+3. Continue distinct-origin research against other candidates (small playlist generators and legally accessible official endpoints) rather than manufacturing a test list from empty/proxy-only results.
