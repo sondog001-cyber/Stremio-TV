@@ -1,0 +1,276 @@
+{
+  "metadata": {
+    "scope": "Isolated research-only candidate probes; never publish; do not use provider credentials or proxy/restream; new to channel or rediscovered from named playlist repos.",
+    "source_urls": [
+      "https://raw.githubusercontent.com/launchpad2/tv/main/us.m3u",
+      "https://raw.githubusercontent.com/SharifAkhand/SA/master/bd",
+      "https://raw.githubusercontent.com/marasiganjosephursaiz-crypto/IPTV-PH-AND-US.M3U/main/JoeMarasiganTV.m3u",
+      "https://github.com/iptv-org/iptv/issues/17989",
+      "https://github.com/iptv-org/iptv/issues/16055"
+    ],
+    "status": "unverified",
+    "historic_lead_note": "Two 2024 iptv-org issue links on different source hostnames, unverified/possibly expired. Run only research QA, no production candidate addition.",
+    "recovery_note": "Bravo and Hallmark recovery sweep after run 38291969091 decoder losses. Only direct public playlist-host leads; no embedded credentials, no approval/publishing; independent source host != verified independent origin."
+  },
+  "candidates": [
+    {
+      "tvg_id": "MLBNetwork.us",
+      "url": "https://gpuserver3.tier1streams.com/MLB_Network/index.m3u8",
+      "playlist_family": "tier1streams",
+      "claimed_tvg_id": "MLBNetwork.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "ESPNews.us",
+      "url": "https://gpuserver3.tier1streams.com/ESPN_NEWS/index.m3u8",
+      "playlist_family": "tier1streams",
+      "claimed_tvg_id": "ESPNews.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "BigTenNetwork.us",
+      "url": "https://gpuserver3.tier1streams.com/BIG_TEN_NETWORK/index.m3u8",
+      "playlist_family": "tier1streams",
+      "claimed_tvg_id": "BigTenNetwork.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "CBSSportsNetwork.us",
+      "url": "https://gpuserver3.tier1streams.com/CBS_SPORTS_NETWORK/index.m3u8",
+      "playlist_family": "tier1streams",
+      "claimed_tvg_id": "CBSSportsNetworkUSA.us@SD",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "BET.us",
+      "url": "https://gpuserver3.tier1streams.com/BET_EAST/index.m3u8",
+      "playlist_family": "tier1streams",
+      "claimed_tvg_id": "BET.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "CNBC.us",
+      "url": "https://gpuserver3.tier1streams.com/CNBC/index.m3u8",
+      "playlist_family": "tier1streams",
+      "claimed_tvg_id": "CNBC.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "FoxSports2.us",
+      "url": "https://messi.damitv.st/papi/ts/fox-sports-2/playlist.m3u8",
+      "playlist_family": "damitv_gateway",
+      "claimed_tvg_id": "FoxSports2.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "NBCSportsPhiladelphia.us",
+      "url": "https://messi.damitv.st/papi/ts/nbc-sports-philly/playlist.m3u8",
+      "playlist_family": "damitv_gateway",
+      "claimed_tvg_id": "NBCSportsPhiladelphia.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "MLBNetwork.us",
+      "url": "https://messi.damitv.st/papi/ts/mlbnetwork-usa/playlist.m3u8",
+      "playlist_family": "damitv_gateway",
+      "claimed_tvg_id": "MLBNetwork.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "Nicktoons.us",
+      "url": "https://messi.damitv.st/papi/ts/nicktoons-usa/playlist.m3u8",
+      "playlist_family": "damitv_gateway",
+      "claimed_tvg_id": "Nicktoons.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "StarzCinema.us",
+      "url": "https://messi.damitv.st/papi/ts/starzcinema-usa/playlist.m3u8",
+      "playlist_family": "damitv_gateway",
+      "claimed_tvg_id": "StarzCinema.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "StarzComedy.us",
+      "url": "https://messi.damitv.st/papi/ts/starzcomedy-usa/playlist.m3u8",
+      "playlist_family": "damitv_gateway",
+      "claimed_tvg_id": "StarzComedy.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "FoxSports2.us",
+      "url": "https://ftv.itscwd273.workers.dev/?id=FOXSPORTS2",
+      "playlist_family": "workers_gateway",
+      "claimed_tvg_id": "FoxSports2.us",
+      "policy_skip": true
+    },
+    {
+      "tvg_id": "CNBC.us",
+      "url": "https://stream.livenewsplay.com:9443/hls/cnbc/cnbcsd.m3u8",
+      "playlist_family": "livenewsplay",
+      "claimed_tvg_id": "CNBC.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "CNBC.us",
+      "url": "http://108.181.20.255:27347/livehttpplay?channel_id=23115",
+      "playlist_family": "iptv_opaque_endpoint",
+      "claimed_tvg_id": "CNBC.us",
+      "policy_skip": true
+    },
+    {
+      "tvg_id": "CNBC.us",
+      "url": "http://206.212.244.63/41/index.m3u8",
+      "playlist_family": "generic_ip",
+      "claimed_tvg_id": "CNBC.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "CNBC.us",
+      "url": "http://40.160.24.56/CNBC_SD/index.m3u8",
+      "playlist_family": "generic_ip",
+      "claimed_tvg_id": "CNBC.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "RFDTV.us",
+      "url": "http://40.160.24.55/RFD-TV/index.m3u8",
+      "playlist_family": "generic_ip",
+      "claimed_tvg_id": "RFDTV.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "SECNetwork.us",
+      "url": "http://40.160.24.55/SEC_NETWORK/index.m3u8",
+      "playlist_family": "generic_ip",
+      "claimed_tvg_id": "SECNetwork.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "SmithsonianChannel.us",
+      "url": "http://40.160.24.55/SMITHSONIAN/index.m3u8",
+      "playlist_family": "generic_ip",
+      "claimed_tvg_id": "SmithsonianChannel.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "Nicktoons.us",
+      "url": "http://40.160.24.55/NICKTOONS/index.m3u8",
+      "playlist_family": "generic_ip",
+      "claimed_tvg_id": "Nicktoons.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "Nicktoons.us",
+      "url": "http://41.205.93.154/NICKTOONS/index.m3u8",
+      "playlist_family": "generic_ip",
+      "claimed_tvg_id": "Nicktoons.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "HallmarkMystery.us",
+      "url": "http://40.160.24.53/HALLMARK_MOVIES_AND_MYSTERIES/index.m3u8",
+      "playlist_family": "generic_ip",
+      "claimed_tvg_id": "HallmarkMystery.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "HallmarkFamily.us",
+      "url": "http://40.160.24.53/HALLMARK_DRAMA/index.m3u8",
+      "playlist_family": "generic_ip",
+      "claimed_tvg_id": "HallmarkFamily.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "SundanceTV.us",
+      "url": "http://40.160.24.55/SUNDANCE/index.m3u8",
+      "playlist_family": "generic_ip",
+      "claimed_tvg_id": "SundanceTV.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "StarzEdge.us",
+      "url": "http://40.160.24.55/STARZ_EDGE/index.m3u8",
+      "playlist_family": "generic_ip",
+      "claimed_tvg_id": "StarzEdge.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "StarzComedy.us",
+      "url": "http://40.160.24.55/STARZ_COMEDY/index.m3u8",
+      "playlist_family": "generic_ip",
+      "claimed_tvg_id": "StarzComedy.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "MLBNetwork.us",
+      "url": "https://tx2.nexgen.bz/MLB/index.m3u8",
+      "playlist_family": "iptv-org-issue-historic",
+      "claimed_tvg_id": "MLBNetwork.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "MLBNetwork.us",
+      "url": "http://livex.pop-app.live/s4n/poplive/ch336/playlist.m3u8",
+      "playlist_family": "iptv-org-issue-historic",
+      "claimed_tvg_id": "MLBNetwork.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "Bravo.us",
+      "url": "http://170.254.18.106/BRAVO/index.m3u8",
+      "playlist_family": "kilirushi/iptv",
+      "claimed_tvg_id": "Bravo.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "Bravo.us",
+      "url": "https://streamer1.nexgen.bz/BRAVO/index.m3u8",
+      "playlist_family": "PABLOPOM/m3u",
+      "claimed_tvg_id": "Bravo.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "Bravo.us",
+      "url": "http://212.8.253.117/bravo/index.m3u8",
+      "playlist_family": "Jason6111/iptv",
+      "claimed_tvg_id": "Bravo.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "Bravo.us",
+      "url": "http://fl2.moveonjoy.com/BRAVO/index.m3u8",
+      "playlist_family": "gogetta69/public-files",
+      "claimed_tvg_id": "Bravo.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "Bravo.us",
+      "url": "http://212.102.60.231/BRAVO/index.m3u8",
+      "playlist_family": "InsolenceWillow/insolencetvgo",
+      "claimed_tvg_id": "Bravo.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "HallmarkChannel.us",
+      "url": "http://fl2.moveonjoy.com/HALLMARK_CHANNEL/index.m3u8",
+      "playlist_family": "gogetta69/public-files",
+      "claimed_tvg_id": "HallmarkChannel.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "HallmarkChannel.us",
+      "url": "https://fl7.moveonjoy.com/HALLMARK_CHANNEL/index.m3u8",
+      "playlist_family": "spookyhost1/yarr-stremio",
+      "claimed_tvg_id": "HallmarkChannel.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "HallmarkChannel.us",
+      "url": "https://fl1.moveonjoy.com/HALLMARK_CHANNEL/index.m3u8",
+      "playlist_family": "weihaoxie/iptv",
+      "claimed_tvg_id": "HallmarkChannel.us",
+      "policy_skip": false
+    }
+  ]
+}
