@@ -3296,7 +3296,10 @@
     "mode": "direct-upstream-only",
     "complaint_policy": "disable-affected-source-or-channel-do-not-hide-or-rotate",
     "disabled_urls": [
-      "http://89.187.175.143:80/4073/index.m3u8"
+      "http://89.187.175.143:80/4073/index.m3u8",
+      "http://89.187.175.143:80/4093/index.m3u8",
+      "http://206.212.244.63/148/index.m3u8",
+      "http://74.48.44.156:1234/stream/asd/391/master.m3u8"
     ],
     "disabled_channels": [],
     "blocked_request_headers": [
