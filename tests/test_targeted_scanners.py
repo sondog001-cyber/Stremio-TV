@@ -178,6 +178,109 @@ class TargetedScannerTests(unittest.TestCase):
         )
         self.assertTrue(entry["ephemeral_signed"])
 
+    def test_player6_additional_candidates_remain_scoped_to_two_channels(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        production = json.loads((root / "config.json").read_text(encoding="utf-8"))
+        targets = production["discovery"]["daddylive_resolver"]["targets"]
+        opted_in = {
+            row["tvg_id"]: row.get("additional_servers")
+            for row in targets if row.get("additional_servers")
+        }
+        self.assertEqual(opted_in, {
+            "FoxSports2.us": ["player"],
+            "CBSSportsNetwork.us": ["player"],
+        })
+        self.assertEqual(production["discovery"]["daddylive_resolver"]["servers"], ["stream", "cast"])
+
+    def test_player6_adds_direct_backup_without_replacing_normal_player(self):
+        config = minimal_config()
+        config["discovery"]["daddylive_resolver"] = {
+            "enabled": True,
+            "base_url_env": "DADDYLIVE_RESOLVER_URL",
+            "family": "daddylive-resolver",
+            "source_name": "DaddyLive maintained live resolver",
+            "priority": 10,
+            "servers": ["stream", "cast"],
+            "targets": [
+                {"tvg_id": "FoxSports2.us", "name": "Fox Sports 2",
+                 "channel_id": 758, "additional_servers": ["player"]},
+                {"tvg_id": "CBSSportsNetwork.us", "name": "CBS Sports Network",
+                 "channel_id": 308, "additional_servers": ["player"]},
+                {"tvg_id": "FXX.us", "name": "FXX", "channel_id": 298,
+                 "additional_servers": ["player"]},
+            ],
+        }
+        requested = []
+        def fake_open(request, timeout=20):
+            url = request.full_url
+            parsed = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
+            channel = parsed["channel"][0]
+            server = parsed["server"][0]
+            requested.append((channel, server))
+            payload = {
+                "direct": "https://media.example.test/" + channel + "/" + server + ".m3u8",
+                "isHls": True,
+                "expiresAt": 123,
+                "vlc": "vlc :http-referrer='https://embed.example.test/player'",
+            }
+            response = mock.MagicMock()
+            response.__enter__.return_value = response
+            response.read.return_value = json.dumps(payload).encode()
+            return response
+        with (
+            mock.patch.object(build.os, "getenv", return_value="http://127.0.0.1:3000"),
+            mock.patch.object(build.urllib.request, "urlopen", side_effect=fake_open),
+        ):
+            entries, report = build.discover_daddylive_resolver_streams(config)
+        self.assertEqual(report["targets"], 3)
+        self.assertEqual(report["resolved"], 3)
+        self.assertEqual(len(entries), 5)
+        self.assertEqual(requested, [
+            ("758", "stream"), ("758", "player"),
+            ("308", "stream"), ("308", "player"),
+            ("298", "stream"),
+        ])
+        backups = [row for row in entries if row["resolver_server"] == "player"]
+        self.assertEqual({row["tvg_id"] for row in backups},
+                         {"FoxSports2.us", "CBSSportsNetwork.us"})
+        self.assertTrue(all(row["priority"] >= 60 for row in backups))
+        self.assertTrue(all(row["ephemeral_signed"] for row in backups))
+        self.assertTrue(all(row["stability_identity"].endswith(":player")
+                            for row in backups))
+
+    def test_player6_proxy_or_non_hls_never_publishes(self):
+        config = minimal_config()
+        config["discovery"]["daddylive_resolver"] = {
+            "enabled": True, "base_url_env": "DADDYLIVE_RESOLVER_URL",
+            "servers": ["stream"], "targets": [
+                {"tvg_id": "FoxSports2.us", "name": "Fox Sports 2",
+                 "channel_id": 758, "additional_servers": ["player"]}
+            ],
+        }
+        requested = []
+        def fake_open(request, timeout=20):
+            parsed = urllib.parse.parse_qs(urllib.parse.urlsplit(request.full_url).query)
+            server = parsed["server"][0]
+            requested.append(server)
+            payload = {
+                "direct": "https://media.example.test/channel.mp4"
+                  if server == "stream" else "http://localhost:3000/api/live?channel=758",
+                "isHls": False if server == "player" else True,
+            }
+            response = mock.MagicMock()
+            response.__enter__.return_value = response
+            response.read.return_value = json.dumps(payload).encode()
+            return response
+        with (
+            mock.patch.object(build.os, "getenv", return_value="http://127.0.0.1:3000"),
+            mock.patch.object(build.urllib.request, "urlopen", side_effect=fake_open),
+        ):
+            entries, report = build.discover_daddylive_resolver_streams(config)
+        self.assertEqual(requested, ["stream", "player"])
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]["resolver_server"], "stream")
+        self.assertEqual(report["candidates_found"], 1)
+
     def test_ephemeral_signed_resolver_candidate_bypasses_dead_source_cooldown(self):
         entry = {
             "tvg_id": "FXX.us",
