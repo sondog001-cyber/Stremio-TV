@@ -36,6 +36,27 @@ class SafetyControlsTests(unittest.TestCase):
         self.assertEqual(rejected[0]["reason"], "url-kill-switch")
         self.assertEqual(rejected[0]["source"], "Provider A")
 
+    def test_confirmed_failed_cbssn_local_source_excluded_exactly(self):
+        import json
+        from pathlib import Path
+
+        config = json.loads((Path(__file__).resolve().parents[1] / "config.json").read_text())
+        rejected_url = "http://89.187.175.143:80/4073/index.m3u8"
+        self.assertIn(rejected_url, config["safety_controls"]["disabled_urls"])
+        candidates = [
+            {"tvg_id": "CBSSportsNetwork.us", "url": rejected_url, "headers": {}},
+            {"tvg_id": "CBSSportsNetwork.us", "url": "https://allowed.example/cbs.m3u8", "headers": {}},
+            {"tvg_id": "SmithsonianChannel.us", "url": "http://89.187.175.143:80/603/index.m3u8", "headers": {}},
+        ]
+        kept, rejected = build.apply_safety_controls(candidates, config)
+        self.assertEqual(len(rejected), 1)
+        self.assertEqual(rejected[0]["reason"], "url-kill-switch")
+        self.assertEqual(
+            {(c["tvg_id"], c["url"]) for c in kept},
+            {("CBSSportsNetwork.us", "https://allowed.example/cbs.m3u8"),
+             ("SmithsonianChannel.us", "http://89.187.175.143:80/603/index.m3u8")},
+        )
+
     def test_channel_kill_switch_removes_every_candidate(self):
         entries = [
             {"tvg_id": "FXX.us", "url": "https://a.example/fxx.m3u8", "headers": {}},
