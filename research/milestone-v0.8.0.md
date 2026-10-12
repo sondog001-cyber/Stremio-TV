@@ -25,3 +25,9 @@ From Actions run 38264295646: 88/111 curated channels published, 128 streams, 58
 - Repository unit tests and PR checks are passing; preserve ability to roll back.
 
 v0.8.0 is a reliability milestone, not a promise of 111 accessible channels. See the existing private connector and authorization policies in README.md.
+
+## Steps 2 and 3: independent-backup and shared-host exposure (diagnostic pass)
+
+The read-only `upstream_exposure.py` report now ranks every published single-stream or same-host mirrored channel, scores shared-host blast radius and recent losses, and lists the hosts where more than one source family actually resolves to the same hostname on an individual stream. It reports concurrent channel losses as clues, **not causal evidence**. The report includes both the top ten backup search targets and the top ten hosts by channels with no distinct-host fallback. No sources are added, removed, or promoted by this diagnostic.
+
+After examining the first report, hunt independently authorized exact-identity feeds for the riskiest targets. Local-verified overrides remain available but do not count as normal decoder QA. Never claim that two hostnames certify truly independent upstream ownership or licensing.
