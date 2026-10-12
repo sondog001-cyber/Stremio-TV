@@ -2753,7 +2753,22 @@ def discover_daddylive_resolver_streams(
             "status": "failed",
         }
 
-        for server in servers:
+        # Channel-specific extra player opt-in. Other channels retain the
+        # existing first-success stream/cast resolution behavior.
+        extra_allowed = {
+            "FoxSports2.us": 758,
+            "CBSSportsNetwork.us": 308,
+        }
+        extra_servers = (
+            ["player"]
+            if extra_allowed.get(tvg_id) == int(channel_id)
+            and "player" in (target.get("additional_servers") or [])
+            else []
+        )
+        regular_resolved = False
+        for server in list(servers) + extra_servers:
+            if server in servers and regular_resolved:
+                continue
             query = urllib.parse.urlencode({
                 "channel": int(channel_id),
                 "server": server,
@@ -2773,9 +2788,17 @@ def discover_daddylive_resolver_streams(
 
                 direct = str(payload.get("direct") or "").strip()
                 headers = _parse_resolver_vlc_headers(str(payload.get("vlc") or ""))
+                direct_ok = direct.startswith(("http://", "https://"))
+                if server == "player":
+                    # No proxy endpoints, WebM or non-HLS Player 6 outputs.
+                    direct_ok = (
+                        direct_ok and bool(payload.get("isHls"))
+                        and "/api/live" not in direct
+                        and "/api/proxy" not in direct
+                    )
                 attempt = {
                     "server": server,
-                    "status": "ok" if direct.startswith(("http://", "https://")) else "failed",
+                    "status": "ok" if direct_ok else "failed",
                     "elapsed_seconds": round(time.monotonic() - started, 2),
                     "expires_at": payload.get("expiresAt"),
                     "is_hls": payload.get("isHls"),
@@ -2792,9 +2815,17 @@ def discover_daddylive_resolver_streams(
                     "tvg_id": tvg_id,
                     "url": direct,
                     "headers": headers,
-                    "source": settings.get("source_name") or "DaddyLive maintained resolver",
+                    "source": (
+                        "DaddyLive Player 6 direct HLS"
+                        if server == "player"
+                        else settings.get("source_name") or "DaddyLive maintained resolver"
+                    ),
                     "family": settings.get("family") or "daddylive-resolver",
-                    "priority": int(target.get("priority", settings.get("priority", 6))),
+                    "priority": (
+                        max(60, int(target.get("priority", settings.get("priority", 6))))
+                        if server == "player"
+                        else int(target.get("priority", settings.get("priority", 6)))
+                    ),
                     "philly": bool(target.get("philly", False)),
                     "group": target.get("group") or "Live TV",
                     "quality": target.get("quality") or "Unknown",
@@ -2810,7 +2841,10 @@ def discover_daddylive_resolver_streams(
                 row["expires_at"] = payload.get("expiresAt")
                 row["has_user_agent"] = bool(headers.get("User-Agent"))
                 row["has_referer"] = bool(headers.get("Referer"))
-                break
+                if server in servers:
+                    regular_resolved = True
+                if not extra_servers or server == extra_servers[-1]:
+                    break
             except urllib.error.HTTPError as exc:
                 row["attempts"].append({
                     "server": server,
