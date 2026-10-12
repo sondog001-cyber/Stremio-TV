@@ -87,6 +87,28 @@ def merge_channels(entries: Iterable[dict[str, Any]], favorites: list[str], max_
             exact_base = next((x for x in ids if x.lower() == base_key), None)
             if exact_base:
                 tvg_id = exact_base
+
+        # A curated logical channel's public tvg_id should not drift from its
+        # approved identity when only @East/@HD quality variants remain. This
+        # changes *metadata only*: never rewrite a stream's source tvg_id, URL,
+        # health score, source order, or its stable Stremio catalog ID.
+        # Explicit pins are deliberately narrow rather than auto-stripping all
+        # suffixes (Fox.us@WTXFTV, for example, is a distinct local affiliate).
+        pinned_ids = (config.get("curation") or {}).get("published_tvg_id_pins") or {}
+        canonical_key = key[3:] if key.startswith("id:") else ""
+        curated_patterns = (
+            (config.get("curation") or {}).get("philly_allow", []) +
+            (config.get("curation") or {}).get("national_allow", [])
+        )
+        for source_id, pinned_id in pinned_ids.items():
+            if (
+                canonical_key
+                and canonical_tvg_id(str(source_id)) == canonical_key
+                and canonical_tvg_id(str(pinned_id)) == canonical_key
+                and any(canonical_tvg_id(str(p)) == canonical_key for p in curated_patterns)
+            ):
+                tvg_id = str(pinned_id)
+                break
         metadata = {}
         for metadata_id, metadata_row in (config.get("channel_metadata") or {}).items():
             if canonical_tvg_id(metadata_id) == canonical_tvg_id(tvg_id):
