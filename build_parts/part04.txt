@@ -4516,7 +4516,7 @@ def build_resilience_hunt_queue(
             "runner_or_geo_blocked": 45,
             "quarantined_or_cooldown": 38,
         }.get(str(row.get("bucket")), 30)
-        score = base + min(2, recent_losses) * 40 + (12 if philly else 0) + (8 if sports else 0)
+        score = base + min(2, recent_losses) * 50 + (12 if philly else 0) + (8 if sports else 0)
         bucket = str(row.get("bucket"))
         mode = (
             "local_runner_comparison_or_authorized_alternative"
