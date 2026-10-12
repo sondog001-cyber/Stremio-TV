@@ -4456,6 +4456,112 @@ def build_host_redundancy_diagnostics(channels: list[dict[str, Any]]) -> dict[st
     }
 
 
+def build_resilience_hunt_queue(
+    host_redundancy: dict[str, Any],
+    missing_diagnostics: dict[str, Any],
+    five_build_reliability: dict[str, Any],
+) -> dict[str, Any]:
+    """One exact-ID hunting queue for missing channels AND exposed single-provider channels.
+
+    This is advisory diagnostics only: it cannot publish/promote streams, loosen
+    decoder QA, or treat an alternate hostname as proof of licensed independence.
+    """
+    redundant_by_id = {
+        row["tvg_id"]: row for row in host_redundancy.get("channels", [])
+        if row.get("tvg_id")
+    }
+    risky_backups = {
+        row["tvg_id"]: row
+        for row in five_build_reliability.get("independent_backup_priorities", [])
+        if row.get("tvg_id")
+    }
+    losses = {
+        row["tvg_id"]: int(row.get("recent_losses", 0) or 0)
+        for row in five_build_reliability.get("recovery_priorities", [])
+        if row.get("tvg_id")
+    }
+    entries: list[dict[str, Any]] = []
+    private_excluded = 0
+    sports_names = ("ESPN", "Sports", "MLB", "NFL", "SECNetwork", "ACCNetwork", "BigTen")
+
+    for row in missing_diagnostics.get("channels", []):
+        channel_id = str(row.get("tvg_id") or "")
+        if row.get("bucket") not in {
+            "no_candidate", "failed_probes", "quarantined_or_cooldown",
+            "runner_or_geo_blocked", "primary_playback_qa_failed",
+            "private_connector_required",
+        }:
+            continue
+        if not row.get("public_search_eligible", True) or row.get("bucket") == "private_connector_required":
+            private_excluded += 1
+            continue
+        recent_losses = losses.get(channel_id, 0)
+        philly = row.get("group") == "Philadelphia"
+        sports = any(name.lower() in channel_id.lower() for name in sports_names)
+        base = {
+            "no_candidate": 65,
+            "failed_probes": 58,
+            "primary_playback_qa_failed": 60,
+            "runner_or_geo_blocked": 45,
+            "quarantined_or_cooldown": 38,
+        }.get(str(row.get("bucket")), 30)
+        score = base + min(2, recent_losses) * 40 + (12 if philly else 0) + (8 if sports else 0)
+        bucket = str(row.get("bucket"))
+        mode = (
+            "local_runner_comparison_or_authorized_alternative"
+            if bucket == "runner_or_geo_blocked"
+            else "wait_for_cooldown_or_new_independent_source"
+            if bucket == "quarantined_or_cooldown"
+            else "new_exact_identity_source"
+        )
+        entries.append({
+            "tvg_id": channel_id,
+            "kind": "missing_channel",
+            "priority_score": score,
+            "reason": bucket,
+            "candidate_count": int(row.get("candidate_count") or 0),
+            "recent_losses": recent_losses,
+            "search_mode": mode,
+            "next_action": row.get("action"),
+            "avoid_existing_upstream_hosts": [],
+            "requires_normal_qa_before_publishing": True,
+        })
+
+    for channel_id, ranked in risky_backups.items():
+        host_info = redundant_by_id.get(channel_id)
+        if not host_info or host_info.get("has_independent_backup"):
+            continue
+        hosts = list(host_info.get("provider_hosts") or [])
+        entries.append({
+            "tvg_id": channel_id,
+            "kind": "independent_backup",
+            "priority_score": int(ranked.get("priority_score") or 0),
+            "reason": "single_stream" if int(host_info.get("stream_count") or 0) < 2 else "same_upstream_mirrors",
+            "candidate_count": int(host_info.get("stream_count") or 0),
+            "recent_losses": int(ranked.get("recent_losses") or 0),
+            "search_mode": "independent_exact_identity_provider",
+            "next_action": "Find and independently validate a genuinely different upstream; do not infer independence from hostnames alone.",
+            "avoid_existing_upstream_hosts": hosts,
+            "existing_source_families": list(host_info.get("provider_families") or []),
+            "has_local_override": bool(ranked.get("locally_verified")),
+            "requires_normal_qa_before_publishing": True,
+        })
+
+    entries.sort(key=lambda item: (-item["priority_score"], item["kind"], item["tvg_id"]))
+    return {
+        "version": 1,
+        "summary": {
+            "backup_targets": sum(item["kind"] == "independent_backup" for item in entries),
+            "missing_targets": sum(item["kind"] == "missing_channel" for item in entries),
+            "private_connector_excluded": private_excluded,
+            "total_targets": len(entries),
+            "queue_does_not_change_production": True,
+        },
+        "top_10": entries[:10],
+        "queue": entries,
+    }
+
+
 def _load_previous_source_scoreboard(config: dict[str, Any]) -> dict[str, Any]:
     settings = config.get("source_scoreboard") or {}
     if not settings.get("enabled", True):
