@@ -57,6 +57,48 @@ class SafetyControlsTests(unittest.TestCase):
              ("SmithsonianChannel.us", "http://89.187.175.143:80/603/index.m3u8")},
         )
 
+    def test_three_failed_smithsonian_local_sources_are_exact_url_disabled(self):
+        import json
+        from pathlib import Path
+
+        config = json.loads(
+            (Path(__file__).resolve().parents[1] / "config.json").read_text()
+        )
+        failed = [
+            "http://89.187.175.143:80/4093/index.m3u8",
+            "http://206.212.244.63/148/index.m3u8",
+            "http://74.48.44.156:1234/stream/asd/391/master.m3u8",
+        ]
+        for url in failed:
+            self.assertIn(url, config["safety_controls"]["disabled_urls"])
+
+        entries = [
+            *[
+                {"tvg_id": "SmithsonianChannel.us", "url": url, "headers": {}}
+                for url in failed
+            ],
+            {
+                "tvg_id": "SmithsonianChannel.us",
+                "url": "https://new-origin.example/smithsonian.m3u8",
+                "headers": {},
+            },
+            {
+                "tvg_id": "UnrelatedChannel.us",
+                "url": "http://206.212.244.63/other/index.m3u8",
+                "headers": {},
+            },
+        ]
+        kept, rejected = build.apply_safety_controls(entries, config)
+        self.assertEqual({item["url"] for item in rejected}, set(failed))
+        self.assertTrue(all(item["reason"] == "url-kill-switch" for item in rejected))
+        self.assertEqual(
+            {item["url"] for item in kept},
+            {
+                "https://new-origin.example/smithsonian.m3u8",
+                "http://206.212.244.63/other/index.m3u8",
+            },
+        )
+
     def test_channel_kill_switch_removes_every_candidate(self):
         entries = [
             {"tvg_id": "FXX.us", "url": "https://a.example/fxx.m3u8", "headers": {}},
