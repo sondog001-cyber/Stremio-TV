@@ -4425,13 +4425,21 @@ def build_host_redundancy_diagnostics(channels: list[dict[str, Any]]) -> dict[st
     rows: list[dict[str, Any]] = []
     for channel in channels:
         streams = channel.get("streams") or []
-        hosts = [stream_provider_host(stream) for stream in streams if stream_provider_host(stream)]
-        unique_hosts = list(dict.fromkeys(hosts))
+        host_family_pairs = []
+        for stream in streams:
+            host = stream_provider_host(stream)
+            if host:
+                host_family_pairs.append((host, str(stream.get("family") or "unknown")))
+        unique_hosts = list(dict.fromkeys(host for host, _family in host_family_pairs))
         rows.append({
             "tvg_id": channel.get("tvg_id"),
             "name": channel.get("name"),
             "stream_count": len(streams),
             "provider_hosts": unique_hosts,
+            "host_family_pairs": [
+                {"host": host, "family": family}
+                for host, family in sorted(set(host_family_pairs))
+            ],
             "provider_families": sorted({str(stream.get("family") or "unknown") for stream in streams}),
             "primary_family": str((streams[0] if streams else {}).get("family") or "unknown"),
             "locally_verified_count": sum(bool(stream.get("local_verified_override")) for stream in streams),
