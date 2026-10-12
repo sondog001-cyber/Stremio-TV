@@ -24,13 +24,13 @@ from collections import Counter
 
 CONFIG_PATH = Path("config.json")
 OUTPUT = Path("qa-results/daddylive-six-player-research.json")
-SERVERS = ("stream", "cast", "watch", "plus", "casting", "player")
+SERVERS = ("player",)  # Follow-up only; full 114-slot result preserved in preceding run artifact
 RESOLVER = "http://127.0.0.1:3000"
 TIMEOUT = 10
 BUDGET_SECONDS = 660
 MANIFEST_BYTES = 500000
-SEGMENT_BYTES = 2200000
-MAX_PER_PROVIDER = 3
+SEGMENT_BYTES = 9500000  # Follow-up: larger TS segments, still bounded
+MAX_PER_PROVIDER = 1  # Focused review without simultaneous provider requests
 USER_AGENT = "Mozilla/5.0 (Stremio-TV research-only playback QA)"
 stop = threading.Event()
 start = time.monotonic()
@@ -204,7 +204,7 @@ def check_one(item):
             if not decoded:
                 row["status"] = "ffmpeg_no_video_frames"
                 return row
-            time.sleep(5)
+            time.sleep(22)  # Extra interval to catch stalled or repeating HLS windows
             second = manifest_info(direct, ref)
             row["manifest_progressed"] = (
                 second["sequence"] != first["sequence"] or second["segments"] != first["segments"]
@@ -228,7 +228,9 @@ def check_one(item):
 
 def main():
     cfg = json.loads(CONFIG_PATH.read_text())
-    targets = cfg["discovery"]["daddylive_resolver"]["targets"]
+    targets = [t for t in cfg["discovery"]["daddylive_resolver"]["targets"]
+               if t["tvg_id"] in {"FoxSports2.us", "CBSSportsNetwork.us"}]
+    # One final direct-HLS-only Player 6 retest; see initial run 38286632107 for all six.
     order = ["FoxSports2.us", "MLBNetwork.us", "NBCSportsPhiladelphia.us",
              "HGTV.us", "FXX.us", "Nicktoons.us", "CBSSportsNetwork.us",
              "InvestigationDiscovery.us", "TLC.us", "DiscoveryChannel.us",
