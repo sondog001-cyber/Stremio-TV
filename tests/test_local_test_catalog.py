@@ -182,6 +182,73 @@ class LocalTestCatalogTests(unittest.TestCase):
         self.assertEqual(channels[0]["streams"][0]["url"], "https://fresh.example/new.m3u8")
         self.assertEqual(report["summary"]["excluded_tested_streams"], 2)
 
+
+    def test_initially_healthy_missing_channel_is_test_only(self):
+        self.config["local_test_catalog"].update({
+            "target_ids": ["Bravo.us", "HallmarkChannel.us"],
+            "include_initially_healthy_unpublished_ids": ["Bravo.us", "HallmarkChannel.us"],
+            "reject_known_http_failures": [401, 404, 410],
+        })
+        entries = [
+            candidate("Bravo.us", "https://example.test/bravo.m3u8",
+                      status="ok", detail="Passed established two-probe validation"),
+            candidate("HallmarkChannel.us", "https://example2.test/hallmark.m3u8",
+                      status="ok", detail="Passed established two-probe validation"),
+        ]
+        channels, report = build.build_local_test_channels(entries, [], self.config)
+        self.assertEqual({c["tvg_id"] for c in channels},
+                         {"Bravo.us", "HallmarkChannel.us"})
+        self.assertEqual(report["summary"]["initially_healthy_unpublished"], 2)
+        self.assertTrue(all(s["local_test"] and not s.get("local_verified_override")
+                            for c in channels for s in c["streams"]))
+        republished, _ = build.build_local_test_channels(
+            entries, [{"tvg_id": "Bravo.us"}, {"tvg_id": "HallmarkChannel.us"}],
+            self.config,
+        )
+        self.assertEqual(republished, [])
+
+    def test_local_test_rejects_known_404_401_and_expiring_media(self):
+        self.config["local_test_catalog"].update({
+            "target_ids": ["BET.us"],
+            "include_runner_timeout_targets": True,
+            "reject_known_http_failures": [401, 404, 410],
+        })
+        entries = [
+            candidate("BET.us", "https://old.example/bet.m3u8",
+                      status="cooldown", detail="Dead source probe deferred; last failure: HTTP 404"),
+            candidate("BET.us", "https://private.example/bet.m3u8",
+                      status="cooldown", detail="Dead source probe deferred; last failure: HTTP 401"),
+            {
+                **candidate("BET.us", "https://temporary.example/bet.m3u8",
+                            status="cooldown", detail="Last failure: HTTP 403"),
+                "ephemeral_signed": True, "expires_at": 1,
+            },
+            candidate("BET.us", "https://maybe.example/bet.m3u8",
+                      status="cooldown", detail="The read operation timed out"),
+        ]
+        channels, report = build.build_local_test_channels(entries, [], self.config)
+        self.assertEqual(len(channels), 1)
+        self.assertEqual(len(channels[0]["streams"]), 1)
+        self.assertEqual(channels[0]["streams"][0]["url"],
+                         "https://maybe.example/bet.m3u8")
+        reasons = report["summary"]["rejected_source_reasons"]
+        self.assertGreaterEqual(reasons.get("known denied/dead source in cooldown", 0), 2)
+        self.assertEqual(reasons.get("expired or expiring signed URL"), 1)
+
+    def test_local_tests_never_publish_private_login_or_proxy_links(self):
+        self.config["local_test_catalog"]["target_ids"] = ["CNBC.us"]
+        entries = [
+            candidate("CNBC.us", "https://user:secret@provider.example/cnbc.m3u8"),
+            candidate("CNBC.us", "https://example.test/api/proxy/cnbc.m3u8"),
+            candidate("CNBC.us", "https://public.example/cnbc.m3u8?username=x&password=y"),
+            candidate("CNBC.us", "https://public.example/cnbc.m3u8"),
+        ]
+        channels, report = build.build_local_test_channels(entries, [], self.config)
+        self.assertEqual(len(channels), 1)
+        self.assertEqual([s["url"] for s in channels[0]["streams"]],
+                         ["https://public.example/cnbc.m3u8"])
+        self.assertEqual(sum(report["summary"]["rejected_source_reasons"].values()), 3)
+
     def test_local_test_stream_preserves_request_headers(self):
         stream = candidate(
             "CBSSportsNetwork.us",
