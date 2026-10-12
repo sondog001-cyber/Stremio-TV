@@ -179,6 +179,7 @@ Build output includes `status.json` and structured reports under `site/diagnosti
 | `resilience-hunt-queue.json` | Priority missing-channel and independent-backup source hunt targets |
 | `five-build-reliability.json` | Five-build decoder and local-override reliability history |
 | `v08-reliability-watchdog.json` | Read-only coverage, backup, override and host concentration alerts |
+| `upstream-exposure.json` | Read-only risk ranking, shared-host blast radius, same-host mirrors, and per-stream source-family evidence |
 | `quality-measurements.json` | Declared and measured stream quality |
 | `philly-recovery.json` | Philadelphia runner/client verification state |
 | `targeted-source-scans.json` | Targeted public source-scan results |
@@ -191,6 +192,8 @@ Each generated response includes the addon version, UTC build timestamp, build I
 ## Reliability roadmap
 
 The [v0.8.0 reliability milestone](research/milestone-v0.8.0.md) prioritizes multi-build playback quality, independent upstream backups, and regression monitoring. The watchdog runs during normal builds and writes a GitHub Actions job summary; it does not change stream selection, block deployment, or count local-verified overrides as normal decoder success.
+
+The upstream-exposure report treats different hostnames as **potential alternatives only**: it never certifies independent providers from DNS names or source-family labels. It prioritizes independent backup research and never changes playback selection.
 
 ## Security and legal notes
 
