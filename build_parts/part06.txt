@@ -385,6 +385,17 @@
             enabled=not bool(fixtures),
         )
 
+        resilience_hunt_queue = build_resilience_hunt_queue(
+            host_redundancy,
+            missing_source_diagnostics,
+            five_build_reliability,
+        )
+        log(
+            "Targeted resilience hunt: "
+            f"{resilience_hunt_queue['summary']['backup_targets']} exposed provider backups; "
+            f"{resilience_hunt_queue['summary']['missing_targets']} missing-channel targets"
+        )
+
         total_streams = sum(len(c["streams"]) for c in channels)
         status = {
             "built_at": build_info["built_at"],
