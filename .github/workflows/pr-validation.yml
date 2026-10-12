@@ -15,6 +15,8 @@ on:
       - "requirements.txt"
       - "reliability_watchdog.py"
       - "upstream_exposure.py"
+      - "qa_wide_net_candidates.py"
+      - "research/qa-20261012-wide-net-candidates.json"
       - ".github/workflows/pr-validation.yml"
 
 permissions:
@@ -38,3 +40,19 @@ jobs:
         run: python -m py_compile build.py
       - name: Run builder tests
         run: python -m unittest discover -s tests -v
+      - name: Install FFmpeg for research-only isolated HLS QA
+        if: github.head_ref == 'research-qa-new-playlists-20261012'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Probe wide-net public M3U candidates (nonblocking; never publish)
+        if: github.head_ref == 'research-qa-new-playlists-20261012'
+        continue-on-error: true
+        timeout-minutes: 17
+        run: python qa_wide_net_candidates.py
+      - name: Upload read-only wide-net QA report
+        if: always() && github.head_ref == 'research-qa-new-playlists-20261012'
+        uses: actions/upload-artifact@v7
+        with:
+          name: wide-net-research-qa
+          path: qa-results/qa-wide-net-20261012.json
+          if-no-files-found: warn
+          retention-days: 7
