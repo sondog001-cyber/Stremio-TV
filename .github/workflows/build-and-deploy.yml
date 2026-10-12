@@ -16,6 +16,7 @@ on:
       - "requirements.txt"
       - "reliability_watchdog.py"
       - "upstream_exposure.py"
+      - "deployment_guard.py"
       - ".github/workflows/build-and-deploy.yml"
   schedule:
     - cron: "7 */2 * * *"
@@ -84,31 +85,8 @@ jobs:
       - name: Report v0.8 reliability risks (advisory)
         continue-on-error: true
         run: python reliability_watchdog.py
-      - name: Guard against catastrophic coverage regression
-        shell: bash
-        run: |
-          python - <<'PY'
-          import json
-          import sys
-          from pathlib import Path
-
-          config = json.loads(Path("config.json").read_text())
-          status = json.loads(Path("site/status.json").read_text())
-          guard = config.get("deployment_guard") or {}
-          if not guard.get("enabled", True):
-              raise SystemExit(0)
-
-          minimum = int(guard.get("minimum_channels", 65))
-          channels = int(status.get("channels", 0))
-          print(f"Deployment guard: published channels={channels}, minimum={minimum}")
-          if channels < minimum:
-              print(
-                  f"ERROR: refusing to deploy catastrophic coverage regression "
-                  f"({channels} < {minimum}); previous Pages deployment stays live.",
-                  file=sys.stderr,
-              )
-              raise SystemExit(1)
-          PY
+      - name: Guard against channel coverage and identity regression
+        run: python deployment_guard.py
       - name: Upload build diagnostics
         if: always()
         uses: actions/upload-artifact@v7
