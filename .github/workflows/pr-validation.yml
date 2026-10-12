@@ -16,6 +16,7 @@ on:
       - "reliability_watchdog.py"
       - "upstream_exposure.py"
       - "research/qa_daddylive_players.py"
+      - "research/qa_daddylive_sustained.py"
       - ".github/workflows/pr-validation.yml"
 
 permissions:
@@ -66,16 +67,18 @@ jobs:
           echo "::error::Pinned resolver did not start; no network QA attempted"
           tail -n 20 /tmp/daddylive-research.log || true
           exit 1
-      - name: Run bounded direct-HLS DaddyLive Players 1 through 6 QA
+      - name: Run 100-second direct-HLS Player 6 sustained and loop QA
         if: github.head_ref == 'research-daddylive-all-six-players-20261012'
         timeout-minutes: 15
         shell: bash
-        run: python research/qa_daddylive_players.py
+        run: python research/qa_daddylive_sustained.py
       - name: Upload research-only DaddyLive QA report
         if: always() && github.head_ref == 'research-daddylive-all-six-players-20261012'
         uses: actions/upload-artifact@v7
         with:
-          name: daddylive-six-player-research
-          path: qa-results/daddylive-six-player-research.json
+          name: daddylive-sustained-player6-review
+          path: |
+            qa-results/daddylive-player6-sustained.json
+            qa-results/identity-thumbnails/*.jpg
           if-no-files-found: warn
           retention-days: 7
