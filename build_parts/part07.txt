@@ -67,6 +67,7 @@
         )
         write_json(output / "diagnostics" / "source-ordering.json", source_ordering_rows)
         write_json(output / "diagnostics" / "host-redundancy.json", host_redundancy)
+        write_json(output / "diagnostics" / "five-build-reliability.json", five_build_reliability)
         write_json(output / "diagnostics" / "source-family-scoreboard.json", source_family_scoreboard)
         write_json(output / "diagnostics" / "source-results.json", source_results)
         write_landing_page(output, config, status)
