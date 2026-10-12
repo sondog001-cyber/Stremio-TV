@@ -4792,6 +4792,67 @@ def _runner_or_geo_blocked_health(health: dict[str, Any]) -> bool:
     )
 
 
+def _coverage_local_test_rejection(
+    entry: dict[str, Any],
+    excluded_http_codes: set[int],
+    built_at: dt.datetime,
+) -> str:
+    """Avoid known-dead, credential-bearing, ephemeral or disguised local test URLs.
+
+    This is a local-test curation filter only; it does not alter normal QA,
+    source selection, blacklists, cooldowns or production publication.
+    """
+    url = str(entry.get("url") or "").strip()
+    try:
+        parts = urllib.parse.urlsplit(url)
+        if parts.scheme not in {"http", "https"} or not parts.hostname:
+            return "not an HTTP(S) media URL"
+        if parts.username or parts.password:
+            return "embedded private login credentials"
+    except ValueError:
+        return "malformed URL"
+    if re.search(r"(?:^|[?&])(?:username|password|user|pass)=", parts.query, re.I):
+        return "embedded account credential parameters"
+    lower = parts.path.lower()
+    if any(x in lower for x in ("/api/proxy", "/api/live")):
+        return "proxy/restream endpoint"
+    if lower.endswith((".png", ".webp", ".jpg", ".jpeg")):
+        return "disguised media segment, not direct HLS"
+    health = entry.get("health") or {}
+    detail = str(health.get("detail") or "")
+    http_code = health.get("http_status")
+    try:
+        http_code = int(http_code)
+    except (ValueError, TypeError):
+        http_code = None
+    if http_code in excluded_http_codes:
+        return f"known HTTP {http_code}"
+    if any(re.search(rf"\\bHTTP\\s+{code}\\b", detail, re.I)
+           for code in excluded_http_codes):
+        return "known denied/dead source in cooldown"
+    if re.search(r"(?:HLS segment returned image content|no video frames|repeated.clip)", detail, re.I):
+        return "known unplayable/repeating media"
+    expires = entry.get("expires_at")
+    if bool(entry.get("ephemeral_signed")):
+        if not expires:
+            return "unbounded short-lived signed URL in static test catalog"
+    if expires:
+        try:
+            if isinstance(expires, (int, float)):
+                expires_at = dt.datetime.fromtimestamp(float(expires), tz=UTC)
+            elif str(expires).strip().isdigit():
+                expires_at = dt.datetime.fromtimestamp(float(expires), tz=UTC)
+            else:
+                expires_at = dt.datetime.fromisoformat(str(expires).replace("Z", "+00:00"))
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=UTC)
+            if expires_at <= built_at + dt.timedelta(minutes=15):
+                return "expired or expiring signed URL"
+        except (ValueError, TypeError, OverflowError, OSError):
+            return "unparseable URL expiration"
+    return ""
+
+
 def build_local_test_channels(
     probed_entries: list[dict[str, Any]],
     published_channels: list[dict[str, Any]],
@@ -4826,6 +4887,16 @@ def build_local_test_channels(
         for value in settings.get("target_ids", [])
         if str(value).strip()
     }
+    initial_ok_target_ids = {
+        canonical_tvg_id(str(value))
+        for value in settings.get("include_initially_healthy_unpublished_ids", [])
+        if str(value).strip()
+    }
+    include_runner_timeout = bool(settings.get("include_runner_timeout_targets", False))
+    excluded_http_codes = {
+        int(value)
+        for value in settings.get("reject_known_http_failures", [401, 404, 410])
+    }
     excluded_families = {
         str(value).strip().lower()
         for value in settings.get("exclude_families", [])
@@ -4837,6 +4908,8 @@ def build_local_test_channels(
         if str(value).strip()
     }
     excluded_tested_streams = 0
+    rejected_source_reasons: dict[str, int] = defaultdict(int)
+    initially_healthy_unpublished_count = 0
     candidates: list[dict[str, Any]] = []
     for entry in probed_entries:
         tvg_id = str(entry.get("tvg_id") or "")
@@ -4855,11 +4928,31 @@ def build_local_test_channels(
             excluded_tested_streams += 1
             continue
         health = entry.get("health") or {}
+        is_initially_healthy_unpublished = (
+            explicitly_pinned
+            and marker in initial_ok_target_ids
+            and marker not in published_ids
+            and health.get("status") == "ok"
+        )
         if explicitly_pinned:
-            if health.get("status") == "ok":
+            if health.get("status") == "ok" and not is_initially_healthy_unpublished:
                 continue
         elif not _runner_or_geo_blocked_health(health):
             continue
+        failure_detail = str(health.get("detail") or "")
+        local_access_signal = _runner_or_geo_blocked_health(health)
+        runner_timeout_signal = (
+            include_runner_timeout and explicitly_pinned
+            and bool(re.search(r"(?:timed out|timeout)", failure_detail, re.I))
+        )
+        if not (is_initially_healthy_unpublished or local_access_signal or runner_timeout_signal):
+            continue
+        reject = _coverage_local_test_rejection(entry, excluded_http_codes, dt.datetime.now(UTC))
+        if reject:
+            rejected_source_reasons[reject] += 1
+            continue
+        if is_initially_healthy_unpublished:
+            initially_healthy_unpublished_count += 1
         item = dict(entry)
         item["local_test"] = True
         item["local_test_reason"] = str(health.get("detail") or "Runner/geo access failure")
@@ -4916,8 +5009,10 @@ def build_local_test_channels(
             "channels": len(channels),
             "streams": sum(len(channel.get("streams") or []) for channel in channels),
             "max_streams_per_channel": max_streams,
-            "pinned_target_ids": len(pinned_target_ids),
             "excluded_tested_streams": excluded_tested_streams,
+            "rejected_source_reasons": dict(sorted(rejected_source_reasons.items())),
+            "initially_healthy_unpublished": initially_healthy_unpublished_count,
+            "pinned_target_ids": len(pinned_target_ids),
             "excluded_families": sorted(excluded_families),
             "excluded_provider_hosts": sorted(excluded_provider_hosts),
         },
