@@ -4827,7 +4827,7 @@ def _coverage_local_test_rejection(
         http_code = None
     if http_code in excluded_http_codes:
         return f"known HTTP {http_code}"
-    if any(re.search(rf"\\bHTTP\\s+{code}\\b", detail, re.I)
+    if any(re.search(rf"\bHTTP\s+{code}\b", detail, re.I)
            for code in excluded_http_codes):
         return "known denied/dead source in cooldown"
     if re.search(r"(?:HLS segment returned image content|no video frames|repeated.clip)", detail, re.I):
