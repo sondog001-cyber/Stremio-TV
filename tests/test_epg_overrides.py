@@ -19,6 +19,27 @@ class EpgOverrideTests(unittest.TestCase):
             self.assertEqual(method, "manual-tvg-id")
             self.assertEqual(score, 1.0)
 
+    def test_recovered_channels_retain_exact_epg_when_source_names_change(self):
+        aliases = build.load_json(build.DEFAULT_ALIASES)
+        known = {
+            "DisneyChannel.us": "Disney.Channel.HD.us2",
+            "NationalGeographic.us": "National.Geographic.HD.us2",
+            "History.us@East": "History.HD.us2",
+        }
+        guide = [
+            {"id": value, "names": [value], "icon": ""}
+            for value in known.values()
+        ]
+        indexes = build.make_epg_indexes(guide)
+        for source_id, expected in known.items():
+            matched, method, score = build.match_epg_channel(
+                {"tvg_id": source_id, "name": "Different upstream name (United States)"},
+                indexes, aliases,
+            )
+            self.assertEqual(matched, expected)
+            self.assertEqual(method, "manual-tvg-id")
+            self.assertEqual(score, 1.0)
+
     def test_unavailable_override_does_not_substitute_another_channel(self):
         aliases = build.load_json(build.DEFAULT_ALIASES)
         matched, method, score = build.match_epg_channel(
