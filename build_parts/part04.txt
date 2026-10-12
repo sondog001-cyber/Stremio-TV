@@ -4470,6 +4470,17 @@ def build_resilience_hunt_queue(
         row["tvg_id"]: row for row in host_redundancy.get("channels", [])
         if row.get("tvg_id")
     }
+    host_dependents: dict[str, set[str]] = {}
+    for row in host_redundancy.get("channels", []):
+        channel_id = str(row.get("tvg_id") or "")
+        for host in set(row.get("provider_hosts") or []):
+            host_dependents.setdefault(host, set()).add(channel_id)
+    host_concentration = [
+        {"host": host, "published_channels": len(dependents)}
+        for host, dependents in host_dependents.items()
+    ]
+    host_concentration.sort(key=lambda item: (-item["published_channels"], item["host"]))
+
     risky_backups = {
         row["tvg_id"]: row
         for row in five_build_reliability.get("independent_backup_priorities", [])
@@ -4542,6 +4553,7 @@ def build_resilience_hunt_queue(
             "search_mode": "independent_exact_identity_provider",
             "next_action": "Find and independently validate a genuinely different upstream; do not infer independence from hostnames alone.",
             "avoid_existing_upstream_hosts": hosts,
+            "shared_host_exposure": max((len(host_dependents.get(host, set())) for host in hosts), default=0),
             "existing_source_families": list(host_info.get("provider_families") or []),
             "has_local_override": bool(ranked.get("locally_verified")),
             "requires_normal_qa_before_publishing": True,
@@ -4558,6 +4570,7 @@ def build_resilience_hunt_queue(
             "queue_does_not_change_production": True,
         },
         "top_10": entries[:10],
+        "host_concentration": host_concentration[:20],
         "queue": entries,
     }
 
