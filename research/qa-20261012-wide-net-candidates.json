@@ -4,9 +4,12 @@
     "source_urls": [
       "https://raw.githubusercontent.com/launchpad2/tv/main/us.m3u",
       "https://raw.githubusercontent.com/SharifAkhand/SA/master/bd",
-      "https://raw.githubusercontent.com/marasiganjosephursaiz-crypto/IPTV-PH-AND-US.M3U/main/JoeMarasiganTV.m3u"
+      "https://raw.githubusercontent.com/marasiganjosephursaiz-crypto/IPTV-PH-AND-US.M3U/main/JoeMarasiganTV.m3u",
+      "https://github.com/iptv-org/iptv/issues/17989",
+      "https://github.com/iptv-org/iptv/issues/16055"
     ],
-    "status": "unverified"
+    "status": "unverified",
+    "historic_lead_note": "Two 2024 iptv-org issue links on different source hostnames, unverified/possibly expired. Run only research QA, no production candidate addition."
   },
   "candidates": [
     {
@@ -196,6 +199,20 @@
       "url": "http://40.160.24.55/STARZ_COMEDY/index.m3u8",
       "playlist_family": "generic_ip",
       "claimed_tvg_id": "StarzComedy.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "MLBNetwork.us",
+      "url": "https://tx2.nexgen.bz/MLB/index.m3u8",
+      "playlist_family": "iptv-org-issue-historic",
+      "claimed_tvg_id": "MLBNetwork.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "MLBNetwork.us",
+      "url": "http://livex.pop-app.live/s4n/poplive/ch336/playlist.m3u8",
+      "playlist_family": "iptv-org-issue-historic",
+      "claimed_tvg_id": "MLBNetwork.us",
       "policy_skip": false
     }
   ]
