@@ -2868,7 +2868,8 @@
           "tvg_id": "CBSSportsNetwork.us",
           "name": "CBS Sports Network",
           "channel_id": 308,
-          "group": "Sports"
+          "group": "Sports",
+          "additional_servers": ["player"]
         },
         {
           "tvg_id": "DiscoveryChannel.us",
@@ -2886,7 +2887,8 @@
           "tvg_id": "FoxSports2.us",
           "name": "Fox Sports 2",
           "channel_id": 758,
-          "group": "Sports"
+          "group": "Sports",
+          "additional_servers": ["player"]
         },
         {
           "tvg_id": "HGTV.us",
