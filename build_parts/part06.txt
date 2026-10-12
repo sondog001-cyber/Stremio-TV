@@ -121,18 +121,6 @@
 
         source_ordering_rows = build_source_ordering_diagnostics(channels, config)
         host_redundancy = build_host_redundancy_diagnostics(channels)
-        five_build_reliability = build_five_build_reliability(
-            channels,
-            channel_changes,
-            primary_playback_qa,
-            host_redundancy,
-            build_tvnow_qa_diagnostics(stream_health_results, source_ordering_rows, primary_playback_qa),
-            build_missing_source_diagnostics(
-                allowlist_coverage, healthy_allowlist_coverage, stream_health_results, channels, config,
-            ),
-            build_info,
-            enabled=not bool(fixtures),
-        )
         source_family_scoreboard = build_source_family_scoreboard(
             stream_health_results,
             channels,
@@ -385,6 +373,16 @@
             stream_health_results,
             channels,
             config,
+        )
+        five_build_reliability = build_five_build_reliability(
+            channels,
+            channel_changes,
+            primary_playback_qa,
+            host_redundancy,
+            build_tvnow_qa_diagnostics(stream_health_results, source_ordering_rows, primary_playback_qa),
+            missing_source_diagnostics,
+            build_info,
+            enabled=not bool(fixtures),
         )
 
         total_streams = sum(len(c["streams"]) for c in channels)
