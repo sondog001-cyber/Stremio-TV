@@ -9,7 +9,8 @@
       "https://github.com/iptv-org/iptv/issues/16055"
     ],
     "status": "unverified",
-    "historic_lead_note": "Two 2024 iptv-org issue links on different source hostnames, unverified/possibly expired. Run only research QA, no production candidate addition."
+    "historic_lead_note": "Two 2024 iptv-org issue links on different source hostnames, unverified/possibly expired. Run only research QA, no production candidate addition.",
+    "recovery_note": "Bravo and Hallmark recovery sweep after run 38291969091 decoder losses. Only direct public playlist-host leads; no embedded credentials, no approval/publishing; independent source host != verified independent origin."
   },
   "candidates": [
     {
@@ -213,6 +214,62 @@
       "url": "http://livex.pop-app.live/s4n/poplive/ch336/playlist.m3u8",
       "playlist_family": "iptv-org-issue-historic",
       "claimed_tvg_id": "MLBNetwork.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "Bravo.us",
+      "url": "http://170.254.18.106/BRAVO/index.m3u8",
+      "playlist_family": "kilirushi/iptv",
+      "claimed_tvg_id": "Bravo.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "Bravo.us",
+      "url": "https://streamer1.nexgen.bz/BRAVO/index.m3u8",
+      "playlist_family": "PABLOPOM/m3u",
+      "claimed_tvg_id": "Bravo.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "Bravo.us",
+      "url": "http://212.8.253.117/bravo/index.m3u8",
+      "playlist_family": "Jason6111/iptv",
+      "claimed_tvg_id": "Bravo.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "Bravo.us",
+      "url": "http://fl2.moveonjoy.com/BRAVO/index.m3u8",
+      "playlist_family": "gogetta69/public-files",
+      "claimed_tvg_id": "Bravo.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "Bravo.us",
+      "url": "http://212.102.60.231/BRAVO/index.m3u8",
+      "playlist_family": "InsolenceWillow/insolencetvgo",
+      "claimed_tvg_id": "Bravo.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "HallmarkChannel.us",
+      "url": "http://fl2.moveonjoy.com/HALLMARK_CHANNEL/index.m3u8",
+      "playlist_family": "gogetta69/public-files",
+      "claimed_tvg_id": "HallmarkChannel.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "HallmarkChannel.us",
+      "url": "https://fl7.moveonjoy.com/HALLMARK_CHANNEL/index.m3u8",
+      "playlist_family": "spookyhost1/yarr-stremio",
+      "claimed_tvg_id": "HallmarkChannel.us",
+      "policy_skip": false
+    },
+    {
+      "tvg_id": "HallmarkChannel.us",
+      "url": "https://fl1.moveonjoy.com/HALLMARK_CHANNEL/index.m3u8",
+      "playlist_family": "weihaoxie/iptv",
+      "claimed_tvg_id": "HallmarkChannel.us",
       "policy_skip": false
     }
   ]
