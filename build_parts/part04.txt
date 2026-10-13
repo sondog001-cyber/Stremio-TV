@@ -4869,6 +4869,71 @@ def _coverage_local_test_rejection(
     return ""
 
 
+
+def _controlled_nicktoons_local_test_source(
+    config: dict[str, Any],
+    pinned_ids: set[str],
+    excluded_http_codes: set[int],
+) -> list[dict[str, Any]]:
+    """Accept only the specifically reviewed Nicktoons AynaScope URL for Local Test.
+
+    The broader aynascope.net exclusion stays intact for all discovered feeds.
+    These controlled entries are NEVER added to the published/primary QA pool.
+    """
+    settings = config.get("local_test_catalog") or {}
+    expected_url = "http://tvsen7.aynascope.net/nicktoons/index.m3u8"
+    expected_id = "Nicktoons.us"
+    if canonical_tvg_id(expected_id) not in pinned_ids:
+        return []
+    if expected_id in set((config.get("safety_controls") or {}).get("disabled_channels") or []):
+        return []
+    if expected_url in set((config.get("safety_controls") or {}).get("disabled_urls") or []):
+        return []
+    accepted = []
+    for item in settings.get("controlled_sources") or []:
+        if not isinstance(item, dict):
+            continue
+        # Hard fail closed to prevent a generic host-exclusion bypass.
+        if (
+            item.get("tvg_id") != expected_id
+            or item.get("url") != expected_url
+            or item.get("family") != "aynascope"
+            or item.get("local_test_only") is not True
+        ):
+            continue
+        if _coverage_local_test_rejection(
+            {"url": expected_url, "health": {}}, excluded_http_codes, dt.datetime.now(UTC)
+        ):
+            continue
+        accepted.append({
+            "tvg_id": expected_id,
+            "name": "Nicktoons East — AynaScope Test",
+            "name_raw": "Nicktoons East — AynaScope Test",
+            "url": expected_url,
+            "family": "aynascope",
+            "source": "AynaScope Nicktoons Controlled Local Test",
+            "quality": "SD",
+            "group": "Kids",
+            "priority": 1,
+            "content_kind": "full-linear",
+            "headers": {},
+            "local_test": True,
+            "local_test_only": True,
+            "local_test_reason": "Research 9/9 clean FFmpeg windows; verify actual Nicktoons US East in Stremio",
+            "health": {
+                "status": "not-tested",
+                "detail": "Controlled local-only test; not part of the normal production QA pool",
+            },
+            "stability": {
+                "classification": "Local Test Only",
+                "passes": 0,
+                "samples": 0,
+                "rank": 3,
+            },
+        })
+    return accepted[:1]
+
+
 def build_local_test_channels(
     probed_entries: list[dict[str, Any]],
     published_channels: list[dict[str, Any]],
@@ -4984,6 +5049,21 @@ def build_local_test_channels(
         item["local_test_reason"] = str(health.get("detail") or "Runner/geo access failure")
         candidates.append(item)
 
+    # Inject only the hard-pinned Nicktoons local validation URL into this
+    # separate catalog. Never pass it to stream discovery, the primary decoder,
+    # published merge, or automatic source promotion. Suppress other Nicktoons
+    # local candidates so the user has a single unambiguous test tile.
+    controlled = _controlled_nicktoons_local_test_source(
+        config, pinned_target_ids, excluded_http_codes
+    )
+    if controlled:
+        controlled_id = canonical_tvg_id(controlled[0]["tvg_id"])
+        candidates = [
+            row for row in candidates
+            if canonical_tvg_id(str(row.get("tvg_id") or "")) != controlled_id
+        ]
+        candidates.extend(controlled)
+
     channels = merge_channels(
         candidates,
         config.get("favorites", []),
@@ -5038,6 +5118,7 @@ def build_local_test_channels(
             "excluded_tested_streams": excluded_tested_streams,
             "rejected_source_reasons": dict(sorted(rejected_source_reasons.items())),
             "initially_healthy_unpublished": initially_healthy_unpublished_count,
+            "controlled_local_test_streams": len(controlled),
             "pinned_target_ids": len(pinned_target_ids),
             "excluded_families": sorted(excluded_families),
             "excluded_provider_hosts": sorted(excluded_provider_hosts),
