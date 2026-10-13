@@ -148,3 +148,27 @@ Main's latest [#38321378327](https://github.com/sondog001-cyber/Stremio-TV/actio
 4. **Excluded historical host:** Cinemax Classics `23.237.104.106` previously banned family. Keep research only until unequivocal independence and QA, no security-policy override.
 
 **Pass-1 result:** all **24 exact missing IDs reviewed and grouped**. **2 URLs warrant preliminary new-origin comparison**, not yet usable: one 2024 historical Bravo host, one Nicktoons gateway URL. **0 new streams passed FFmpeg/segment/repetition QA**, **0 production promotions**. Batch A–D can be run independently and merged into one diagnostic report before any source deployment. Keep all findings in this draft research PR until media QA makes them actionable.
+
+
+## Executed four-batch isolated HLS/FFmpeg run (GitHub Actions #38327011713)
+
+**Run:** https://github.com/sondog001-cyber/Stremio-TV/actions/runs/38327011713  
+**Source:** `research/batch_missing_hls_qa.py` and `.github/workflows/batch-missing-hls-research-qa.yml` on research-only draft PR #82. The workflow ran on all four `A, B, C, D` groups successfully. Its **job success only indicates diagnostics completed**, not that media passed QA. Results are in four per-batch artifact JSON files attached to the run.
+
+| Six-channel batch | Eligible endpoints attempted | Exact candidate | Result | Disposition |
+|---|---:|---|---|---|
+| A | 1 | Bravo `http://170.254.18.106/BRAVO/index.m3u8` | `URLError: <urlopen error timed out>` from Actions runner | no manifest, segment or FFmpeg pass |
+| B | 2 | Nicktoons `https://sra72yz.s.gy/NICKTOONS_HD.m3u8` | `HTTP 403 Forbidden` from Actions runner | not independently playable from runner; no media redirect recovered |
+| B | — | CBS Sports Network `http://40.160.24.52/CBS_SPORTS_NETWORK/index.m3u8` | `HTTP 404 Not Found` from Actions runner | pre-existing candidate still invalid |
+| C | 0 | — | All six premium-channel targets have no fresh eligible origin | no playback probe attempted |
+| D | 0 | — | All six targets have no fresh eligible origin; last two require private/OTA connector | no playback probe attempted |
+
+**Aggregate: 24 missing exact identities tracked; 3 candidate URLs actually contacted; 0 streams passed initial HTTP/HLS gate; 0 reached FFmpeg decoding; 0 promoted**. Remaining 21 channels were explicitly reported as `no_new_eligible_candidate` or `private_connector_required`, **not tested and failed**. These results reflect GitHub-runner conditions, not a conclusive verdict on other networks. The bad Nicktoons gateway is not eligible for a Stremio Local Test link solely because it appears in a public playlist.
+
+### Actions taken
+- Created and executed fully isolated research-only GitHub Actions matrix A–D.
+- Captured exact endpoint failures in run artifacts. Kept all candidate URLs out of production config and the Stremio Local Test catalog.
+- Kept `deployment_guard`, normal decoder and repeat/stall policy unchanged. The previous successful GitHub Pages deployment remains at **87/111**.
+- A future candidate must first survive HLS manifest/segment HTTP checks; **only then** does this research runner examine live playlist advance, ~18s initial decoded frames, and finally the full production 60s burn-in plus exact identity and authorization checks.
+
+**Next highest-value action:** new per-channel original-provider and OTA/TVE-authorized source discovery, not repeated probes of these exact same URLs or imported mirror playlists.
