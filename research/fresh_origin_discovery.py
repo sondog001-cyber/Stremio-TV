@@ -37,6 +37,14 @@ SEEDS = [
      "repo": "abusaeeidx/IPTV-Scraper-Zilla", "source_type": "third-party-scraped-unverified"},
     {"name": "BD", "url": "https://raw.githubusercontent.com/abusaeeidx/IPTV-Scraper-Zilla/main/BD.m3u",
      "repo": "abusaeeidx/IPTV-Scraper-Zilla", "source_type": "third-party-scraped-unverified"},
+    {"name": "chyz-US", "url": "https://raw.githubusercontent.com/cihan53/chyz-iptv/master/US/index.m3u",
+     "repo": "cihan53/chyz-iptv", "source_type": "community-playlist"},
+    {"name": "Insolence-go", "url": "https://raw.githubusercontent.com/InsolenceWillow/insolencetvgo/main/playlist%20(2).m3u8",
+     "repo": "InsolenceWillow/insolencetvgo", "source_type": "community-playlist"},
+    {"name": "CeresLabX", "url": "https://raw.githubusercontent.com/CeresLabX/us-tv/main/playlist.m3u",
+     "repo": "CeresLabX/us-tv", "source_type": "iptv-org-derivative-dedup-comparison"},
+    {"name": "pcouillard", "url": "https://raw.githubusercontent.com/pcouillard/iptv/master/iptv.m3u",
+     "repo": "pcouillard/iptv", "source_type": "community-mixed-credential-entries-rejected"},
 ]
 # The source has NO tvg-id; these are explicitly evaluated NAME hints, never automatic
 # proof of exact network identity. Keep MS NOW/MSNBC especially marked provisional.
@@ -76,6 +84,9 @@ def valid_public_url(url):
     if p.scheme not in ("http", "https") or not p.hostname:
         return False
     if p.username is not None or p.password is not None:
+        return False
+    qs = urllib.parse.parse_qs(p.query, keep_blank_values=True)
+    if any(k.lower() in {"un", "user", "username", "pass", "password", "pwd"} for k in qs):
         return False
     if re.search(r"/(?:live|movie|series)/[^/]+/[^/]+/[0-9]+(?:\.[a-z0-9]+)?$", p.path, re.I):
         return False
@@ -234,9 +245,19 @@ def run(batch, artifact):
         key = (row["channel"], row["url"])
         uniq.setdefault(key, row)
     results = list(uniq.values())
-    # Only network-probe new host candidates; not known failures, credentialed or private.
+    # Probe at most two distinct new-host families per channel per run:
+    # never repeatedly hit duplicate mirrors, and never mass-probe a provider.
+    probed_groups = set()
+    probed_by_channel = Counter()
     for row in results:
         if row["discovery_class"] == "new-entry-host-unknown-video-origin":
+            group = (row["channel"], row["entry_host_family"])
+            if group in probed_groups or probed_by_channel[row["channel"]] >= 2:
+                row["manifest_probe"] = {"stage": "not-probed-limit-or-duplicate-family"}
+                row["discovery_class"] = "new-host-awaiting-research-probe"
+                continue
+            probed_groups.add(group)
+            probed_by_channel[row["channel"]] += 1
             row["manifest_probe"] = probe_manifest(row["url"])
             final = row["manifest_probe"].get("final_host")
             if final and final in known_hosts:
@@ -253,7 +274,8 @@ def run(batch, artifact):
             "fresh_host_leads": sum(r["discovery_class"] in
                                    ("new-entry-host-unknown-video-origin",
                                     "redirects-to-different-unverified-host",
-                                    "new-host-manifest-unavailable") for r in matches),
+                                    "new-host-manifest-unavailable",
+                                    "new-host-awaiting-research-probe") for r in matches),
             "state": "private-connector-only" if tvg_id in PRIVATE_IDS else
                      ("new-host-found-manifest-inaccessible" if any(
                          r["discovery_class"] == "new-host-manifest-unavailable"
@@ -275,7 +297,8 @@ def run(batch, artifact):
             "channels": len(targets), "seed_matches": len(results),
             "novel_entry_hosts_found": sorted({r["entry_host"] for r in results
                  if r["discovery_class"] in ("new-entry-host-unknown-video-origin",
-                     "redirects-to-different-unverified-host", "new-host-manifest-unavailable")}),
+                     "redirects-to-different-unverified-host", "new-host-manifest-unavailable",
+                     "new-host-awaiting-research-probe")}),
             "manifest_observed_hosts": sorted({r["entry_host"] for r in results
                  if (r.get("manifest_probe") or {}).get("stage") ==
                  "manifest-observed-not-decoded"}),
