@@ -22,6 +22,7 @@ IDENTITIES={
     ("bravousaeasternfeed", "bravousa"): "Bravo.us",
     ("cbssportsnetwork", "cbssportsnetworkcbssn"): "CBSSportsNetwork.us",
     ("cbssportsnetworkus", "cbssportsnetworkcbssn"): "CBSSportsNetwork.us",
+    ("cbssportsnetworkusa", "cbssportsnetworkcbssn"): "CBSSportsNetwork.us",
     ("espnews", "espnews"): "ESPNews.us",
     ("espnnews", "espnews"): "ESPNews.us",
     ("nicktoons", "nicktoons"): "Nicktoons.us",
