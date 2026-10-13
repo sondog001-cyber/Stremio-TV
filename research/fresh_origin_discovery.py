@@ -11,6 +11,7 @@ import ipaddress
 import json
 import pathlib
 import re
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -183,23 +184,96 @@ def enrich_known_from_artifact(path, known_hosts, known_families):
             known_families.add(str(f))
     return True
 
+def parse_hls_snapshot(text):
+    """Inspect public HLS syntax without mistaking a master, VOD or HTML for live media."""
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if not lines or lines[0].lstrip("\ufeff") != "#EXTM3U":
+        return {"kind": "invalid"}
+    if any(x.startswith(("#EXT-X-KEY:", "#EXT-X-SESSION-KEY:")) for x in lines):
+        return {"kind": "encrypted-or-keyed"}
+    for i, line in enumerate(lines):
+        if line.startswith("#EXT-X-STREAM-INF:"):
+            variant = next((x for x in lines[i+1:] if not x.startswith("#")), "")
+            return {"kind": "master", "variant": variant}
+    if "#EXT-X-ENDLIST" in lines:
+        return {"kind": "on-demand-not-live"}
+    if not any(x.startswith("#EXTINF:") for x in lines):
+        return {"kind": "not-standard-media"}
+    segments = [x for x in lines if not x.startswith("#")]
+    if len(segments) < 2:
+        return {"kind": "not-enough-segments"}
+    match = re.search(r"(?m)^#EXT-X-MEDIA-SEQUENCE:(\\d+)", text)
+    duration = re.search(r"(?m)^#EXT-X-TARGETDURATION:(\\d+)", text)
+    return {"kind": "media", "sequence": int(match.group(1)) if match else None,
+            "segments": segments, "target_duration": int(duration.group(1)) if duration else 6}
+
+
+def media_snapshot(url):
+    """Follow only validated public HLS variant references (maximum two levels)."""
+    current = url
+    for _ in range(3):
+        p = fetch(current, MAX_MEDIA_MANIFEST, timeout=10)
+        parsed = parse_hls_snapshot(p["data"].decode("utf-8-sig", "replace"))
+        if parsed["kind"] != "master":
+            return p, parsed
+        current = urllib.parse.urljoin(p["final"], parsed["variant"])
+        if not parsed["variant"] or not valid_public_url(current):
+            raise ValueError("unsafe-or-empty-variant")
+    raise ValueError("excessive-master-indirection")
+
+
+def fetch_media_sample(url):
+    """Read at most 2KB from a direct segment; never save, proxy or retransmit video."""
+    if not valid_public_url(url):
+        raise ValueError("unsafe-media-segment-url")
+    req = urllib.request.Request(
+        url, headers={"User-Agent": DEFAULT_AGENT, "Range": "bytes=0-2047"})
+    with OPENER.open(req, timeout=10) as response:
+        final_url = response.geturl()
+        if response.status not in (200, 206) or not valid_public_url(final_url):
+            raise ValueError("bad-or-unsafe-media-segment-response")
+        prefix = response.read(2048)
+        if len(prefix) < 188 or prefix.lstrip().lower().startswith(
+                (b"<html", b"<!doctype html", b"#extm3u")):
+            raise ValueError("media-segment-unreadable")
+        return {"readable": True, "final_media_host": host(final_url)}
+
+
 def probe_manifest(url):
-    # Discovery-stage manifest access only; NOT sustained playback QA.
+    """Isolated *preflight*, not authorization, exact-ID verification or decoder QA.
+
+    Require two readable live media manifests showing actual segment-window movement
+    plus nonempty segment bytes. Never mark production eligible based on this alone.
+    """
     try:
-        p = fetch(url, MAX_MEDIA_MANIFEST, timeout=10)
-        start = p["data"][:1000].decode("utf-8", "replace")
-        format_ok = start.lstrip("\ufeff \t\r\n").startswith("#EXTM3U")
-        return {
-            "http_status": p["status"], "final_host": host(p["final"]),
-            "final_url": p["final"] if "?" not in p["final"] else p["final"].split("?", 1)[0],
-            "final_family": host_family(host(p["final"])),
-            "redirected": p["final"] != url,
-            "hls_header": format_ok,
-            "stage": "manifest-observed-not-decoded" if format_ok else "no-HLS-header",
-        }
+        first, before = media_snapshot(url)
+        base = {"http_status": first["status"], "final_host": host(first["final"]),
+                "final_family": host_family(host(first["final"])),
+                "redirected": first["final"] != url,
+                "hls_header": before["kind"] != "invalid",
+                "hls_kind": before["kind"]}
+        if before["kind"] != "media":
+            return dict(base, stage="not-live-readable-hls")
+        delay = min(15, max(6, before["target_duration"] * 1.5))
+        time.sleep(delay)
+        second, after = media_snapshot(url)
+        if after["kind"] != "media":
+            return dict(base, stage="second-media-manifest-unreadable")
+        seq_advanced = before["sequence"] is not None and after["sequence"] is not None and (
+            after["sequence"] > before["sequence"])
+        segment_advanced = after["segments"][-1] != before["segments"][-1]
+        if not (seq_advanced or segment_advanced):
+            return dict(base, stage="hls-window-not-progressing",
+                        sequence_before=before["sequence"], sequence_after=after["sequence"])
+        segment_url = urllib.parse.urljoin(second["final"], after["segments"][-1])
+        sample = fetch_media_sample(segment_url)
+        return dict(base, stage="progressing-hls-readable-not-decoded",
+                    sequence_before=before["sequence"], sequence_after=after["sequence"],
+                    media_host=sample["final_media_host"], media_bytes_readable=True,
+                    original_video_origin_verified=False, authorized_origin_confirmed=False)
     except Exception as exc:
         code = getattr(exc, "code", None)
-        return {"http_status": code, "stage": "manifest-unavailable",
+        return {"http_status": code, "stage": "manifest-or-segment-unavailable",
                 "error": type(exc).__name__ + ": " + str(exc)[:160]}
 
 def run(batch, artifact):
@@ -268,7 +342,7 @@ def run(batch, artifact):
                 row["discovery_class"] = "redirects-to-known-host"
             elif final and final != row["entry_host"]:
                 row["discovery_class"] = "redirects-to-different-unverified-host"
-            elif row["manifest_probe"]["stage"] != "manifest-observed-not-decoded":
+            elif row["manifest_probe"]["stage"] != "progressing-hls-readable-not-decoded":
                 row["discovery_class"] = "new-host-manifest-unavailable"
     channel_rows = []
     for tvg_id in targets:
