@@ -6,9 +6,11 @@ on:
       - "research/fresh_origin_discovery.py"
       - "research/disney_fallback_diagnostic.py"
       - "research/nicktoons_repeat_diagnostic.py"
+      - "research/public_header_recheck.py"
       - "research/bravo_nicktoons_decoder_research.py"
       - "tests/test_research_public_headers.py"
       - "tests/test_disney_nicktoons_diagnostics.py"
+      - "tests/test_public_header_recheck.py"
       - ".github/workflows/diagnose-disney-headers-nicktoons.yml"
   workflow_dispatch:
 
@@ -24,8 +26,24 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run production-neutral research unit tests
         run: |
-          python3 -m compileall -q research/fresh_origin_discovery.py research/disney_fallback_diagnostic.py research/nicktoons_repeat_diagnostic.py research/bravo_nicktoons_decoder_research.py
-          python3 -m unittest tests.test_fresh_origin_discovery tests.test_research_public_headers tests.test_disney_nicktoons_diagnostics -v
+          python3 -m compileall -q research/fresh_origin_discovery.py research/disney_fallback_diagnostic.py research/nicktoons_repeat_diagnostic.py research/bravo_nicktoons_decoder_research.py research/public_header_recheck.py
+          python3 -m unittest tests.test_fresh_origin_discovery tests.test_research_public_headers tests.test_disney_nicktoons_diagnostics tests.test_public_header_recheck -v
+
+  header-recheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe distinct public-header CDN gateway families without credentials
+        run: python3 -m research.public_header_recheck --out research-results/public-header-recheck.json
+      - name: Store redacted gateway-preflight results (never deploy)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-header-recheck-no-deploy
+          path: research-results/public-header-recheck.json
+          if-no-files-found: warn
+          retention-days: 7
 
   disney-fallback:
     runs-on: ubuntu-latest
