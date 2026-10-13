@@ -101,3 +101,24 @@ Focused search on Bravo, CBS Sports Network, Smithsonian and ESPNews, excluding 
 Other screened repos ([koztay/iptv-sources](https://github.com/koztay/iptv-sources), [whhxmwhh/iptv-usa](https://github.com/whhxmwhh/iptv-usa)) are IPTV-org indexes/forks, while [kpirnie/kptv-proxy](https://github.com/kpirnie/kptv-proxy) is a proxy aggregator with authenticated Xtream support rather than a public new media upstream. Keep them out of recovery count.
 
 **Disposition:** Multiple new *playlist URLs* reviewed, **0 verified novel exact-channel video origin URLs** for the four top targets, **0 new Stremio local-test candidates**, **0 production changes**. Broaden to source repositories whose config declares a primary independent provider/official broadcast origin; reject forks, rehosting, masked proxy links and expired credential lists before consuming QA time.
+
+
+## Provider-origin and station-specific follow-up (Oct 12)
+
+Continued hunting provider-origin implementations, individual broadcasters, smaller playlist repos and playlist issue history. This pass **did not** move any stream into production or local test.
+
+| Lead | Exact evidence and deduplication | Result |
+|---|---|---|
+| CBS Sports Network: [IPTV-org issue #44158](https://github.com/iptv-org/iptv/issues/44158) | Reported independent-looking `http://40.160.24.52/CBS_SPORTS_NETWORK/index.m3u8`, July 2026, approved ticket. **Already referenced in this project's config.json**, despite alternative host; this is not a net new discovered origin. No current FFmpeg proof. | Known candidate, do not relabel new |
+| Bravo: [IPTV-org #45915](https://github.com/iptv-org/iptv/issues/45915) | `4.30.180.36:8420/bravo/index.m3u8?token=test` was **rejected stream_cuts_out**. | Not acceptable |
+| WPHL / Philadelphia PHL17: [TingFM listing](https://tingfm.com/tv/101402) | Exposes `restream-live.realiptv.to` with numeric user/pass-shaped account path; same host already appears in our config; no rights evidence. | Reject private-account-shaped stream |
+| WPVI / Philadelphia 6ABC: [TingFM listing](https://tingfm.com/tv/101341) | `fl1.moveonjoy.com/PA_PHILADELPHIA_ABC/index.m3u8`; MoveOnJoy is an already failed/excluded upstream. | Duplicated family |
+| Official/local broadcast scrapers: [FastChannels PBS](https://github.com/kineticman/FastChannels) | Can discover unauthenticated US OTA/PBS feeds but **not** subscription CBS Sports Network or Bravo. Its exported `/play/` URLs are proxy-resolved, incompatible with our no-proxy architecture; an independently identified clear upstream for a **missing exact local** could still be evaluated. | Possible future legal/technical source path, no URL proven for missing IDs |
+| Generic new CDN hosts in [IPTV-org US](https://github.com/iptv-org/iptv/blob/master/streams/us.m3u) | `23.239.31.26` carries A&E, but A&E is not one of our currently missing channels; new provider host by itself is not a coverage gain. | No missing-ID candidate |
+| Tiny playlist repo, [pcouillard/iptv](https://github.com/pcouillard/iptv/blob/master/iptv.m3u) | CBS Sports Network entry uses `mael-tv.online:8080/live/{account}/{secret}/{channel}.ts`. | Embedded-account link; reject |
+| Community source [Smithsonian US GitHub playlists](https://github.com/judy-gotv/iptv/blob/main/Moveonjoy.m3u) | Exact `SmithsonianChannel.us@East` but URL resolves to MoveOnJoy family, already failed. | Duplicate |
+
+### Outcome
+Fresh playlist or new hostname alone does **not** yield exact-channel independence. This origin-level pass found **0 new, rights-established, current sustained-video qualified upstreams for missing IDs**. The July 2026 CBS candidate looks different but is already in our config, so the next meaningful action is a **fresh, isolated decode/segment QA of that specific pre-existing candidate** rather than adding it twice. For missing local broadcasters, favor independently disclosed full-linear OTA/broadcaster feeds, not station-branded clips or numeric account restreams.
+
+Main's latest [#38321378327](https://github.com/sondog001-cyber/Stremio-TV/actions/runs/38321378327) **failed the no-regression release guard**, so prior successful Pages **87/111** remains the last verified production count. No claim of improved coverage.
