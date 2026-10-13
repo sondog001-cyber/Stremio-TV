@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest import mock
 
 import private_ota
+import serve_private_ota
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -92,6 +93,15 @@ class PrivateOTATests(unittest.TestCase):
             mapping = {"channels": [{"tvg_id": tid, "guide_numbers": ["3.1"], "guide_names": ["CBS3"]}]}
             with self.subTest(tvg_id=tid), self.assertRaises(ValueError):
                 private_ota.compile_overlay(self.stations, mapping, self.base)
+
+    def test_server_defaults_to_loopback_and_never_binds_publicly(self):
+        serve_private_ota.validate_bind_host("127.0.0.1", False)
+        with self.assertRaises(ValueError):
+            serve_private_ota.validate_bind_host("192.168.1.20", False)
+        serve_private_ota.validate_bind_host("192.168.1.20", True)
+        for host in ("0.0.0.0", "8.8.8.8", "myhost.example", "::1"):
+            with self.subTest(host=host), self.assertRaises(ValueError):
+                serve_private_ota.validate_bind_host(host, True)
 
     def test_public_actions_hard_stop(self):
         with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=False):
