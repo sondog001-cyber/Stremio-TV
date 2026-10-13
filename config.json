@@ -820,6 +820,13 @@
         "reason": "Repeated 2- and 3-second clips plus 8-second freeze observed in one of three independent research decoder windows; replaced with locally verified AynaScope stream.",
         "observed_at": "2026-10-13",
         "evidence": "Research 3x60s GitHub decoder run #38410846314; local Stremio test of alternative AynaScope passed without freeze/loop."
+      },
+      {
+        "tvg_id": "Bravo.us",
+        "url": "http://206.212.244.63/26/index.m3u8",
+        "reason": "User-confirmed Stremio Local Test AVFormat playback error on Bravo West; last six backend probes also failed with timeouts/cooldowns.",
+        "observed_at": "2026-10-13",
+        "evidence": "Local Stremio user playback report and latest successful deployment diagnostics: Shovo Bravo West source, 6 consecutive probe failures, Dead status."
       }
     ]
   },
