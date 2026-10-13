@@ -91,6 +91,38 @@ class StreamQuarantineTests(unittest.TestCase):
             rules,
         )
 
+    def test_user_confirmed_bravo_west_avformat_is_exactly_quarantined(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        config = json.loads((root / "config.json").read_text(encoding="utf-8"))
+        bad = "http://206.212.244.63/26/index.m3u8"
+        different = "http://tvsen7.aynascope.net/bravo/index.m3u8"
+        candidates = [
+            {"tvg_id": "Bravo.us", "name": "Bravo West", "url": bad},
+            {"tvg_id": "Bravo.us", "name": "Other Bravo", "url": different},
+            {"tvg_id": "MSNOW.us", "name": "MS NOW", "url": "https://tvsen6.aynaott.com/msnbc/index.m3u8"},
+            {"tvg_id": "Other.us", "name": "Other", "url": bad},
+        ]
+        kept, quarantined = build.apply_stream_quarantine(candidates, config)
+        self.assertEqual([row["name"] for row in quarantined], ["Bravo West"])
+        self.assertEqual([row["name"] for row in kept], ["Other Bravo", "MS NOW", "Other"])
+        self.assertIn("AVFormat", quarantined[0]["reason"])
+
+    def test_failed_bravo_west_does_not_reappear_in_local_test(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        config = json.loads((root / "config.json").read_text(encoding="utf-8"))
+        bad = "http://206.212.244.63/26/index.m3u8"
+        input_rows = [
+            {"tvg_id": "Bravo.us", "name": "Bravo West", "url": bad, "source": "Shovo",
+             "family": "shovo", "health": {"status": "cooldown", "detail": "The read operation timed out"}},
+        ]
+        vetted, quarantined = build.apply_stream_quarantine(input_rows, config)
+        channels, _ = build.build_local_test_channels(vetted, [], config)
+        self.assertEqual(len(quarantined), 1)
+        self.assertFalse(any(
+            stream.get("url") == bad
+            for channel in channels for stream in channel.get("streams", [])
+        ))
+
     def test_empty_quarantine_is_noop(self):
         entries = [{"tvg_id": "HGTV.us", "url": "https://example.test/hgtv.m3u8"}]
         kept, quarantined = build.apply_stream_quarantine(entries, {"curation": {}})
