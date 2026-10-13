@@ -1,6 +1,20 @@
 {
   "streams": [
     {
+      "tvg_id": "MSNOW.us",
+      "name": "MS NOW",
+      "url": "https://tvsen6.aynaott.com/msnbc/index.m3u8",
+      "quality": "SD",
+      "source": "AynaOTT MS NOW — user-verified direct HLS",
+      "family": "aynaott",
+      "priority": 0,
+      "philly": false,
+      "headers": {},
+      "content_kind": "full-linear",
+      "local_verified_override": true,
+      "local_verified_note": "User reported successful Stremio playback for 10 minutes without freezing or looping on 2026-10-13; AynaOTT feed passed GitHub direct FFmpeg 3/3 60-second continuity tests. Program identity relies on playlist label and user playback, not independent episode-by-episode audit."
+    },
+    {
       "tvg_id": "Nicktoons.us",
       "name": "Nicktoons East",
       "url": "http://tvsen7.aynascope.net/nicktoons/index.m3u8",
