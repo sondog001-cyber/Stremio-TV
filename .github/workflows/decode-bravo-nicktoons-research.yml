@@ -1,0 +1,41 @@
+name: Decode Bravo and Nicktoons Research Origins (no deploy)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/decode-bravo-nicktoons-research.yml"
+      - "research/bravo_nicktoons_decoder_research.py"
+      - "tests/test_bravo_nicktoons_decoder_research.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decoders:
+    name: "FFmpeg/repeat preflight — ${{ matrix.channel }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: ["Bravo.us", "Nicktoons.us"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate isolated decoder logic
+        run: python3 -m unittest tests.test_bravo_nicktoons_decoder_research -v
+      - name: Verify FFmpeg available
+        run: ffmpeg -version | head -n 1
+      - name: Decode 60s of current HLS (no video recorded, no proxy)
+        run: |
+          python3 -m research.bravo_nicktoons_decoder_research \
+            --channel "${{ matrix.channel }}" \
+            --out research-results/decode
+      - name: Save research-only decoder scores
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: decoder-research-${{ strategy.job-index }}
+          path: research-results/decode/
+          if-no-files-found: warn
+          retention-days: 14
