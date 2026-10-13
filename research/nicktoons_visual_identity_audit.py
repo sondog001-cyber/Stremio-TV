@@ -32,11 +32,14 @@ TARGET_KEYWORDS = {
     "commercial_or_ad": re.compile(r"ad(?:vertisement)?\s+break", re.I),
 }
 REFERENCE = {
-    "source": "https://americatvlistings.com/en/us/nicktoons",
-    "source_title": "Nicktoons US day-by-day guide",
+    "guide_urls": [
+        "https://www.tvpassport.com/tv-listings/stations/nicktoons-east/2010",
+        "https://americatvlistings.com/en/us/nicktoons",
+    ],
     "date_eastern": "2026-10-13",
-    "expected_series": "SpongeBob SquarePants",
-    "precision": "series-level only; does not establish episode/version/time-delay",
+    "exact_date_guide_independently_confirmed": False,
+    "tentative_frequently_scheduled_series": "SpongeBob SquarePants",
+    "precision": "No verified Oct 13 episode/time-slot snapshot; cached listings conflict or omit date. A series title alone cannot validate US East feed.",
 }
 
 def split_jpegs(content: bytes) -> list[bytes]:
