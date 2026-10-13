@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "channels": [
+    {
+      "tvg_id": "KYW.us",
+      "name": "CBS 3 Philadelphia / KYW",
+      "guide_numbers": [
+        "3.1"
+      ],
+      "guide_names": [
+        "KYW",
+        "KYW-TV",
+        "KYW-HD",
+        "CBS3",
+        "CBS 3"
+      ]
+    },
+    {
+      "tvg_id": "WCAU.us",
+      "name": "NBC 10 Philadelphia / WCAU",
+      "guide_numbers": [
+        "10.1"
+      ],
+      "guide_names": [
+        "WCAU",
+        "WCAU-TV",
+        "WCAU-HD",
+        "NBC10",
+        "NBC 10"
+      ]
+    },
+    {
+      "tvg_id": "WPVI.us",
+      "name": "6abc Philadelphia / WPVI",
+      "guide_numbers": [
+        "6.1"
+      ],
+      "guide_names": [
+        "WPVI",
+        "WPVI-TV",
+        "WPVI-HD",
+        "6ABC",
+        "ABC 6"
+      ]
+    },
+    {
+      "tvg_id": "WPHL.us",
+      "name": "PHL17 Philadelphia / WPHL",
+      "guide_numbers": [
+        "17.1"
+      ],
+      "guide_names": [
+        "WPHL",
+        "WPHL-TV",
+        "WPHL-HD",
+        "PHL17",
+        "PHL 17"
+      ]
+    },
+    {
+      "tvg_id": "WPSG.us",
+      "name": "Philly57 / WPSG",
+      "guide_numbers": [
+        "57.1"
+      ],
+      "guide_names": [
+        "WPSG",
+        "WPSG-TV",
+        "WPSG-HD",
+        "Philly57",
+        "PHL57",
+        "PHL 57"
+      ]
+    }
+  ]
+}
