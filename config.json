@@ -813,6 +813,13 @@
         "reason": "Wrong regional identity for ESPN US: exact URL is listed upstream as ESPN.br@SD / Brazil feed and was user-confirmed non-English.",
         "observed_at": "2026-09-25",
         "evidence": "User Stremio playback verification + IPTV-org streams/br.m3u exact URL identity"
+      },
+      {
+        "tvg_id": "Nicktoons.us",
+        "url": "http://41.205.93.154/NICKTOONS/index.m3u8",
+        "reason": "Repeated 2- and 3-second clips plus 8-second freeze observed in one of three independent research decoder windows; replaced with locally verified AynaScope stream.",
+        "observed_at": "2026-10-13",
+        "evidence": "Research 3x60s GitHub decoder run #38410846314; local Stremio test of alternative AynaScope passed without freeze/loop."
       }
     ]
   },
@@ -941,6 +948,17 @@
         {
           "family": "moveonjoy",
           "label": "MoveOnJoy fallback"
+        }
+      ],
+      "Nicktoons.us": [
+        {
+          "family": "aynascope",
+          "url_contains": "/nicktoons/index.m3u8",
+          "label": "Locally verified AynaScope Nicktoons primary"
+        },
+        {
+          "family": "iptv-org",
+          "label": "Independently tested Nicktoons backup"
         }
       ]
     },
@@ -3406,17 +3424,7 @@
       404,
       410
     ],
-    "controlled_sources": [
-      {
-        "tvg_id": "Nicktoons.us",
-        "name": "Nicktoons East — AynaScope",
-        "family": "aynascope",
-        "source": "AynaScope — Nicktoons local verification",
-        "url": "http://tvsen7.aynascope.net/nicktoons/index.m3u8",
-        "quality": "SD",
-        "local_test_only": true
-      }
-    ]
+    "controlled_sources": []
   },
   "deployment_guard": {
     "enabled": true,
