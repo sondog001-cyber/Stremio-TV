@@ -152,7 +152,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 def fetch_lineup(base_url: str, timeout: float = 7.0) -> list:
     """Only GET direct private tuner lineup, never follow redirects off-LAN."""
     url = validate_base_url(base_url) + "/lineup.json"
-    opener = urllib.request.build_opener(_NoRedirect)
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect)
     with opener.open(urllib.request.Request(url, headers={"Accept": "application/json"}), timeout=timeout) as res:
         payload = res.read(250_001)
     if len(payload) > 250_000:
