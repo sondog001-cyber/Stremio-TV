@@ -64,7 +64,8 @@
   "channels": {
     "Bravo.us": {
       "aliases": [
-        "bravo"
+        "bravo",
+        "bravo-usa-eastern-feed"
       ],
       "names": [
         "bravo east",
@@ -105,7 +106,8 @@
     },
     "HBOMovies.us": {
       "aliases": [
-        "hbozone"
+        "hbozone",
+        "hbo-zone-hd-east"
       ],
       "names": [
         "hbo movies",
@@ -114,7 +116,8 @@
     },
     "BET.us": {
       "aliases": [
-        "bet"
+        "bet",
+        "bet-eastern-feed"
       ],
       "names": [
         "bet east",
