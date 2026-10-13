@@ -1,0 +1,287 @@
+{
+  "as_of": "2026-10-12",
+  "source_branch": "research-fresh-media-origins-four-batches-20261012",
+  "production_baseline": {
+    "last_success_run": 38316450648,
+    "curated": 111,
+    "published": 87,
+    "missing": 24
+  },
+  "method": "Primary-origin provider/source documentation plus prior isolated playlist and HLS research; not direct authenticated extraction",
+  "status_definitions": {
+    "ota": "Full OTA broadcast is an original available local signal, but no public HLS; optional private LAN tuner",
+    "provider": "Official authenticated/paid/TV provider path; no unprotected reusable exact linear HLS verified"
+  },
+  "counts": {
+    "ota": 5,
+    "provider": 19
+  },
+  "verified_public_direct_hls_full_linear": 0,
+  "full_linear_direct_hls_decoded_this_pass": 0,
+  "channels": [
+    {
+      "batch": "A",
+      "tvg_id": "Bravo.us",
+      "exact_identity": "Bravo (linear, not Bravo Vault)",
+      "access_class": "provider",
+      "official_path": "NBCUniversal Bravo/NBC TV Everywhere with eligible pay-TV login; Peacock Bravo on-demand is not automatically linear",
+      "source_url": "https://help.nbc.com/hc/en-us/articles/360033854593-TV-Provider-vs-Internet-Provider",
+      "open_hls_status": "No unauthenticated direct HLS found; current recycled M3U hosts not eligible",
+      "engineering_action": "High—seek authorized independent network distributor origin, not FAST/mirrors",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "A",
+      "tvg_id": "KYW.us",
+      "exact_identity": "KYW-TV Philadelphia CBS 3 full affiliate",
+      "access_class": "ota",
+      "official_path": "OTA virtual 3; Paramount+ Premium offers geolocated live local CBS station (authenticated)",
+      "source_url": "https://www.paramountplus.com/sneak-peak/how-to-watch-cbs-shows-on-paramount-plus/",
+      "open_hls_status": "CBS News Philadelphia FAST stream is not full KYW linear",
+      "engineering_action": "High—user-private direct tuner source (if antenna receives KYW); preserve full-station identity",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "A",
+      "tvg_id": "WCAU.us",
+      "exact_identity": "WCAU-TV NBC10 Philadelphia full affiliate",
+      "access_class": "ota",
+      "official_path": "OTA virtual 10; Peacock Premium Plus offers local NBC station in market (authenticated)",
+      "source_url": "https://www.peacocktv.com/help/article/nbc-local-news-channel",
+      "open_hls_status": "NBC10's 24/7 news stream is not the NBC affiliate 24/7 program lineup",
+      "engineering_action": "High—user-private tuner first; Peacock route is viewing entitlement, not addon URL",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "A",
+      "tvg_id": "WPVI.us",
+      "exact_identity": "WPVI-TV 6abc Philadelphia full affiliate",
+      "access_class": "ota",
+      "official_path": "OTA virtual 6; Hulu + Live TV carries ABC local service where available",
+      "source_url": "https://6abc.com/post/television-channels-i-cant-see-6abc-watch-channel-6-antenna/5733704/",
+      "open_hls_status": "Official open 6abc 24/7 Action News stream is a separate channel; WPVI low-VHF antenna reception needs attention",
+      "engineering_action": "High—test all-band antenna / tuner; don't relabel news FAST",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "A",
+      "tvg_id": "CinemaxClassics.us",
+      "exact_identity": "Cinemax Classics (formerly 5StarMax)",
+      "access_class": "provider",
+      "official_path": "Paid Cinemax multiplex via entitled TV distributor; 2025 5StarMax -> Cinemax Classics rebrand confirmed",
+      "source_url": "https://www.thewrap.com/hbo-max-renames-linear-channels-rebrand/",
+      "open_hls_status": "Old USA_5STARMAX link is plausibly same feed identity, but source provenance and playback still NOT established",
+      "engineering_action": "Medium—compare old ID versus live provider schedule, then lawful origin/codec QA",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "A",
+      "tvg_id": "HBOMovies.us",
+      "exact_identity": "HBO Movies (formerly HBO Zone)",
+      "access_class": "provider",
+      "official_path": "HBO pay-TV package, with HBO Max live channels accessible on eligible plans",
+      "source_url": "https://help.hbomax.com/us/Answer/Detail/000002565",
+      "open_hls_status": "HBO Zone rebranded to HBO Movies in Sept 2025; still no verified public reusable manifest",
+      "engineering_action": "Medium—search HBOZone legacy ID and exact program alignment",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "B",
+      "tvg_id": "BET.us",
+      "exact_identity": "BET US linear network",
+      "access_class": "provider",
+      "official_path": "BET NOW uses participating TV-provider authentication; BET+ is distinct VOD product",
+      "source_url": "https://viacom.helpshift.com/hc/en/16-bet/faq/6076-is-there-a-difference-between-watching-bet-live-on-linear-tv-cable-tv-and-bet/",
+      "open_hls_status": "BET+ and free BET digital offerings do not establish exact linear BET",
+      "engineering_action": "Medium—entitled provider direct distribution only",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "B",
+      "tvg_id": "CBSSportsNetwork.us",
+      "exact_identity": "CBS Sports Network cable network (not CBS Sports HQ)",
+      "access_class": "provider",
+      "official_path": "CBS Sports Network is distributed by cable/satellite and live-TV OTT providers",
+      "source_url": "https://www.cbssportsnetwork.com/faqs",
+      "open_hls_status": "CBS Sports HQ FAST is not CBSSN; old 40.160.24.52 candidate known, most recent comparison 404; greektoday TLS EOF",
+      "engineering_action": "Critical—verify CBS Sports Network exact schedule then seek authorized original provider feed",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "B",
+      "tvg_id": "CNBC.us",
+      "exact_identity": "CNBC US live cable network",
+      "access_class": "provider",
+      "official_path": "TV-provider sign-in for CNBC live; CNBC+ or Pro direct subscription provides CNBC business-day livestream",
+      "source_url": "https://cnbc.zendesk.com/hc/en-us/articles/39187574140571-How-can-I-watch-CNBC-on-a-web-browser",
+      "open_hls_status": "CNBC+ business-day stream is not proof of full 24-hour US cable feed; greektoday TLS EOF",
+      "engineering_action": "High—check precise hours/feed identity and permission before separate access pathway",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "B",
+      "tvg_id": "ESPNews.us",
+      "exact_identity": "ESPNews linear network",
+      "access_class": "provider",
+      "official_path": "ESPN Unlimited explicitly includes ESPNEWS; pay-TV entitlements also possible",
+      "source_url": "https://support.espn.com/hc/en-us/articles/40375771733652-What-is-the-available-content-on-ESPN-Unlimited",
+      "open_hls_status": "An authenticated ESPN channel tile is not an unprotected original HLS URL; greektoday TLS EOF",
+      "engineering_action": "Critical—official DTC feed identity is known; investigate sanctioned interoperability, not session extraction",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "B",
+      "tvg_id": "MSNOW.us",
+      "exact_identity": "MS NOW linear network (formerly MSNBC)",
+      "access_class": "provider",
+      "official_path": "VERSANT launched MS NOW Membership September 9, 2026 with 24/7 live television; TV provider also works",
+      "source_url": "https://www.versantmedia.com/ms-now/press-releases/become-ms-now-member-new-way-watch-connect-engage",
+      "open_hls_status": "Some original older FAQ says membership is future—outdated; old MSNBC label plausible but not content proof; greektoday TLS EOF",
+      "engineering_action": "High—first-party membership is legitimate watch path, not sharable public stream",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "B",
+      "tvg_id": "Nicktoons.us",
+      "exact_identity": "Nicktoons US linear network",
+      "access_class": "provider",
+      "official_path": "Carried as actual live Nicktoons by Philo subscription",
+      "source_url": "https://www.philo.com/go/nicktoons",
+      "open_hls_status": "Nickelodeon, Nick Pluto/FAST brands or Nicktoons non-US feed are not replacements",
+      "engineering_action": "Medium—validate exact US schedule via subscriber-authorized service",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "C",
+      "tvg_id": "HallmarkFamily.us",
+      "exact_identity": "Hallmark Family cable channel (formerly Hallmark Drama)",
+      "access_class": "provider",
+      "official_path": "Hallmark confirms one of its three linear networks, available through certain pay-TV/live-TV providers; Hallmark+ separate",
+      "source_url": "https://www.hallmarkfamily.com/faq",
+      "open_hls_status": "Hallmark Movies & More free FAST and Hallmark+ VOD are different; historical Hallmark Drama names can be aliases only with schedule proof",
+      "engineering_action": "Medium—compare Hallmark Drama legacy title to current channel",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "C",
+      "tvg_id": "HallmarkMystery.us",
+      "exact_identity": "Hallmark Mystery cable channel",
+      "access_class": "provider",
+      "official_path": "Hallmark Mystery linearly carried via pay-TV/live-TV providers; Hallmark+ doesn't include live cable entitlement",
+      "source_url": "https://care.hallmarkplus.com/s/article/What-is-Hallmark-Plus",
+      "open_hls_status": "Mystery VOD and FAST substitutes not full linear Mystery network",
+      "engineering_action": "Medium—seek subscriber-authorized origin and correct schedule",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "C",
+      "tvg_id": "StarzCinema.us",
+      "exact_identity": "STARZ Cinema linear multiplex",
+      "access_class": "provider",
+      "official_path": "STARZ subscriber web live schedule / entitled paid-TV distributor, availability of exact multiplex depends on entitlement",
+      "source_url": "https://support.starz.com/en_us/can-i-watch-live-content-on-starz-H1kDMNZ1o",
+      "open_hls_status": "STARZ app VOD alone is not proof exact STARZ Cinema live subfeed is entitled",
+      "engineering_action": "Low—verify subfeed entitlement and East identity first",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "C",
+      "tvg_id": "StarzComedy.us",
+      "exact_identity": "STARZ Comedy linear multiplex",
+      "access_class": "provider",
+      "official_path": "STARZ web live schedule / entitled paid-TV distributor",
+      "source_url": "https://support.starz.com/en_us/how-do-i-view-the-channel-schedules-SJyCf4bkj",
+      "open_hls_status": "Existing 23.237.104.106 mirror is not verified independent; distinct from STARZ main",
+      "engineering_action": "Low—require Comedy EPG and provenance",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "C",
+      "tvg_id": "StarzEdge.us",
+      "exact_identity": "STARZ Edge linear multiplex",
+      "access_class": "provider",
+      "official_path": "STARZ web schedule / authorized paid TV package",
+      "source_url": "https://support.starz.com/en_us/can-i-watch-live-content-on-starz-H1kDMNZ1o",
+      "open_hls_status": "Not STARZ main network or STARZ app generic live tile",
+      "engineering_action": "Low—check explicit Edge carriage, East variant",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "C",
+      "tvg_id": "StarzEncoreSpanish.us",
+      "exact_identity": "STARZ ENCORE Español cable multiplex",
+      "access_class": "provider",
+      "official_path": "Authorized STARZ ENCORE/linear pay-TV add-on; 2026 dated guide listings support live scheduling",
+      "source_url": "https://www.gatotv.com/canal/starz_encore_espanol/2026-10-04",
+      "open_hls_status": "STARZ app playback must be verified for this exact Spanish subfeed; don't infer from a generic STARZ subscription",
+      "engineering_action": "Low—carriage/EPG proof before origin engineering",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "D",
+      "tvg_id": "RFDTV.us",
+      "exact_identity": "RFD-TV rural network full linear",
+      "access_class": "provider",
+      "official_path": "RFD+ subscription app offers live RFD programming; pay-TV carriage also documented",
+      "source_url": "https://play.google.com/store/apps/details?id=tv.ottflow.ruralmediagrouprfdtv.rfdtvnow",
+      "open_hls_status": "Public rfdtv-jw.cdn.vustreams.com HLS candidate already tried; 503/cooldown; not a fresh source",
+      "engineering_action": "Medium—seek first-party license for 24/7 feed or retry only upon source-change evidence",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "D",
+      "tvg_id": "SmithsonianChannel.us",
+      "exact_identity": "Smithsonian Channel US cable linear",
+      "access_class": "provider",
+      "official_path": "Smithsonian official site: live through participating TV providers; Paramount+/Pluto offer select episodes",
+      "source_url": "https://www.smithsonianchannel.com/how-to-watch",
+      "open_hls_status": "Pluto and Paramount+ selections are not the live cable lineup; user-failed local test links quarantined",
+      "engineering_action": "Critical—provider-origin only; disallow lookalike factual FAST channels",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "D",
+      "tvg_id": "SundanceTV.us",
+      "exact_identity": "SundanceTV cable linear (not Sundance Now)",
+      "access_class": "provider",
+      "official_path": "SundanceTV TV Everywhere requires eligible provider/lineup and TVE permission; AMC+ offers programming on demand",
+      "source_url": "https://support.sundancetv.com/support/solutions/articles/11000132454-how-can-i-watch-sundancetv-",
+      "open_hls_status": "Sundance Now SVOD is not the linear SundanceTV channel",
+      "engineering_action": "Low—authenticated provider path, no public direct origin",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "D",
+      "tvg_id": "WPHL.us",
+      "exact_identity": "WPHL-TV PHL17 full OTA station",
+      "access_class": "ota",
+      "official_path": "Philadelphia OTA licensed WPHL-TV channel 17; provider carriage optional",
+      "source_url": "https://fcc.report/Public-Files/tv/73879",
+      "open_hls_status": "PHL17 website/replays/news not equivalent to full OTA schedule",
+      "engineering_action": "High—private direct tuner route; check lineup station identifier",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "D",
+      "tvg_id": "NBCSportsPhiladelphiaPlus.us",
+      "exact_identity": "NBC Sports Philadelphia Plus event/overflow feed",
+      "access_class": "provider",
+      "official_path": "Peacock NBCSP RSN add-on and TV operators; Plus events can appear as additional live-event streams",
+      "source_url": "https://www.mlb.com/press-release/press-release-peacock-launches-in-market-streaming-of-nbc-sports-philadelphia",
+      "open_hls_status": "Not OTA, not necessarily always-on 24/7 feed; geo/rights constrained. Explicitly private-connector-only in project",
+      "engineering_action": "Medium private-only—event-aware catalog with authorized provider, NOT public M3U",
+      "new_original_public_hls_verified": false
+    },
+    {
+      "batch": "D",
+      "tvg_id": "WPSG.us",
+      "exact_identity": "WPSG Philadelphia / Philly57 full OTA station",
+      "access_class": "ota",
+      "official_path": "Licensed Philadelphia OTA television station, RF 33, historically virtual 57; check scan's live virtual slot",
+      "source_url": "https://fccinfo.com/CMDProFacLookup.php?order=3%7CA%7CA&sCity=Philadelphia&sCurrentService=TV&sState=PA&tabSearchType=City",
+      "open_hls_status": "No freely reusable online full linear feed found; explicitly private-connector-only in project",
+      "engineering_action": "High private-only—OTA tuner on LAN; never expose tuner address publicly",
+      "new_original_public_hls_verified": false
+    }
+  ]
+}
