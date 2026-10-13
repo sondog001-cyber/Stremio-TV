@@ -118,7 +118,7 @@ def vetted_public_headers(headers):
         key, val = str(name).strip(), str(value).strip()
         if key.lower() not in PUBLIC_HEADER_ALLOWLIST or not val or len(val) > 512:
             raise ValueError("Disallowed or oversized public playback header")
-        if any(ch in key + val for ch in "\\r\\n"):
+        if any(ord(ch) < 32 for ch in key + val):
             raise ValueError("Malformed public playback header")
         if key.lower() in {"referer", "origin"} and not valid_public_url(val):
             raise ValueError("Public origin/referer is not a permitted URL")
