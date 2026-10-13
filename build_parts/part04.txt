@@ -4934,6 +4934,66 @@ def _controlled_nicktoons_local_test_source(
     return accepted[:1]
 
 
+
+def _controlled_msnow_local_test_source(
+    config: dict[str, Any],
+    pinned_ids: set[str],
+    excluded_http_codes: set[int],
+) -> list[dict[str, Any]]:
+    """Provide one exact MS NOW AynaOTT candidate only in the separate test catalog."""
+    settings = config.get("local_test_catalog") or {}
+    expected_id = "MSNOW.us"
+    expected_url = "https://tvsen6.aynaott.com/msnbc/index.m3u8"
+    if canonical_tvg_id(expected_id) not in pinned_ids:
+        return []
+    safety = config.get("safety_controls") or {}
+    if expected_id in set(safety.get("disabled_channels") or []):
+        return []
+    if expected_url in set(safety.get("disabled_urls") or []):
+        return []
+    for item in settings.get("controlled_sources") or []:
+        if not isinstance(item, dict):
+            continue
+        if (
+            item.get("tvg_id") != expected_id
+            or item.get("family") != "aynaott"
+            or item.get("url") != expected_url
+            or item.get("local_test_only") is not True
+        ):
+            continue
+        if _coverage_local_test_rejection(
+            {"url": expected_url, "health": {}}, excluded_http_codes, dt.datetime.now(UTC)
+        ):
+            continue
+        return [{
+            "tvg_id": expected_id,
+            "name": "MS NOW — AynaOTT Test",
+            "name_raw": "MS NOW — AynaOTT Test",
+            "url": expected_url,
+            "family": "aynaott",
+            "source": "AynaOTT MS NOW Controlled Local Test",
+            "quality": "SD",
+            "group": "News",
+            "priority": 1,
+            "content_kind": "full-linear",
+            "headers": {},
+            "local_test": True,
+            "local_test_only": True,
+            "local_test_reason": "GitHub FFmpeg 60s smooth; verify full US MS NOW and freeze/loop behavior in Stremio",
+            "health": {
+                "status": "not-tested",
+                "detail": "Controlled local-only test; outside normal production QA and selection",
+            },
+            "stability": {
+                "classification": "Local Test Only",
+                "passes": 0,
+                "samples": 0,
+                "rank": 3,
+            },
+        }]
+    return []
+
+
 def build_local_test_channels(
     probed_entries: list[dict[str, Any]],
     published_channels: list[dict[str, Any]],
@@ -5055,12 +5115,14 @@ def build_local_test_channels(
     # local candidates so the user has a single unambiguous test tile.
     controlled = _controlled_nicktoons_local_test_source(
         config, pinned_target_ids, excluded_http_codes
+    ) + _controlled_msnow_local_test_source(
+        config, pinned_target_ids, excluded_http_codes
     )
     if controlled:
-        controlled_id = canonical_tvg_id(controlled[0]["tvg_id"])
+        controlled_ids = {canonical_tvg_id(row["tvg_id"]) for row in controlled}
         candidates = [
             row for row in candidates
-            if canonical_tvg_id(str(row.get("tvg_id") or "")) != controlled_id
+            if canonical_tvg_id(str(row.get("tvg_id") or "")) not in controlled_ids
         ]
         candidates.extend(controlled)
 
