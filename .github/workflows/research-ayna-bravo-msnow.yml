@@ -1,0 +1,45 @@
+name: Research AynaScope Bravo and MS NOW (no deploy)
+
+on:
+  pull_request:
+    paths:
+      - "research/ayna_bravo_msnow_research.py"
+      - "tests/test_ayna_bravo_msnow_research.py"
+      - ".github/workflows/research-ayna-bravo-msnow.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ayna-two-channel-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: ["Bravo.us", "MSNOW.us"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and test research helpers
+        run: |
+          python3 -m compileall -q research/ayna_bravo_msnow_research.py
+          python3 -m unittest tests.test_ayna_bravo_msnow_research -v
+      - name: Ensure real FFmpeg is available
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq -y ffmpeg
+          ffmpeg -version
+      - name: Direct HLS advance, segment-readability, conditional 60-second FFmpeg
+        run: |
+          python3 -m research.ayna_bravo_msnow_research \
+            --channel "${{ matrix.channel }}" \
+            --output research-results/ayna-hosts
+      - name: Upload redacted diagnostic JSON only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ayna-candidate-${{ matrix.channel }}
+          path: research-results/ayna-hosts
+          if-no-files-found: warn
+          retention-days: 7
