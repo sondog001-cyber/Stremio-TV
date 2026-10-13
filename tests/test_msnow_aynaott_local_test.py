@@ -1,66 +1,77 @@
-"""MS NOW AynaOTT controlled local test is exact and cannot affect production."""
-import copy
+"""MS NOW: previously controlled Local Test is now user-confirmed production source.
+
+Ten minutes of successful local Stremio playback plus 3x60 clean decoder
+windows justify a scoped stream promotion, without changing unrelated channels.
+"""
 import json
 import pathlib
 import unittest
+
 import build
 
-ROOT=pathlib.Path(__file__).resolve().parents[1]
-URL="https://tvsen6.aynaott.com/msnbc/index.m3u8"
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+URL = "https://tvsen6.aynaott.com/msnbc/index.m3u8"
 
-def row(tvg_id,url,*,family="test"):
-    return {
-        "tvg_id":tvg_id,"name":tvg_id,"url":url,"family":family,
-        "source":"other","health":{"status":"failed","detail":"HTTP 403 Forbidden","http_status":403},
-    }
 
-class MSNowControlledLocalTest(unittest.TestCase):
+class MSNowPromotionRegressionTests(unittest.TestCase):
     def setUp(self):
-        self.conf=json.loads((ROOT/"config.json").read_text())
+        self.config = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
+        self.sources = json.loads((ROOT / "manual_sources.json").read_text(encoding="utf-8"))
 
-    def test_valid_msnow_local_only_and_no_mutation_of_published(self):
-        original=row("MSNOW.us","https://other.example.com/msnow.m3u8")
-        incoming=[original]
-        published=[{"tvg_id":"MSNOW.us","streams":[original]}]
-        before=copy.deepcopy(published)
-        channels,report=build.build_local_test_channels(incoming,published,self.conf)
-        filtered=[c for c in channels if c.get("tvg_id")=="MSNOW.us"]
-        self.assertEqual(len(filtered),1)
-        self.assertEqual(len(filtered[0]["streams"]),1)
-        stream=filtered[0]["streams"][0]
-        self.assertEqual(stream["url"],URL)
-        self.assertTrue(stream["local_test_only"])
-        self.assertTrue(stream["local_test"])
-        self.assertTrue(filtered[0]["id"].startswith("stremiotv_localtest_"))
-        self.assertEqual(build.stream_object(stream,1)["url"],URL)
-        self.assertEqual(published,before)
-        self.assertEqual(report["summary"]["controlled_local_test_streams"],1)
+    def test_single_exact_approved_msnow_source(self):
+        items = [s for s in self.sources["streams"] if s.get("tvg_id") == "MSNOW.us"]
+        self.assertEqual(len(items), 1)
+        new = items[0]
+        self.assertEqual(new["url"], URL)
+        self.assertEqual(new["family"], "aynaott")
+        self.assertTrue(new["local_verified_override"])
+        self.assertEqual(new["content_kind"], "full-linear")
+        self.assertEqual(new["headers"], {})
+        self.assertIn("10 minutes", new["local_verified_note"])
 
-    def test_no_other_channel_allowed_on_same_host(self):
-        others=[row("BET.us","https://tvsen6.aynaott.com/bet/index.m3u8",family="aynaott")]
-        channels,_=build.build_local_test_channels(others,[],self.conf)
-        self.assertFalse(any(c.get("tvg_id")=="BET.us" for c in channels))
+    def test_production_source_preferred_without_touching_nicktoons(self):
+        rows = [s for s in self.sources["streams"] if s.get("tvg_id") == "MSNOW.us"]
+        first = build.select_streams(rows, 3, self.config, channel_id="MSNOW.us")
+        self.assertEqual(first[0]["url"], URL)
+        self.assertEqual(build.stream_object(first[0], 1)["url"], URL)
+        self.assertEqual(
+            build.channel_preference_rules(self.config, "MSNOW.us")[0]["family"],
+            "aynaott",
+        )
+        self.assertEqual(
+            build.channel_preference_rules(self.config, "Nicktoons.us")[0]["family"],
+            "aynascope",
+        )
 
-    def test_url_and_channel_kill_switch(self):
-        disabled=self.conf.setdefault("safety_controls",{})
-        disabled["disabled_urls"].append(URL)
-        ch,_=build.build_local_test_channels([],[],self.conf)
-        self.assertFalse(any(c.get("tvg_id")=="MSNOW.us" for c in ch))
-        disabled["disabled_urls"].remove(URL)
-        disabled.setdefault("disabled_channels",[]).append("MSNOW.us")
-        ch,_=build.build_local_test_channels([],[],self.conf)
-        self.assertFalse(any(c.get("tvg_id")=="MSNOW.us" for c in ch))
+    def test_exact_msnow_test_retired_and_no_other_aynaott_exception(self):
+        local = self.config["local_test_catalog"]
+        self.assertIn("aynaott.com", local["exclude_provider_hosts"])
+        self.assertIn("aynascope.net", local["exclude_provider_hosts"])
+        self.assertFalse(any(
+            item.get("tvg_id") == "MSNOW.us"
+            for item in local.get("controlled_sources", [])
+        ))
+        local_rows, _ = build.build_local_test_channels([], [], self.config)
+        self.assertFalse(any(
+            stream.get("url") == URL
+            for c in local_rows for stream in c.get("streams", [])
+        ))
 
-    def test_unreviewed_host_variant_fails_closed(self):
-        row=self.conf["local_test_catalog"]["controlled_sources"][0]
-        row["url"]=URL+"?token=example"
-        ch,report=build.build_local_test_channels([],[],self.conf)
-        self.assertEqual(ch,[])
-        self.assertEqual(report["summary"]["controlled_local_test_streams"],0)
+    def test_existing_url_kill_switch_still_applies_to_manual_source(self):
+        self.config["safety_controls"]["disabled_urls"].append(URL)
+        source = next(s for s in self.sources["streams"] if s["tvg_id"] == "MSNOW.us")
+        kept, rejected = build.apply_safety_controls([source], self.config)
+        self.assertEqual(kept, [])
+        self.assertEqual(len(rejected), 1)
+        self.assertEqual(rejected[0]["url"], URL)
 
-    def test_global_nicktoons_exclusion_remains(self):
-        self.assertIn("aynascope.net",self.conf["local_test_catalog"]["exclude_provider_hosts"])
-        self.assertFalse(any(x.get("tvg_id")=="Nicktoons.us" for x in self.conf["local_test_catalog"]["controlled_sources"]))
+    def test_existing_production_channel_qa_and_guard_remain_enabled(self):
+        self.assertTrue(self.config["deployment_guard"]["enabled"])
+        self.assertIn("DisneyChannel.us", self.config["deployment_guard"]["required_channel_ids"])
+        self.assertIn("NationalGeographic.us", self.config["deployment_guard"]["required_channel_ids"])
+        self.assertFalse(any(item.get("tvg_id") == "MSNOW.us" for item in
+            self.config["curation"].get("stream_quarantine", [])))
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     unittest.main()
