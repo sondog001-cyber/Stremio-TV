@@ -10,6 +10,8 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import private_ota
+
 ROOT = Path(__file__).resolve().parent
 PRIVATE_SITE = ROOT / "private-site"
 CORS_ORIGINS = {
@@ -93,5 +95,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    import private_ota
     raise SystemExit(main())
