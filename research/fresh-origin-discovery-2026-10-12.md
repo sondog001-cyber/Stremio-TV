@@ -41,3 +41,19 @@ Discovery evidence: [IPTV-Scraper-Zilla FSTV24](https://github.com/abusaeeidx/IP
 ## Separation and safeguards
 
 This is an isolated **draft research PR**. Does **not** edit `config.json`, `manual_sources.json`, production build assembly, deployment guard, local-test catalogs, authenticated tokens, or per-URL kill switches. The source scan rejects embedded credentials, private IPs and account-shaped live stream paths. **No streaming or retransmission of video was performed** in this pass; only HTTP manifest inspections were attempted on newly found URLs.
+
+
+## Expanded four-batch discovery (second pass)
+
+The same A/B/C/D matrix was broadened from six to **nine** public playlists drawn from four maintainer repositories: IPTV-Scraper-Zilla's six source-specific feeds, `cihan53/chyz-iptv` US, `InsolenceWillow/insolencetvgo`, and `CeresLabX/us-tv`. The added 2,604 M3U entries bring the total to **3,168 playlist entries scanned per batch**, with duplicate-entry and origin-host comparison against the **158-known-host deployed baseline**.
+
+- **Batch A:** Five exact-ID matches, all to existing known hosts (`40.160.24.52`, `41.205.93.154`, or `23.237.104.106`); 0 new candidate origins. No new Philadelphia full-linear affiliate feed.
+- **Batch B:** Repeat known-host hits for BET, CNBC, ESPNews, Nicktoons. The only non-duplicate public-host family still worth recording is the four **unverified and HLS-inaccessible** `greektoday.shop` name matches.
+- **Batch C:** Five exact-ID matches, all known hosts or previously disabled URLs (`40.160.24.53`, `206.212.244.63`, `23.237.104.106`, `168.228.44.241`); 0 new eligible hosts.
+- **Batch D:** Three exact-ID matches, all already-known or URL-disabled (`40.160.24.55`, `206.212.244.63`); 0 new eligible hosts. Official/local alternatives were not exposed by these third-party playlists.
+
+An additional test list contained account-identifying data inside direct stream URL **path** components. That repository was **removed from the approved research seeds**, and the scanner now rejects email-bearing paths and account-shaped `/api/stream/...` paths before HTTP access or logging. It must not become a production source.
+
+**Expanded conclusion:** 24/24 missing identities considered in four batches; 3,168 unique source-list rows inspected per batch; only 4 plausible playlist-name leads from one unverified domain family; all 4 failed initial TLS/HLS access; **0 verified independent original video origins, 0 decoded playable streams, 0 production changes**. Most additional playlist entries were mirrors of current or disabled upstreams.
+
+The discovery process remains research only, separate from the static addon, and does not change the 87/111 last confirmed deployed count.
