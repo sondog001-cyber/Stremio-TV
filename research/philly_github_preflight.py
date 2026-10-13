@@ -24,6 +24,7 @@ def validate_registry(data: dict) -> None:
             url = candidate.get("url", "")
             if not checks.valid_public_url(url):
                 raise ValueError("Unsafe, credentialed or private stream candidate URL")
+            checks.vetted_public_headers(candidate.get("public_headers"))
             if not candidate.get("source_url", "").startswith("https://github.com/"):
                 raise ValueError("Each candidate requires public GitHub source evidence")
             if not candidate.get("family") or not candidate.get("source"):
@@ -48,7 +49,7 @@ def analyze_station(tvg_id: str, data: dict, baseline: str = "") -> dict:
         if url in disabled:
             outcome = {"stage": "rejected-by-existing-kill-switch"}
         else:
-            outcome = checks.probe_manifest(url)
+            outcome = checks.probe_manifest(url, headers=c.get("public_headers"))
         outcomes.append({
             "tvg_id": tvg_id,
             "source": c["source"],
