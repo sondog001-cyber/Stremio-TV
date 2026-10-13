@@ -3424,7 +3424,17 @@
       404,
       410
     ],
-    "controlled_sources": []
+    "controlled_sources": [
+      {
+        "tvg_id": "MSNOW.us",
+        "name": "MS NOW — AynaOTT",
+        "family": "aynaott",
+        "source": "AynaOTT MS NOW independent test",
+        "url": "https://tvsen6.aynaott.com/msnbc/index.m3u8",
+        "quality": "SD",
+        "local_test_only": true
+      }
+    ]
   },
   "deployment_guard": {
     "enabled": true,
