@@ -57,6 +57,25 @@ class PhillyGithubSourceResearchTests(unittest.TestCase):
         self.assertEqual(result["candidates"][0]["probe"]["stage"], "rejected-by-existing-kill-switch")
         self.assertEqual(called.call_count, 4)
 
+    def test_public_referer_allowed_but_auth_or_cookie_header_rejected(self):
+        valid = REGISTRY["channels"]["WCAU.us"]["candidates"][-1]["public_headers"]
+        self.assertEqual(set(probe.checks.vetted_public_headers(valid)), {"Origin", "Referer", "User-Agent"})
+        for bad in ("Authorization", "Cookie", "X-Api-Key"):
+            with self.subTest(header=bad):
+                data = copy.deepcopy(REGISTRY)
+                data["channels"]["WCAU.us"]["candidates"][-1]["public_headers"][bad] = "Bearer secret"
+                with self.assertRaises(ValueError):
+                    probe.validate_registry(data)
+
+    def test_nbc_public_headers_reach_only_intended_candidate(self):
+        with mock.patch.object(probe.checks, "load_known_paths", return_value=(set(), set(), set())), mock.patch.object(
+            probe.checks, "probe_manifest", return_value={"stage": "manifest-or-segment-unavailable"}
+        ) as called:
+            result = probe.analyze_station("WCAU.us", REGISTRY)
+        self.assertEqual(result["candidate_count"], 6)
+        self.assertEqual(called.call_args_list[-1].kwargs["headers"]["Origin"], "https://jxoxkplay.xyz")
+        self.assertTrue(all(x.kwargs["headers"] is None for x in called.call_args_list[:-1]))
+
     def test_wpsg_no_public_credentials_no_false_recovery(self):
         with mock.patch.object(probe.checks, "load_known_paths", return_value=(set(), set(), set())), mock.patch.object(
             probe.checks, "probe_manifest"
