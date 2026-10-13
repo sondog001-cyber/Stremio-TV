@@ -243,6 +243,8 @@ def run(batch, artifact):
                 row["discovery_class"] = "redirects-to-known-host"
             elif final and final != row["entry_host"]:
                 row["discovery_class"] = "redirects-to-different-unverified-host"
+            elif row["manifest_probe"]["stage"] != "manifest-observed-not-decoded":
+                row["discovery_class"] = "new-host-manifest-unavailable"
     channel_rows = []
     for tvg_id in targets:
         matches = [r for r in results if r["channel"] == tvg_id]
@@ -250,11 +252,15 @@ def run(batch, artifact):
             "tvg_id": tvg_id, "seed_matches": len(matches),
             "fresh_host_leads": sum(r["discovery_class"] in
                                    ("new-entry-host-unknown-video-origin",
-                                    "redirects-to-different-unverified-host") for r in matches),
+                                    "redirects-to-different-unverified-host",
+                                    "new-host-manifest-unavailable") for r in matches),
             "state": "private-connector-only" if tvg_id in PRIVATE_IDS else
-                     ("new-entry-host-lead-unverified" if any(r["discovery_class"] ==
-                     "new-entry-host-unknown-video-origin" for r in matches) else
-                     "no-proven-fresh-origin"),
+                     ("new-host-found-manifest-inaccessible" if any(
+                         r["discovery_class"] == "new-host-manifest-unavailable"
+                         for r in matches) else
+                     ("new-entry-host-lead-unverified" if any(
+                         r["discovery_class"] == "new-entry-host-unknown-video-origin"
+                         for r in matches) else "no-proven-fresh-origin")),
         })
     report = {
         "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
@@ -267,9 +273,14 @@ def run(batch, artifact):
         "candidates": results,
         "summary": {
             "channels": len(targets), "seed_matches": len(results),
-            "novel_entry_hosts": sorted({r["entry_host"] for r in results
+            "novel_entry_hosts_found": sorted({r["entry_host"] for r in results
                  if r["discovery_class"] in ("new-entry-host-unknown-video-origin",
-                                            "redirects-to-different-unverified-host")}),
+                     "redirects-to-different-unverified-host", "new-host-manifest-unavailable")}),
+            "manifest_observed_hosts": sorted({r["entry_host"] for r in results
+                 if (r.get("manifest_probe") or {}).get("stage") ==
+                 "manifest-observed-not-decoded"}),
+            "unreachable_new_hosts": sorted({r["entry_host"] for r in results
+                 if r["discovery_class"] == "new-host-manifest-unavailable"}),
             "streams_full_QA_passed": 0, "streams_promoted": 0,
         },
         "rule": "Unverified discovery only. No DRM/login/credential bypass, no restreaming. "
