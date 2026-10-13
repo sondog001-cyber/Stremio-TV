@@ -1,6 +1,20 @@
 {
   "streams": [
     {
+      "tvg_id": "Nicktoons.us",
+      "name": "Nicktoons East",
+      "url": "http://tvsen7.aynascope.net/nicktoons/index.m3u8",
+      "quality": "SD",
+      "source": "AynaScope Nicktoons — user-verified direct HLS",
+      "family": "aynascope",
+      "priority": 0,
+      "philly": false,
+      "headers": {},
+      "content_kind": "full-linear",
+      "local_verified_override": true,
+      "local_verified_note": "User confirmed Stremio playback without looping or freezing on 2026-10-13; isolated 9/9 GitHub 60-second FFmpeg windows clean. Preferred source for Nicktoons only."
+    },
+    {
       "tvg_id": "WHYY.us",
       "name": "WHYY",
       "url": "https://whyydt.lls.pbs.org/out/v1/40b7857a84ee4302be8ab755a719cc14/index.m3u8",
