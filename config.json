@@ -967,6 +967,17 @@
           "family": "iptv-org",
           "label": "Independently tested Nicktoons backup"
         }
+      ],
+      "MSNOW.us": [
+        {
+          "family": "aynaott",
+          "url_contains": "/msnbc/index.m3u8",
+          "label": "User-verified AynaOTT MS NOW primary"
+        },
+        {
+          "family": "iptv-org",
+          "label": "Verified public alternative"
+        }
       ]
     },
     "primary_deprioritized_source_contains": [
@@ -3432,17 +3443,7 @@
       404,
       410
     ],
-    "controlled_sources": [
-      {
-        "tvg_id": "MSNOW.us",
-        "name": "MS NOW — AynaOTT",
-        "family": "aynaott",
-        "source": "AynaOTT MS NOW independent test",
-        "url": "https://tvsen6.aynaott.com/msnbc/index.m3u8",
-        "quality": "SD",
-        "local_test_only": true
-      }
-    ]
+    "controlled_sources": []
   },
   "deployment_guard": {
     "enabled": true,
