@@ -104,7 +104,12 @@
           "source": "nightah/daddylive",
           "url": "https://zekonew.newkso.ru/zeko/premium277/mono.m3u8",
           "source_url": "https://github.com/nightah/daddylive/blob/main/daddylive-channels.m3u8",
-          "notes": "Published generic test ID; check exact station lineup not just 'NBC10' title; may require public origin/referer headers not captured by anonymous preflight."
+          "notes": "Retry with only three public non-credentialed playback-context headers supplied in nightah/daddylive GitHub playlist; no DRM bypass, cookies, sessions or auth. This remains research-only, not approved for publication.",
+          "public_headers": {
+            "Origin": "https://jxoxkplay.xyz",
+            "Referer": "https://jxoxkplay.xyz/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36"
+          }
         }
       ]
     },
