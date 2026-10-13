@@ -103,6 +103,19 @@ class PrivateOTATests(unittest.TestCase):
             with self.subTest(host=host), self.assertRaises(ValueError):
                 serve_private_ota.validate_bind_host(host, True)
 
+    def test_private_server_hides_diagnostics_even_when_url_encoded(self):
+        for path in (
+            "/status.json",
+            "/%73tatus.json",
+            "/diagnostics/stream-health.json",
+            "/foo/../diagnostics/private.json",
+            "/%64iagnostics/data.json",
+        ):
+            with self.subTest(path=path):
+                self.assertTrue(serve_private_ota._deny_diagnostic_path(path))
+        for path in ("/manifest.json", "/catalog/tv/channels.json", "/stream/tv/id.json"):
+            self.assertFalse(serve_private_ota._deny_diagnostic_path(path))
+
     def test_public_actions_hard_stop(self):
         with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=False):
             with self.assertRaises(RuntimeError):
