@@ -202,8 +202,8 @@ def parse_hls_snapshot(text):
     segments = [x for x in lines if not x.startswith("#")]
     if len(segments) < 2:
         return {"kind": "not-enough-segments"}
-    match = re.search(r"(?m)^#EXT-X-MEDIA-SEQUENCE:(\\d+)", text)
-    duration = re.search(r"(?m)^#EXT-X-TARGETDURATION:(\\d+)", text)
+    match = re.search(r"(?m)^#EXT-X-MEDIA-SEQUENCE:(\d+)", text)
+    duration = re.search(r"(?m)^#EXT-X-TARGETDURATION:(\d+)", text)
     return {"kind": "media", "sequence": int(match.group(1)) if match else None,
             "segments": segments, "target_duration": int(duration.group(1)) if duration else 6}
 
