@@ -6,9 +6,10 @@ import argparse
 import functools
 import ipaddress
 import os
+import posixpath
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 import private_ota
 
@@ -35,6 +36,11 @@ def validate_bind_host(host: str, allow_lan: bool) -> None:
         raise ValueError("LAN binding requires --allow-lan and an explicit RFC1918 IP; never use 0.0.0.0")
 
 
+def _deny_diagnostic_path(raw_path: str) -> bool:
+    path = posixpath.normpath("/" + unquote(urlsplit(raw_path).path).lstrip("/"))
+    return path in ("/status.json", "/diagnostics") or path.startswith("/diagnostics/")
+
+
 class PrivateSiteHandler(SimpleHTTPRequestHandler):
     def end_headers(self):
         origin = self.headers.get("Origin", "")
@@ -54,15 +60,13 @@ class PrivateSiteHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        path = urlsplit(self.path).path
-        if path == "/status.json" or path == "/diagnostics" or path.startswith("/diagnostics/"):
+        if _deny_diagnostic_path(self.path):
             self.send_error(404)
             return
         super().do_GET()
 
     def do_HEAD(self):
-        path = urlsplit(self.path).path
-        if path == "/status.json" or path == "/diagnostics" or path.startswith("/diagnostics/"):
+        if _deny_diagnostic_path(self.path):
             self.send_error(404)
             return
         super().do_HEAD()
