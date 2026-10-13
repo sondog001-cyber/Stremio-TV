@@ -17,16 +17,14 @@ SEEDS=(
 )
 # Explicit audited *legacy ID + name* pairs; exclude all other lookalikes.
 IDENTITIES={
-    ("bravo", "bravo"): "Bravo.us",
-    ("bravo", "bravousa"): "Bravo.us",
-    ("bravousaeasternfeed", "bravousa"): "Bravo.us",
-    ("cbssportsnetwork", "cbssportsnetworkcbssn"): "CBSSportsNetwork.us",
+    ("bravous", "bravo"): "Bravo.us",
+    ("bravousaeasternfeedus", "bravousa"): "Bravo.us",
     ("cbssportsnetworkus", "cbssportsnetworkcbssn"): "CBSSportsNetwork.us",
-    ("cbssportsnetworkusa", "cbssportsnetworkcbssn"): "CBSSportsNetwork.us",
-    ("espnews", "espnews"): "ESPNews.us",
-    ("espnnews", "espnews"): "ESPNews.us",
-    ("nicktoons", "nicktoons"): "Nicktoons.us",
-    ("nicktoonseast", "nicktoons"): "Nicktoons.us",
+    ("cbssportsnetworkusaus", "cbssportsnetworkcbssn"): "CBSSportsNetwork.us",
+    ("espnewsus", "espnews"): "ESPNews.us",
+    ("espnnewsus", "espnews"): "ESPNews.us",
+    ("nicktoonsus", "nicktoons"): "Nicktoons.us",
+    ("nicktoonseastus", "nicktoons"): "Nicktoons.us",
 }
 FOCUS={"Bravo.us","CBSSportsNetwork.us","ESPNews.us","Nicktoons.us"}
 CAP_TOTAL=8
