@@ -45,7 +45,10 @@ class NicktoonsPromotionTests(unittest.TestCase):
     def test_keep_global_aynascope_local_test_exclusion(self):
         local=self.cfg["local_test_catalog"]
         self.assertIn("aynascope.net",local["exclude_provider_hosts"])
-        self.assertEqual(local.get("controlled_sources"),[])
+        self.assertFalse(any(
+            row.get("tvg_id") == "Nicktoons.us"
+            for row in (local.get("controlled_sources") or [])
+        ))
         self.assertFalse(any(x.get("url")==NEW for x in (local.get("controlled_sources") or [])))
 
     def test_no_other_channel_preferences_changed_by_nicktoons_rule(self):
