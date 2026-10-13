@@ -43,8 +43,6 @@ SEEDS = [
      "repo": "InsolenceWillow/insolencetvgo", "source_type": "community-playlist"},
     {"name": "CeresLabX", "url": "https://raw.githubusercontent.com/CeresLabX/us-tv/main/playlist.m3u",
      "repo": "CeresLabX/us-tv", "source_type": "iptv-org-derivative-dedup-comparison"},
-    {"name": "pcouillard", "url": "https://raw.githubusercontent.com/pcouillard/iptv/master/iptv.m3u",
-     "repo": "pcouillard/iptv", "source_type": "community-mixed-credential-entries-rejected"},
 ]
 # The source has NO tvg-id; these are explicitly evaluated NAME hints, never automatic
 # proof of exact network identity. Keep MS NOW/MSNBC especially marked provisional.
@@ -84,6 +82,12 @@ def valid_public_url(url):
     if p.scheme not in ("http", "https") or not p.hostname:
         return False
     if p.username is not None or p.password is not None:
+        return False
+    # Third-party lists may place subscriber IDs/emails and secret account numbers in
+    # plain path segments rather than RFC userinfo. Reject before requesting/logging.
+    if "@" in urllib.parse.unquote(p.path):
+        return False
+    if re.search(r"/(?:api/)?(?:stream|streams|play|live)/[^/]+/[^/]+/", p.path, re.I):
         return False
     qs = urllib.parse.parse_qs(p.query, keep_blank_values=True)
     if any(k.lower() in {"un", "user", "username", "pass", "password", "pwd"} for k in qs):
