@@ -27,6 +27,10 @@ def load_registry(path=REGISTRY):
     all_ids = [id for name in "ABCD" for id in batches[name]]
     if len(all_ids) != 24 or len(set(all_ids)) != 24 or set(all_ids) != set(obj["channels"]):
         raise ValueError("Exactly 24 disjoint original TVG target IDs are required")
+    for tvg_id, metadata in obj["channels"].items():
+        # Canonical current TVG ID must match itself, including suffixes like .us@East.
+        if tvg_id not in metadata["aliases"]:
+            metadata["aliases"].append(tvg_id)
     for source in obj["references"]:
         if not source["url"].startswith("https://raw.githubusercontent.com/"):
             raise ValueError("Only pinned public GitHub raw source files accepted")
