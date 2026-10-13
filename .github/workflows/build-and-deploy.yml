@@ -26,9 +26,12 @@ permissions:
   pages: write
   id-token: write
 
+# An automatic two-hour scheduled run must never cancel an already-running
+# build/deploy attempt. GitHub serializes Pages runs in this same group.
+# Keep the channel coverage/identity deployment guard fully enabled.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
