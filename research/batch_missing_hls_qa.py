@@ -123,7 +123,7 @@ def playlist_variant(url: str) -> dict:
 def playlist_variant_content(url: str, s: str) -> dict:
     if not s.lstrip().startswith("#EXTM3U") or "#EXT-X-MEDIA-SEQUENCE" not in s:
         raise ValueError("no-hls-media-sequence")
-    m = re.search(r"(?m)^#EXT-X-MEDIA-SEQUENCE:\\s*(\\d+)", s)
+    m = re.search(r"(?m)^#EXT-X-MEDIA-SEQUENCE:\s*(\d+)", s)
     if not m:
         raise ValueError("invalid-hls-media-sequence")
     entries = [t.strip() for t in s.splitlines() if t.strip() and not t.startswith("#")]
@@ -132,7 +132,7 @@ def playlist_variant_content(url: str, s: str) -> dict:
     return {
         "url": url, "sequence": int(m.group(1)), "segments": len(entries),
         "tail": entries[-1], "is_vod": "#EXT-X-ENDLIST" in s,
-        "target_duration": re.search(r"(?m)^#EXT-X-TARGETDURATION:(\\d+)", s).group(1) if "#EXT-X-TARGETDURATION:" in s else None,
+        "target_duration": re.search(r"(?m)^#EXT-X-TARGETDURATION:(\d+)", s).group(1) if "#EXT-X-TARGETDURATION:" in s else None,
     }
 
 
@@ -150,11 +150,11 @@ def video_decode(url: str) -> dict:
     except subprocess.TimeoutExpired:
         return {"status": "decode_timeout", "decoded_frames": 0}
     output = (process.stderr or "")[-10000:]
-    frames = [int(m) for m in re.findall(r"frame=\\s*(\\d+)", output)]
+    frames = [int(m) for m in re.findall(r"frame=\s*(\d+)", output)]
     max_frames = max(frames, default=0)
     status = "video_decoded" if process.returncode == 0 and max_frames >= 45 else "decoder_no_sustained_video"
     return {"status": status, "decoded_frames": max_frames, "exit_code": process.returncode,
-            "diagnostic_tail": output[-350:].replace("\\n", " ")}
+            "diagnostic_tail": output[-350:].replace("\n", " ")}
 
 
 def check(candidate: dict) -> dict:
@@ -172,7 +172,7 @@ def check(candidate: dict) -> dict:
         segment_url = urllib.parse.urljoin(v1["url"], v1["tail"])
         segment = grab(segment_url, max_bytes=3_000_000)
         data = segment["data"]
-        if data.startswith((b"\\x89PNG", b"\\xff\\xd8\\xff", b"GIF8")) or b"<html" in data[:120].lower():
+        if data.startswith((b"\x89PNG", b"\xff\xd8\xff", b"GIF8")) or b"<html" in data[:120].lower():
             result["failure"] = "segment-image-or-html"; return result
         if not data or len(data) < 256:
             result["failure"] = "empty-or-invalid-segment"; return result
