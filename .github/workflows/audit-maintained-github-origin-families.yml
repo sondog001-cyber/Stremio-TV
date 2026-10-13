@@ -1,0 +1,40 @@
+name: Audit Maintained GitHub Origin Families (research only)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/audit-maintained-github-origin-families.yml"
+      - "research/maintained_github_origin_scan.py"
+      - "research/maintained-github-origin-registry-2026-10-12.json"
+      - "tests/test_maintained_github_origin_scan.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: "Original-media discovery — batch ${{ matrix.batch }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        batch: ["A", "B", "C", "D"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests for exact identity and no-promotion rules
+        run: python3 -m unittest tests.test_maintained_github_origin_scan -v
+      - name: Fetch maintained GitHub playlists and inspect fixed HLS leads
+        run: |
+          python3 -m research.maintained_github_origin_scan \
+            --batch "${{ matrix.batch }}" \
+            --out research-results/maintained
+      - name: Preserve source/host evidence; do not publish Stremio links
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maintained-github-origin-batch-${{ matrix.batch }}
+          path: research-results/maintained/
+          retention-days: 14
+          if-no-files-found: warn
