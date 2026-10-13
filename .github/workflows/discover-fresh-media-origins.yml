@@ -1,0 +1,48 @@
+name: Discover Fresh Media Origins (research only)
+
+on:
+  pull_request:
+    paths:
+      - "research/fresh_origin_discovery.py"
+      - ".github/workflows/discover-fresh-media-origins.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  discover-four-batches:
+    name: Fresh media origins batch \${{ matrix.batch }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        batch: [A, B, C, D]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download last successful production stream-health baseline
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: stremio-tv-diagnostics
+          run-id: 38316450648
+          github-token: \${{ github.token }}
+          repository: \${{ github.repository }}
+          path: .research-baseline
+      - name: Parse and inspect only newly found origin hosts
+        run: |
+          python3 -m py_compile research/fresh_origin_discovery.py
+          python3 research/fresh_origin_discovery.py \
+            --batch "\${{ matrix.batch }}" \
+            --baseline .research-baseline/diagnostics/stream-health.json \
+            --out research-results
+      - name: Save the candidate evidence (no production changes)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-origin-discovery-batch-\${{ matrix.batch }}
+          path: research-results/
+          if-no-files-found: warn
+          retention-days: 14
