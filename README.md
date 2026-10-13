@@ -129,6 +129,12 @@ STREMIO_TV_PRIVATE_SOURCES_FILE=private_sources.generated.json \
 
 The public GitHub Actions build refuses to load the private overlay. Serve private output only from infrastructure you control.
 
+### Experimental local-only Philadelphia OTA (five stations)
+
+A stricter, *opt-in* HDHomeRun helper is provided in `private_ota.py`: it detects only KYW, WCAU, WPVI, WPHL and WPSG from a user's scanned tuner lineup. It requires an exact channel-number **and** station-name match, refuses DRM/redirect/remote endpoints, and writes an overlay only with `--write-overlay`. The direct tuner feeds remain separate from public GitHub Pages.
+
+For complete **Windows PowerShell setup, local Stremio manifest serving, safety boundaries and hardware acceptance tests**, see [Private Philadelphia OTA prototype](research/private-ota-philadelphia-prototype.md). Local antenna/tuner hardware and network access are required; unit tests do not prove OTA reception or playback.
+
 ## Deployment
 
 1. Place the project in a public GitHub repository.
