@@ -24,8 +24,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate isolated decoder logic
         run: python3 -m unittest tests.test_bravo_nicktoons_decoder_research -v
-      - name: Verify FFmpeg available
-        run: ffmpeg -version | head -n 1
+      - name: Install FFmpeg and fail if binary is missing
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          command -v ffmpeg
+          ffmpeg -version >/dev/null
       - name: Decode 60s of current HLS (no video recorded, no proxy)
         run: |
           python3 -m research.bravo_nicktoons_decoder_research \
