@@ -14,7 +14,7 @@ Inspected two current, independently maintained source projects, an existing hig
 
 The four CI jobs parsed **2,521 playlist entries per batch** across these four pinned public files (1,060 + 555 + 178 + 728). They match all 24 research targets with exact IDs, explicit historical aliases or exact channel names. **52 source-label matches** occurred across 18/24 target IDs after alias corrections: A=11, B=25, C=10, D=6. These are playlist *claims*; many are multiple SD/HD variants on the same `tvpass.org` web route, the same historical relays, or unrelated clones. None of these counts represents independent original video hosts.
 
-Six IDs have **zero matches in this specific four-file source set**: `KYW.us`, `WPVI.us`, `StarzEdge.us`, `WPHL.us`, `NBCSportsPhiladelphiaPlus.us`, `WPSG.us`. This does *not* negate previously known sources outside this sample; for example previous [Philadelphia dedicated hunt](philly-github-results-2026-10-12.md) already tested 17 archived leads with 0 manifest passes.
+Six IDs have **zero matches in this specific four-file source set**: `KYW.us`, `WPVI.us`, `StarzEdge.us`, `WPHL.us`, `NBCSportsPhiladelphiaPlus.us`, `WPSG.us`. This does *not* negate previously known sources outside this sample; for example previous [Philadelphia dedicated hunt](https://github.com/sondog001-cyber/Stremio-TV/blob/research-github-philly-linear-leads-20261012/research/philly-github-results-2026-10-12.md) already tested 17 archived leads with 0 manifest passes.
 
 ## Five selected historical direct HLS leads — isolated preflight
 
@@ -29,6 +29,17 @@ Six IDs have **zero matches in this specific four-file source set**: `KYW.us`, `
 See [all-24 audit run #38338409538](https://github.com/sondog001-cyber/Stremio-TV/actions/runs/38338409538), [latest full four-batch code run #38338644536](https://github.com/sondog001-cyber/Stremio-TV/actions/runs/38338644536) and current PR's [research workflow](https://github.com/sondog001-cyber/Stremio-TV/actions/workflows/audit-maintained-github-origin-families.yml).
 
 **Historical-health caveat:** iptv-org issue [#42525](https://github.com/iptv-org/iptv/issues/42525) reports `41.205.93.154/MSNBC` broken in July 2026; issue [#48358](https://github.com/iptv-org/iptv/issues/48358) notes a broken Nicktoons link with that IP in August 2026, so the same IP working in one snapshot is not enough for production. These observed positive Nicktoons/Bravo snapshots should not be confused with a 60-second uninterrupted decode.
+
+## Direct decoder QA on the two HLS-positive feeds
+
+The first decoder workflow misleadingly showed green despite having no FFmpeg binary: a `ffmpeg -version | head` shell pipeline masked the missing command. **This was corrected** by installing FFmpeg with `apt-get` and invoking `ffmpeg -version` without a pipeline. Only the second [real decoder workflow #38338700446](https://github.com/sondog001-cyber/Stremio-TV/actions/runs/38338700446) supplies valid decoder evidence.
+
+| Candidate | 60-second FFmpeg result | Loop/freeze details | Decision |
+| --- | --- | --- | --- |
+| **Nicktoons.us** | **PASS**, return code 0, **60/60** sampled one-second video frames decoded; **60 unique frame hashes** | No repeating 2-, 3- or 4-second clips detected; longest identical-frame run 1 second | **Strong isolated candidate for further identity/provenance verification**. Not declared exact Nicktoons schedule, authorized original broadcast, or durable 5-run reliability. No production promotion. |
+| **Bravo.us** | **FAIL**, exit code **183**, **zero decoded frames**, FFmpeg reported **invalid data** | Earlier HLS preflight passed once but another run showed nonadvancing window. No decoded video to analyze. | **Quarantine as research-only, do not create a local test or promote**. |
+
+For the initial passing HLS snapshot of Nicktoons, GitHub Actions reported the **same 41.205.93.154 IP** for initial entry, final HLS playlist and fetched media segment. This confirms a reachable **segment delivery endpoint** but *not* that this machine is Nicktoons's actual broadcaster-owned original media CDN. It is a shared upstream, not an independent channel source family. Nicktoons's next gate requires source attribution, comparison against the current US linear Nicktoons EPG/programs and independent repeated decoder passes; do not confuse unlabeled video decoding with content identity or permission.
 
 ## Family-level engineering conclusions
 
