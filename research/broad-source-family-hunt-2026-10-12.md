@@ -82,3 +82,22 @@ Last confirmed successful live deployment #38316450648: **87/111** channels. Pos
 1. If Nexus API becomes accessible, query **only the canonical 24 missing IDs**, traverse `streams[].url` in each returned channel JSON, normalize URL host+path (discard volatile tokens), dedupe against existing sources, and tag `sources[]` provenance (iptv-org-only vs novel).
 2. For Rebel, obtain a maintainer-published origin list **with permission**; no proxy playback from its proprietary server.
 3. Continue distinct-origin research against other candidates (small playlist generators and legally accessible official endpoints) rather than manufacturing a test list from empty/proxy-only results.
+
+
+## Small independent playlist / generator origin triage — follow-up
+
+Focused search on Bravo, CBS Sports Network, Smithsonian and ESPNews, excluding existing MoveOnJoy, 41.205.93.154, expired TVE and credentialed Xtream hits. **Repository identity is not source-family identity.**
+
+| Research lead | Provenance | Exact-channel outcome | Verdict |
+|---|---|---|---|
+| [CeresLabX/us-tv](https://github.com/CeresLabX/us-tv) | README explicitly says its source is IPTV-org US; regenerates ~676-channel playlist | Bravo is the **identical** `http://41.205.93.154/BRAVO/index.m3u8` | Duplicate origin; do not test again |
+| [gogetta69/public-files](https://github.com/gogetta69/public-files/blob/main/m3u_formatted.dat) | Publishes MoveOnJoy M3U and channel metadata | ESPNews URL on `fl2.moveonjoy.com` | Existing excluded origin family |
+| [afshinkobi/iptv](https://github.com/afshinkobi/iptv/blob/main/playlist%204.m3u) | Mixed playlist from public sources | ESPNews `https://fl1.moveonjoy.com/ESPN_NEWS/index.m3u8` | Existing excluded origin family |
+| [dzhafar777-ai M3U gist](https://gist.github.com/dzhafar777-ai/2bc403291f95dbee9bb29a4a41735312) | IPTV-org compilation | Bravo upstream `41.205.93.154`; alternate `tvsen7.aynascope.net` | Both already cataloged/known failing |
+| [mik25/marvel_m3u](https://github.com/mik25/marvel_m3u) | Xtream-style account-path links (username/password components) | CBS Sports Network via private account-shaped `25461` IPTV endpoint | Excluded by embedded credential policy; not a public direct feed |
+| [eslco/YueChan combined gist](https://gist.github.com/eslco/95291fddc442733afb4ab5abb9ab4caf) | Mixes MoveOnJoy with individual CDN FAST channels | No new exact target match established; recognizable NBCU-derived FAST names are **not** Bravo linear | Potential general generator lead, not a recovery |
+| [CeresLabX playlist](https://github.com/CeresLabX/us-tv/blob/main/playlist.m3u) | Same IPTV-org output at alternate host | Bravo exact same failed upstream | Rejected duplicate |
+
+Other screened repos ([koztay/iptv-sources](https://github.com/koztay/iptv-sources), [whhxmwhh/iptv-usa](https://github.com/whhxmwhh/iptv-usa)) are IPTV-org indexes/forks, while [kpirnie/kptv-proxy](https://github.com/kpirnie/kptv-proxy) is a proxy aggregator with authenticated Xtream support rather than a public new media upstream. Keep them out of recovery count.
+
+**Disposition:** Multiple new *playlist URLs* reviewed, **0 verified novel exact-channel video origin URLs** for the four top targets, **0 new Stremio local-test candidates**, **0 production changes**. Broaden to source repositories whose config declares a primary independent provider/official broadcast origin; reject forks, rehosting, masked proxy links and expired credential lists before consuming QA time.
