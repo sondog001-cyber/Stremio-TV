@@ -109,8 +109,9 @@ class PrivateOTATests(unittest.TestCase):
                 private_ota._secure_local_only()
 
     def test_refuse_non_gitignored_output_filename(self):
-        with self.assertRaises(ValueError):
-            private_ota.write_overlay({"streams": []}, ROOT / "manual_sources.json")
+        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "false"}, clear=False):
+            with self.assertRaises(ValueError):
+                private_ota.write_overlay({"streams": []}, ROOT / "manual_sources.json")
 
 
 if __name__ == "__main__":
