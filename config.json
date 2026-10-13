@@ -2870,7 +2870,9 @@
           "name": "CBS Sports Network",
           "channel_id": 308,
           "group": "Sports",
-          "additional_servers": ["player"]
+          "additional_servers": [
+            "player"
+          ]
         },
         {
           "tvg_id": "DiscoveryChannel.us",
@@ -2889,7 +2891,9 @@
           "name": "Fox Sports 2",
           "channel_id": 758,
           "group": "Sports",
-          "additional_servers": ["player"]
+          "additional_servers": [
+            "player"
+          ]
         },
         {
           "tvg_id": "HGTV.us",
@@ -3401,6 +3405,17 @@
       401,
       404,
       410
+    ],
+    "controlled_sources": [
+      {
+        "tvg_id": "Nicktoons.us",
+        "name": "Nicktoons East — AynaScope",
+        "family": "aynascope",
+        "source": "AynaScope — Nicktoons local verification",
+        "url": "http://tvsen7.aynascope.net/nicktoons/index.m3u8",
+        "quality": "SD",
+        "local_test_only": true
+      }
     ]
   },
   "deployment_guard": {
