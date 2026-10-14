@@ -27,6 +27,9 @@ SOURCES=[
 ]
 TARGETS={"Bravo.us","USANetwork.us","E.us","DisneyChannel.us",
          "WPVI.us","WCAU.us","KYW.us","WPHL.us","WPSG.us"}
+LOCAL_ID_VARIANTS={"wpvidt1.us@sd":"WPVI.us","wcaudt1.us@sd":"WCAU.us",
+                   "kywdt1.us@sd":"KYW.us","wphldt1.us@sd":"WPHL.us",
+                   "wpsgdt1.us@sd":"WPSG.us"}
 # Evidence-backed but not otherwise covered candidates.
 SEEDS=[
  ("Bravo.us","independent-bravo-170","http://170.254.18.106/BRAVO/index.m3u8"),
@@ -56,7 +59,7 @@ def candidate_rows(raw,label):
   if line.startswith("#EXTINF"):
    id_match=re.search(r'tvg-id="([^"]+)"',line,re.I)
    name=line.rsplit(",",1)[-1] if "," in line else ""
-   pending=old.clean_id(id_match.group(1)) if id_match else None
+   pending=(old.clean_id(id_match.group(1)) or LOCAL_ID_VARIANTS.get(id_match.group(1).lower())) if id_match else None
   elif pending in TARGETS and line.startswith(("http://","https://")):
    url=line
    yield {"identity":pending,"url":url,"playlist":label,"channel_label":name}
