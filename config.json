@@ -3388,7 +3388,7 @@
       "service_type": "Premium movie network"
     },
     "WTXF.us": {
-      "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/us-local/fox-29-wtxf-us.png"
+      "logo": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/05/Fts-philadelphia-a.svg/960px-Fts-philadelphia-a.svg.png"
     },
     "MSNOW.us": {
       "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/ms-now-us.png"
@@ -3545,6 +3545,9 @@
     },
     "ACCNetwork.us": {
       "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/united-states/espn-accn-us.png"
+    },
+    "Fox.us@WTXFTV": {
+      "logo": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/05/Fts-philadelphia-a.svg/960px-Fts-philadelphia-a.svg.png"
     }
   },
   "safety_controls": {
@@ -3599,7 +3602,11 @@
     "canvas_size": 512,
     "max_logo_size": 384,
     "timeout_seconds": 8,
-    "byte_limit": 5000000
+    "byte_limit": 5000000,
+    "monochrome_light_tvg_ids": [
+      "WTXF.us",
+      "Fox.us@WTXFTV"
+    ]
   },
   "local_test_catalog": {
     "enabled": true,
