@@ -22,11 +22,15 @@ jobs:
           sudo apt-get install -y -qq ffmpeg
       - name: Probe all lost channel identities and alternate media origins
         run: python3 research/recover_lost_13_probe.py
+      - name: Capture small programme identity frames for qualified streams
+        run: python3 research/capture_lost_13_identities.py
       - name: Upload read-only media origin report
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: net-13-independent-media-qa
-          path: research/diagnostics/lost-13-source-probe.json
+          path: |
+            research/diagnostics/lost-13-source-probe.json
+            research/diagnostics/lost-13-identity-frames/
           if-no-files-found: warn
           retention-days: 14
