@@ -77,3 +77,9 @@ The diagnostic workflow captured still frames from each candidate at 640px width
 - **Existing 212.5.144.156 History, Disney, NatGeo feeds:** all three simultaneously returned HTTP **403** during the frame capture, so synchronized side-by-side programme comparison could not be completed. Correlated shared-origin failure reproduced a third time.
 
 **Decision:** Keep History and Disney production selections unchanged; disqualify the AynaScope Disney link as a DisneyChannel.us replacement. Keep NatGeo exact HD East alias in separate draft PR #98 for staging and confirm schedule before merging. Do not weaken the deployment guard.
+
+## Follow-up: US East Disney and History
+- In Actions run 38511944919, the fl31.moveonjoy.com Disney candidate timed out during FFmpeg network connection. The 4.30.180.36 Disney candidate returned HTTP 403; neither produced video, so neither qualifies as a recovered Disney Channel source.
+- The AynaScope Disney feed shows Disney Junior branding, not Disney Channel. Do not promote it as DisneyChannel.us.
+- Simultaneous 3-frame captures showed HISTORY branding in AynaScope's History English feed and a Trelegy medication advert playing on both feeds around the same time. This is suggestive but not proof of identical US East programming. A read-only perceptual comparison is running.
+- All production streams and the deployment guard remain unchanged.
