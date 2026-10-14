@@ -225,6 +225,13 @@ def normalize_channel_logos(
         return canvas
 
     for channel in channels:
+        is_light_logo = canonical_tvg_id(str(channel.get("tvg_id") or "")) in light_logo_ids
+        channel_max_logo_size = (
+            max(max_logo_size, min(canvas_size - 16, int(
+                settings.get("monochrome_light_max_logo_size", max_logo_size)
+            )))
+            if is_light_logo else max_logo_size
+        )
         source_url = _canonical_logo_url(str(channel.get("logo") or ""))
         destination = asset_dir / f"{channel['id']}.png"
         status = "fallback"
@@ -248,7 +255,7 @@ def normalize_channel_logos(
                     image.load()
                     original_size = list(image.size)
                     logo = image.convert("RGBA")
-                    if canonical_tvg_id(str(channel.get("tvg_id") or "")) in light_logo_ids:
+                    if is_light_logo:
                         # Preserve FOX 29's official wordmark geometry while
                         # translating black ink to light ink for a dark tile.
                         # This also strips a plain white raster background.
@@ -263,7 +270,7 @@ def normalize_channel_logos(
                     alpha_box = logo.getchannel("A").getbbox()
                     if alpha_box:
                         logo = logo.crop(alpha_box)
-                    logo.thumbnail((max_logo_size, max_logo_size), Image.Resampling.LANCZOS)
+                    logo.thumbnail((channel_max_logo_size, channel_max_logo_size), Image.Resampling.LANCZOS)
                     canvas = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
                     x = (canvas_size - logo.width) // 2
                     y = (canvas_size - logo.height) // 2
@@ -291,11 +298,8 @@ def normalize_channel_logos(
             "status": status,
             "original_size": original_size,
             "canvas_size": [canvas_size, canvas_size],
-            "max_logo_size": max_logo_size,
-            "color_treatment": (
-                "light-monochrome" if canonical_tvg_id(str(channel.get("tvg_id") or "")) in light_logo_ids
-                else "original"
-            ),
+            "max_logo_size": channel_max_logo_size,
+            "color_treatment": "light-monochrome" if is_light_logo else "original",
             "error": error,
         })
 
