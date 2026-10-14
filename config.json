@@ -475,6 +475,7 @@
     },
     "canonical_id_aliases": {
       "MSNBC.us": "MSNOW.us",
+      "NationalGeographic.us@HDEast": "NationalGeographic.us",
       "AandE.us": "AE.us",
       "ACCN.us": "ACCNetwork.us",
       "BloombergTelevision.us": "BloombergTV.us",
