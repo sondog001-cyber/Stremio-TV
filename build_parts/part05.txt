@@ -169,7 +169,7 @@ def normalize_channel_logos(
         }
 
     try:
-        from PIL import Image, ImageDraw, ImageFont
+        from PIL import Image, ImageDraw, ImageFont, ImageChops, ImageOps
     except Exception as exc:
         log(f"WARNING: Pillow unavailable; channel-logo normalization skipped: {exc}")
         return {
@@ -184,6 +184,14 @@ def normalize_channel_logos(
             },
             "channels": [],
         }
+
+    # Opt-in light monochrome artwork for dark Stremio cards.
+    # Exact channel identities only; other channels stay unchanged.
+    light_logo_ids = {
+        canonical_tvg_id(str(tvg_id))
+        for tvg_id in settings.get("monochrome_light_tvg_ids", [])
+        if str(tvg_id).strip()
+    }
 
     asset_dir = site / "assets" / "channel-logos"
     asset_dir.mkdir(parents=True, exist_ok=True)
@@ -240,6 +248,18 @@ def normalize_channel_logos(
                     image.load()
                     original_size = list(image.size)
                     logo = image.convert("RGBA")
+                    if canonical_tvg_id(str(channel.get("tvg_id") or "")) in light_logo_ids:
+                        # Preserve FOX 29's official wordmark geometry while
+                        # translating black ink to light ink for a dark tile.
+                        # This also strips a plain white raster background.
+                        source_alpha = logo.getchannel("A")
+                        ink = ImageOps.invert(ImageOps.grayscale(logo.convert("RGB")))
+                        alpha = ImageChops.multiply(source_alpha, ink)
+                        if not alpha.getbbox():
+                            raise ValueError("no visible monochrome logo ink")
+                        light = Image.new("RGBA", logo.size, (246, 248, 252, 0))
+                        light.putalpha(alpha)
+                        logo = light
                     alpha_box = logo.getchannel("A").getbbox()
                     if alpha_box:
                         logo = logo.crop(alpha_box)
@@ -272,6 +292,10 @@ def normalize_channel_logos(
             "original_size": original_size,
             "canvas_size": [canvas_size, canvas_size],
             "max_logo_size": max_logo_size,
+            "color_treatment": (
+                "light-monochrome" if canonical_tvg_id(str(channel.get("tvg_id") or "")) in light_logo_ids
+                else "original"
+            ),
             "error": error,
         })
 
