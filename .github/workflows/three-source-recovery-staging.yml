@@ -54,11 +54,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DADDYLIVE_RESOLVER_URL: http://127.0.0.1:3000
-      - name: Require original published channel-coverage and identity guard
-        run: python deployment_guard.py
-      - name: Require zero generic logo fallbacks
+      - name: Audit published logos independently
+        if: always()
         run: python tests/verify_published_logos.py
-      - name: Require recovery candidates to pass normal stream QA
+      - name: Report recovery candidate full QA independently
+        if: always()
         run: |
           python - <<'PY'
           import json
@@ -93,6 +93,8 @@ jobs:
               raise SystemExit("Stage NOT qualified for promotion: "+", ".join(fail))
           print("Only stage criteria met. Exact programme identity still needs review.")
           PY
+      - name: Require original published channel-coverage and identity guard (final deployment gate)
+        run: python deployment_guard.py
       - name: Upload diagnostics even if staging fails
         if: always()
         uses: actions/upload-artifact@v7
