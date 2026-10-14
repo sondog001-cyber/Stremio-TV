@@ -1,4 +1,4 @@
-name: Validate independent BTN OAN History backups (staging only)
+name: Validate independent BTN OAN History Cooking backups (staging only)
 
 on:
   pull_request:
@@ -72,6 +72,7 @@ jobs:
               "BigTenNetwork.us": "https://cache0.wonvt.st/live/12ttivn0fhm14f0yr8ber/master.m3u8",
               "OneAmericaNewsNetwork.us": "https://a-cdn.klowdtv.com/live1/oan_720p/playlist.m3u8",
               "History.us": "https://tvsen5.aynascope.net/historyen/index.m3u8",
+              "CookingChannel.us": "https://tvsen7.aynascope.net/cooking/index.m3u8",
           }
           fail=[]
           ids={r.get("tvg_id","").split("@")[0] for r in published}
@@ -96,7 +97,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: staged-independent-recovery-3
+          name: staged-independent-recovery-4
           path: |
             site/status.json
             site/diagnostics/
