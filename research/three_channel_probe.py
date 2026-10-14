@@ -33,17 +33,17 @@ CANDIDATES = [
     ("NationalGeographic.us", "sorted-iptv-east-lead", "http://40.160.24.53/NAT_GEO/index.m3u8", "THEROCKSSS/sorted-iptv documentary.m3u"),
 ]
 
-def probe_once(url: str, attempt: int) -> dict:
+def probe_once(url: str, attempt: int, duration_seconds: int = 12) -> dict:
     cmd = [
         "ffmpeg", "-hide_banner", "-nostdin", "-loglevel", "error",
         "-rw_timeout", "10000000", "-analyzeduration", "6000000",
         "-probesize", "8000000", "-i", url,
-        "-map", "0:v:0", "-an", "-t", "12",
+        "-map", "0:v:0", "-an", "-t", str(duration_seconds),
         "-vf", "fps=2,scale=160:-2", "-f", "framemd5", "-"
     ]
     begin = time.monotonic()
     try:
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=32, check=False)
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=max(32, duration_seconds + 35), check=False)
         hashes = []
         for line in p.stdout.splitlines():
             if line.startswith("#"):
@@ -55,16 +55,16 @@ def probe_once(url: str, attempt: int) -> dict:
         # is a warning of a short repeated segment rather than live progression.
         windows = [tuple(hashes[i:i+4]) for i in range(0, len(hashes)-3, 4)]
         obvious_loop = len(windows) >= 3 and len(set(windows)) < len(windows)
-        passed = p.returncode == 0 and len(hashes) >= 14 and len(set(hashes)) >= 4 and not obvious_loop
+        passed = p.returncode == 0 and len(hashes) >= max(14, int(duration_seconds * 1.2)) and len(set(hashes)) >= 4 and not obvious_loop
         return {
-            "attempt": attempt, "passed": passed, "decoded_frames": len(hashes),
+            "attempt": attempt, "duration_requested_seconds": duration_seconds, "passed": passed, "decoded_frames": len(hashes),
             "unique_frame_hashes": len(set(hashes)), "short_repeat_warning": obvious_loop,
             "elapsed_seconds": round(time.monotonic()-begin, 2),
             "exit_code": p.returncode, "error_tail": p.stderr[-850:],
             "sample_fingerprint": hashlib.sha256((",".join(hashes[:12])).encode()).hexdigest()[:14],
         }
     except subprocess.TimeoutExpired:
-        return {"attempt": attempt, "passed": False, "error_tail": "ffmpeg timed out after 32 seconds"}
+        return {"attempt": attempt, "passed": False, "error_tail": f"ffmpeg timed out after {max(32, duration_seconds + 35)} seconds"}
     except Exception as exc:
         return {"attempt": attempt, "passed": False, "error_tail": type(exc).__name__ + ": " + str(exc)[:300]}
 
@@ -91,6 +91,19 @@ def main() -> None:
     start = time.monotonic()
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         results = list(executor.map(check, CANDIDATES))
+    # A true continuity test is substantially longer than the initial media
+    # sanity probes. Exercise every 2/2 candidate over 65 seconds in parallel.
+    eligible = [row for row in results if row["two_probe_media_pass"]]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        extended = list(executor.map(
+            lambda row: probe_once(row["url"], 3, duration_seconds=65), eligible
+        ))
+    for row, longer in zip(eligible, extended):
+        row["extended_continuity"] = longer
+        row["extended_65s_media_pass"] = bool(longer["passed"])
+    for row in results:
+        row.setdefault("extended_65s_media_pass", False)
+
     by_channel = {}
     for item in results:
         by_channel.setdefault(item["tvg_id"], []).append(item)
@@ -108,6 +121,7 @@ def main() -> None:
         "summary": {
             "candidates": len(results),
             "two_probe_media_pass": sum(r["two_probe_media_pass"] for r in results),
+            "extended_65s_media_pass": sum(r["extended_65s_media_pass"] for r in results),
             "elapsed_seconds": round(time.monotonic()-start, 1),
             "note": "Two decodes and frame changes only; exact aired feed and independence remain unverified."
         }, "channels": by_channel
