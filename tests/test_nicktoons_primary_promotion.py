@@ -17,7 +17,7 @@ class NicktoonsPromotionTests(unittest.TestCase):
         rows=[s for s in self.manual["streams"] if s["tvg_id"]=="Nicktoons.us"]
         self.assertEqual(len(rows),1)
         self.assertEqual(rows[0]["url"],NEW)
-        self.assertTrue(rows[0]["local_verified_override"])
+        self.assertNotIn("local_verified_override", rows[0])
         self.assertEqual(rows[0]["family"],"aynascope")
 
     def test_exact_channel_scoped_old_loop_quarantine(self):
