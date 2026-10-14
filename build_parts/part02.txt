@@ -725,7 +725,23 @@ def select_streams(
 
     selected: list[dict[str, Any]] = []
     if unique:
-        primary_index = next(
+        # An optional exact-ID/URL pin preserves an established Primary when it
+        # passes health validation. If absent/unhealthy, retain the normal
+        # stability-ranked candidate selection (never publish a failed pin).
+        url_pins = target.get("primary_url_pins") or {}
+        preferred_url = next(
+            (str(url) for tvg_id, url in url_pins.items()
+             if canonical_tvg_id(str(tvg_id)) == canonical_tvg_id(channel_id)),
+            "",
+        )
+        pinned_index = next(
+            (index for index, candidate in enumerate(unique)
+             if preferred_url
+             and not candidate.get("primary_deprioritized")
+             and str(candidate.get("url") or "") == preferred_url),
+            None,
+        )
+        primary_index = pinned_index if pinned_index is not None else next(
             (
                 index
                 for index, candidate in enumerate(unique)
