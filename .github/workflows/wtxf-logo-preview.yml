@@ -1,0 +1,42 @@
+name: WTXF FOX29 logo preview (no production deploy)
+
+on:
+  pull_request:
+    paths:
+      - "config.json"
+      - "build_parts/part05.txt"
+      - "tests/test_wtxf_logo_wordmark.py"
+      - "research/preview_wtxf_logo.py"
+      - ".github/workflows/wtxf-logo-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fox29-logo-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout candidate logo branch
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install Pillow
+        run: python -m pip install -r requirements.txt
+      - name: Assemble builder
+        run: python assemble_build.py
+      - name: Check WTXF identity, logo placement and transparency
+        run: python -m unittest discover -s tests -p "test_wtxf_logo_wordmark.py" -v
+      - name: Render official FOX 29 logo on Stremio-style card
+        run: python research/preview_wtxf_logo.py
+      - name: Upload logo preview and normalization evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fox29-transparent-wordmark-preview
+          path: research/diagnostics/wtxf-logo-preview/
+          if-no-files-found: warn
+          retention-days: 14
