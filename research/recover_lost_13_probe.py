@@ -68,6 +68,15 @@ ALTERNATES = [
     ("MLBStrikeZone.us@SD", "insolence-mlb-strike-direct", "http://74.48.44.156:1234/stream/asd/474/master.m3u8", "", "US-MLB-Strike-Zone-label-unverified"),
     ("CinemaxHits.us@East", "insolence-moremax-east-direct", "http://74.48.44.156:1234/stream/asd/343/master.m3u8", "", "MoreMAX-East-not-all-Cinemax-feeds"),
     ("StarzKidsFamily.us@East", "insolence-starz-kids-east-direct", "http://74.48.44.156:1234/stream/asd/468/master.m3u8", "", "Starz-Kids-and-Family-East-label-unverified"),
+    # Direct origins from arquerido TV247 and judy-gotv refreshed playlists,
+    # all identity-unverified until visual/programme QA.
+    ("BET.us", "tv247-bet-memfs", "https://ft.fbcdntv247.cfd/memfs/bet.m3u8", "", "BET-US-identity-unverified"),
+    ("BigTenNetwork.us@SD", "tv247-big-ten-memfs", "https://ft.fbcdntv247.cfd/memfs/a9fac2ae-4feb-4765-aded-46b61277a09b_output_0.m3u8", "", "BTN-exact-network-unverified"),
+    ("History.us@East", "tv247-history-memfs", "https://ft.fbcdntv247.cfd/memfs/7ba806d9-3ae3-4425-a46d-90db0b27988a_output_0.m3u8", "", "History-US-East-unverified"),
+    ("SECNetwork.us@SD", "espnfree-sec-channel", "https://cdn.espnfreenew.xyz/channel/sec.m3u8", "", "SEC-Network-identity-unverified"),
+    ("CMT.us@East", "moveonjoy-fl2-cmt", "https://fl2.moveonjoy.com/CMT/index.m3u8", "", "CMT-US-East-unverified"),
+    ("History.us@East", "moveonjoy-fl7-history", "https://fl7.moveonjoy.com/history_channel/index.m3u8", "", "History-US-East-unverified"),
+    ("WeTV.us@East", "moveonjoy-fl12-wetv", "http://fl12.moveonjoy.com/WE_TV/index.m3u8", "", "WEtv-US-East-unverified"),
 ]
 
 
