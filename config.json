@@ -3606,7 +3606,8 @@
     "monochrome_light_tvg_ids": [
       "WTXF.us",
       "Fox.us@WTXFTV"
-    ]
+    ],
+    "monochrome_light_max_logo_size": 448
   },
   "local_test_catalog": {
     "enabled": true,
