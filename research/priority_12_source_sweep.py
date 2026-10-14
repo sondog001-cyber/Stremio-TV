@@ -63,6 +63,9 @@ SEEDS=[
     ("USANetwork.us","usa-new-190-11-host","http://190.11.225.124:5000/live/usa_hd/playlist.m3u8"),
     ("USANetwork.us","usa-new-40-160-host","http://40.160.24.55/USA_NETWORK/index.m3u8"),
     ("History.us","history-alt-84-origin","http://84.17.50.102/history/index.m3u8"),
+    ("WPVI.us","wpvi-fl1-philadelphia-abc","https://fl1.moveonjoy.com/PA_PHILADELPHIA_ABC/index.m3u8"),
+    ("WCAU.us","wcau-fl1-philadelphia-nbc","https://fl1.moveonjoy.com/PA_PHILADELPHIA_NBC/index.m3u8"),
+    ("KYW.us","kyw-fl1-philadelphia-cbs","https://fl1.moveonjoy.com/PA_PHILADELPHIA_CBS/index.m3u8"),
 ]
 KNOWN_PREVIOUSLY_FAILED_HOSTS={
     "23.237.104.106", "212.5.144.156", "41.205.93.154",
