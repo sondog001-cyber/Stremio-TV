@@ -11,7 +11,6 @@
       "philly": false,
       "headers": {},
       "content_kind": "full-linear",
-      "local_verified_override": true,
       "local_verified_note": "User reported successful Stremio playback for 10 minutes without freezing or looping on 2026-10-13; AynaOTT feed passed GitHub direct FFmpeg 3/3 60-second continuity tests. Program identity relies on playlist label and user playback, not independent episode-by-episode audit."
     },
     {
@@ -25,7 +24,6 @@
       "philly": false,
       "headers": {},
       "content_kind": "full-linear",
-      "local_verified_override": true,
       "local_verified_note": "User confirmed Stremio playback without looping or freezing on 2026-10-13; isolated 9/9 GitHub 60-second FFmpeg windows clean. Preferred source for Nicktoons only."
     },
     {
@@ -141,7 +139,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -156,7 +153,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -171,7 +167,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -186,7 +181,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -201,7 +195,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -216,7 +209,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -231,7 +223,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -246,7 +237,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -261,7 +251,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -276,7 +265,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -291,7 +279,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -306,7 +293,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -321,7 +307,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -336,7 +321,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -351,7 +335,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -366,7 +349,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     },
     {
@@ -381,7 +363,6 @@
       "headers": {
         "Referer": "https://tvnow.st/"
       },
-      "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
     }
   ]
