@@ -383,6 +383,51 @@
       },
       "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
+    },
+    {
+      "tvg_id": "E.us@East",
+      "name": "E! Entertainment US East",
+      "url": "https://cache0.wonvt.st/live/15a0cd61f3w7um0229g5g/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow separate-host E! — 2x FFmpeg decoder + 65s continuity, visible E! watermark",
+      "family": "tvnow",
+      "priority": 42,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/",
+        "User-Agent": "Mozilla/5.0"
+      },
+      "content_kind": "full-linear"
+    },
+    {
+      "tvg_id": "SECNetwork.us@SD",
+      "name": "SEC Network US",
+      "url": "https://cache0.wonvt.st/live/0wvobh902biwzw08m7trv/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow SEC Network — 2x FFmpeg decoder + 65s continuity, visible SEC coverage",
+      "family": "tvnow",
+      "priority": 42,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/",
+        "User-Agent": "Mozilla/5.0"
+      },
+      "content_kind": "full-linear"
+    },
+    {
+      "tvg_id": "ScienceChannel.us",
+      "name": "Science Channel",
+      "url": "https://cache0.wonvt.st/live/1qy87o21k84k1r0zek1wt/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow Science Channel — 2x FFmpeg decoder + 65s continuity, visible SCI logo",
+      "family": "tvnow",
+      "priority": 42,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/",
+        "User-Agent": "Mozilla/5.0"
+      },
+      "content_kind": "full-linear"
     }
   ]
 }
