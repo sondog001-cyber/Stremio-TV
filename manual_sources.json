@@ -452,6 +452,18 @@
         "User-Agent": "Mozilla/5.0"
       },
       "content_kind": "full-linear"
+    },
+    {
+      "tvg_id": "History.us@East",
+      "name": "History US East — AynaOTT alternate",
+      "url": "https://tvsen3.aynaott.com/np3JstRE/index.m3u8",
+      "quality": "SD",
+      "source": "AynaOTT independent-host History — simultaneous Pawn Stars/History identity evidence; source still must pass full QA",
+      "family": "aynaott",
+      "priority": 43,
+      "philly": false,
+      "headers": {},
+      "content_kind": "full-linear"
     }
   ]
 }
