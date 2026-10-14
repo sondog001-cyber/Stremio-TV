@@ -61,6 +61,33 @@ class NatGeoHDEastStandbyTests(unittest.TestCase):
             {row["url"] for row in dropped},
         )
 
+    def test_established_primary_stays_primary_only_while_healthy(self):
+        original = {
+            "name": "National Geographic", "tvg_id": "NationalGeographic.us",
+            "family": "iptv-org",
+            "url": "http://212.5.144.156:8080/natgeo/index.m3u8",
+            "quality": "720P", "content_kind": "full-linear", "priority": 1,
+            "stability": {"rank": 1, "passes": 4, "samples": 5},
+        }
+        alternate = {
+            "name": "National Geographic HD East", "tvg_id": "NationalGeographic.us",
+            "family": "iptv-org",
+            "url": "http://198.58.104.90:8989/natgeo/index.m3u8",
+            "quality": "720P", "content_kind": "full-linear", "priority": 0,
+            "stability": {"rank": 0, "passes": 5, "samples": 5},
+        }
+        chosen = build.select_streams(
+            [alternate, original], 3, self.config, channel_id="NationalGeographic.us"
+        )
+        self.assertEqual(chosen[0]["url"], original["url"])
+        self.assertIn(alternate["url"], [r["url"] for r in chosen[1:]])
+        # When normal health excludes the primary, the verified alternate can
+        # move to primary instead of leaving the channel dark.
+        fallback = build.select_streams(
+            [alternate], 3, self.config, channel_id="NationalGeographic.us"
+        )
+        self.assertEqual(fallback[0]["url"], alternate["url"])
+
     def test_primary_and_guard_configuration_unchanged(self):
         curation = self.config["curation"]
         self.assertEqual(
