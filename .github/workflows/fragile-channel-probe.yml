@@ -23,11 +23,15 @@ jobs:
           sudo apt-get install -y -qq ffmpeg
       - name: Test current hosts against independent-source leads
         run: python3 research/three_channel_probe.py
+      - name: Collect paired program identity thumbnails
+        run: python3 research/capture_three_channel_frames.py
       - name: Upload decoder/continuity diagnostics
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: fragile-three-channel-probe
-          path: research/diagnostics/three-channel-probe.json
+          path: |
+            research/diagnostics/three-channel-probe.json
+            research/diagnostics/frame-samples/
           if-no-files-found: warn
           retention-days: 14
