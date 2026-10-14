@@ -58,6 +58,11 @@ SEEDS=[
     ("DisneyChannel.us","disney-moveonjoy-fl12","http://fl12.moveonjoy.com/DISNEY/index.m3u8"),
     ("NationalGeographic.us","natgeo-moveonjoy-fl31","https://fl31.moveonjoy.com/National_Geographic/index.m3u8"),
     ("E.us","e-moveonjoy-https","https://fl2.moveonjoy.com/E_ENTERTAINMENT_TELEVISION/index.m3u8"),
+    ("Bravo.us","bravo-aynascope-english","http://tvsen7.aynascope.net/bravo/index.m3u8"),
+    ("Bravo.us","bravo-new-40-160-host","http://40.160.24.52/BRAVO/index.m3u8"),
+    ("USANetwork.us","usa-new-190-11-host","http://190.11.225.124:5000/live/usa_hd/playlist.m3u8"),
+    ("USANetwork.us","usa-new-40-160-host","http://40.160.24.55/USA_NETWORK/index.m3u8"),
+    ("History.us","history-alt-84-origin","http://84.17.50.102/history/index.m3u8"),
 ]
 KNOWN_PREVIOUSLY_FAILED_HOSTS={
     "23.237.104.106", "212.5.144.156", "41.205.93.154",
