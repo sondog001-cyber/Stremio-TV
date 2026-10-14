@@ -31,6 +31,8 @@ CANDIDATES = [
     ("DisneyChannel.us", "artmott-disney-lead", "http://ott.artmott.com/DisneyChannel/tracks-v1a1/mono.m3u8", "existing discovery.seed_candidates"),
     ("DisneyChannel.us", "thetvapp-east-2025-lead", "https://e3.thetvapp.to/hls/DisneyChannelEast/tracks-v2a1/mono.m3u8", "iptv-org/iptv issue 27125"),
     ("DisneyChannel.us", "thetvapp-east-alternate-2025-lead", "https://e5.thetvapp.to/hls/DisneyChannelEast/index.m3u8", "iptv-org/iptv issue 28387; historical"),
+    ("DisneyChannel.us", "moveonjoy-fl31-disney-2026-lead", "https://fl31.moveonjoy.com/DISNEY/index.m3u8", "pzeepzee March 2026 exact East directory; network identity unconfirmed"),
+    ("DisneyChannel.us", "4.30.180.36-disneychannel-2026-lead", "http://4.30.180.36:8420/disneychannel/index.m3u8", "iptv-org/iptv issue 51016 Sep 2026; unsigned URL only; may be inactive"),
     ("NationalGeographic.us", "iptv-org-hd-east-lead", "http://198.58.104.90:8989/natgeo/index.m3u8", "iptv-org/iptv US HDEast variant"),
     ("NationalGeographic.us", "sorted-iptv-east-lead", "http://40.160.24.53/NAT_GEO/index.m3u8", "THEROCKSSS/sorted-iptv documentary.m3u"),
     # Source-family discovery: current directory includes tokenized examples,
