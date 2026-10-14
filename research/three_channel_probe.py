@@ -31,6 +31,12 @@ CANDIDATES = [
     ("DisneyChannel.us", "thetvapp-east-2025-lead", "https://e3.thetvapp.to/hls/DisneyChannelEast/tracks-v2a1/mono.m3u8", "iptv-org/iptv issue 27125"),
     ("NationalGeographic.us", "iptv-org-hd-east-lead", "http://198.58.104.90:8989/natgeo/index.m3u8", "iptv-org/iptv US HDEast variant"),
     ("NationalGeographic.us", "sorted-iptv-east-lead", "http://40.160.24.53/NAT_GEO/index.m3u8", "THEROCKSSS/sorted-iptv documentary.m3u"),
+    # Source-family discovery: current directory includes tokenized examples,
+    # but test ONLY the public unsigned canonical paths. Do not synthesize
+    # credentials or claim feed identity from a descriptive label.
+    ("History.us", "aynascope-history-english-lead", "https://tvsen5.aynascope.net/historyen/index.m3u8", "konanda-sg/Mrgify-Tv; History English, US-East identity unconfirmed"),
+    ("DisneyChannel.us", "aynascope-disney-ambiguous-lead", "https://tvsen7.aynascope.net/disney/index.m3u8", "konanda-sg/Mrgify-Tv; Disney Channel label conflicts with another directory's Disney Junior label"),
+    ("NationalGeographic.us", "aynascope-natgeo-unverified-lead", "https://tvsen6.aynascope.net/natgeo/index.m3u8", "konanda-sg/Mrgify-Tv; Nat Geo TV, US-East identity unconfirmed"),
 ]
 
 def probe_once(url: str, attempt: int, duration_seconds: int = 12) -> dict:
