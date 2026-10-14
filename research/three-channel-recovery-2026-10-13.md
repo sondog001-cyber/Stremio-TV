@@ -53,3 +53,16 @@ The current diagnostic PR changes **only** a research script, research note, and
 **Important curation finding:** `NationalGeographic.us@HDEast` is present in the IPTV-org raw USA playlist, but `canonical_tvg_id` treats `HDEast` as a different identity, excluding it from the configured `NationalGeographic.us` allowlist. A narrowly scoped draft [PR #98](https://github.com/sondog001-cyber/Stremio-TV/pull/98) proposes an exact one-ID alias and a no-deploy full staging build to check backup inclusion under existing QA. Do not broaden generic variant normalization across other channels just to address this one.
 
 This confirms improved **availability diversity** for the NatGeo candidate, not necessarily independent provider ownership or actual programme identity. No candidate has been deployed or promoted by this diagnostic PR. Existing production selections and deployment guard remain unchanged.
+
+## AynaScope follow-up — three-channel cross-check
+
+[Run #38504384310](https://github.com/sondog001-cyber/Stremio-TV/actions/runs/38504384310) tested AynaScope's publicly listed History English, Disney, and Nat Geo TV paths *without* attempting to generate or reuse expired playlist access tokens.
+
+- `https://tvsen5.aynascope.net/historyen/index.m3u8`: two 12s decoder passes + 65s continuation (130 unique frames, no short repeat).
+- `https://tvsen7.aynascope.net/disney/index.m3u8`: two 12s decoder passes + 65s continuation (130 unique frames, no short repeat).
+- `https://tvsen6.aynascope.net/natgeo/index.m3u8`: invalid media input; rejected.
+- During the same run, existing 212.5.144.156 feeds and the 198.58.104.90 NatGeo East alternative also passed 65s; during the preceding run, the entire 212.5.144.156 family returned correlated HTTP 403 failures.
+
+**Identity precautions:** AynaScope calls its `disney` feed Disney Channel, while IPTV-org lists the same path under Disney Junior. Do not map either label automatically. AynaScope's `historyen` is labeled English History, *not yet confirmed* as History Channel US East. Visual/EPG comparison is required.
+
+The paired frame-sample workflow collects stills for manual review on this diagnostic branch. No AynaScope feed has been promoted to production.
