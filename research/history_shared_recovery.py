@@ -59,7 +59,7 @@ def probe(url, seconds, referer=""):
  start=time.monotonic()
  try:
   p=subprocess.run(cmd,capture_output=True,text=True,timeout=seconds+35)
-  frames=[x.rsplit(",",1)[-1].strip() for x in p.stdout.splitlines() if not x.startswith("#") and re.search(r",[0-9a-f]{32}\s*$",x)]
+  frames=[x.rsplit(",",1)[-1].strip() for x in p.stdout.splitlines() if not x.startswith("#") and re.search(r",\s*[0-9a-f]{32}\s*$",x)]
   chunks=[tuple(frames[i:i+4]) for i in range(0,len(frames)-3,4)]
   loop=len(chunks)>3 and len(set(chunks))<len(chunks)
   ok=p.returncode==0 and len(frames)>=int(seconds*1.4) and len(set(frames))>=4 and not loop
