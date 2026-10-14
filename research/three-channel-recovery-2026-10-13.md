@@ -66,3 +66,14 @@ This confirms improved **availability diversity** for the NatGeo candidate, not 
 **Identity precautions:** AynaScope calls its `disney` feed Disney Channel, while IPTV-org lists the same path under Disney Junior. Do not map either label automatically. AynaScope's `historyen` is labeled English History, *not yet confirmed* as History Channel US East. Visual/EPG comparison is required.
 
 The paired frame-sample workflow collects stills for manual review on this diagnostic branch. No AynaScope feed has been promoted to production.
+
+## Still-frame identity investigation — run #38504770902
+
+The diagnostic workflow captured still frames from each candidate at 640px width. Artifact: https://github.com/sondog001-cyber/Stremio-TV/actions/runs/38504770902/artifacts/11866913481.
+
+- **AynaScope Disney `/disney/`: REJECT as DisneyChannel.us.** Captured video displays an unambiguous **Disney Jr.** on-screen bug. This resolves the conflicting playlist metadata in favor of the Disney Junior identity; passing HLS/FFmpeg tests was not sufficient to identify the network. Do not add or alias it as Disney Channel. It might separately warrant DisneyJunior.us discovery, but is **not** a candidate for this three-channel recovery.
+- **AynaScope History English `/historyen/`: INDETERMINATE exact feed.** Frame displays a scanned newspaper/text documentary shot, without a network bug or programme-specific proof that it matches the US East History channel. Remains a research lead, not production-ready.
+- **NatGeo HD East at 198.58.104.90:** visible **National Geographic** yellow rectangle branding and documentary footage; this supports network-brand identity but does not independently prove US East feed/programme schedule. Exact timezone/programme identity still requires confirmation.
+- **Existing 212.5.144.156 History, Disney, NatGeo feeds:** all three simultaneously returned HTTP **403** during the frame capture, so synchronized side-by-side programme comparison could not be completed. Correlated shared-origin failure reproduced a third time.
+
+**Decision:** Keep History and Disney production selections unchanged; disqualify the AynaScope Disney link as a DisneyChannel.us replacement. Keep NatGeo exact HD East alias in separate draft PR #98 for staging and confirm schedule before merging. Do not weaken the deployment guard.
