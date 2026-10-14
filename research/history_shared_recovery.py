@@ -54,12 +54,12 @@ for identity, suffix in SHARED.items():
 
 def probe(url, seconds, referer=""):
  cmd=["ffmpeg","-hide_banner","-nostdin","-loglevel","error","-rw_timeout","15000000","-user_agent","Mozilla/5.0"]
- if referer:cmd+=["-headers","Referer: "+referer+"\\r\\n"]
+ if referer:cmd+=["-headers","Referer: "+referer+"\r\n"]
  cmd+=["-i",url,"-map","0:v:0","-an","-t",str(seconds),"-vf","fps=2,scale=160:-2","-f","framemd5","-"]
  start=time.monotonic()
  try:
   p=subprocess.run(cmd,capture_output=True,text=True,timeout=seconds+35)
-  frames=[x.rsplit(",",1)[-1].strip() for x in p.stdout.splitlines() if not x.startswith("#") and re.search(r",[0-9a-f]{32}\\s*$",x)]
+  frames=[x.rsplit(",",1)[-1].strip() for x in p.stdout.splitlines() if not x.startswith("#") and re.search(r",[0-9a-f]{32}\s*$",x)]
   chunks=[tuple(frames[i:i+4]) for i in range(0,len(frames)-3,4)]
   loop=len(chunks)>3 and len(set(chunks))<len(chunks)
   ok=p.returncode==0 and len(frames)>=int(seconds*1.4) and len(set(frames))>=4 and not loop
@@ -93,7 +93,7 @@ def main():
  "summary":{k:{"tested":len(v),"full_media_pass":sum(r["full_media_pass"] for r in v),"passing_tags":[r["tag"] for r in v if r["full_media_pass"]]} for k,v in by_kind.items()},"elapsed":round(time.monotonic()-start,1)}
  dest=Path("research/diagnostics/history-shared-recovery.json")
  dest.parent.mkdir(parents=True,exist_ok=True)
- dest.write_text(json.dumps(data,indent=2)+"\\n")
+ dest.write_text(json.dumps(data,indent=2)+"\n")
  print(json.dumps(data["summary"],indent=2))
  print("No source promoted. Full media decoding is not identity validation.")
 if __name__=="__main__":main()
