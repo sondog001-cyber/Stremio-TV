@@ -422,6 +422,18 @@
       "philly": false,
       "headers": {},
       "content_kind": "full-linear"
+    },
+    {
+      "tvg_id": "CookingChannel.us@SD",
+      "name": "Cooking Channel US",
+      "url": "https://tvsen7.aynascope.net/cooking/index.m3u8",
+      "quality": "SD",
+      "source": "AynaScope Cooking Channel — on-screen Cooking Channel network bug verified",
+      "family": "aynascope",
+      "priority": 42,
+      "philly": false,
+      "headers": {},
+      "content_kind": "full-linear"
     }
   ]
 }
