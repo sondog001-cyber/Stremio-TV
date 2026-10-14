@@ -25,6 +25,8 @@ jobs:
         run: python3 research/three_channel_probe.py
       - name: Collect paired program identity thumbnails
         run: python3 research/capture_three_channel_frames.py
+      - name: Compare simultaneous History programme footage
+        run: python3 research/compare_history_programming.py
       - name: Upload decoder/continuity diagnostics
         if: always()
         uses: actions/upload-artifact@v7
@@ -33,5 +35,6 @@ jobs:
           path: |
             research/diagnostics/three-channel-probe.json
             research/diagnostics/frame-samples/
+            research/diagnostics/history-programme-parity.json
           if-no-files-found: warn
           retention-days: 14
