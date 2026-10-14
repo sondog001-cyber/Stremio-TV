@@ -62,13 +62,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Require zero published generic logo fallbacks
         run: python tests/verify_published_logos.py
+      - name: Require all published streams to pass normal playback QA
+        run: python tests/verify_full_qa.py
+      - name: Require original deployment guard and essential channels
+        run: python deployment_guard.py
       - name: Upload logo diagnostics
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: logo-build-audit
           path: |
-            site/diagnostics/logo-normalization.json
-            site/diagnostics/channels.json
+            site/status.json
+            site/diagnostics/
           if-no-files-found: warn
           retention-days: 14
