@@ -1,4 +1,4 @@
-"""Ensure three recovery streams remain exact-ID QA candidates, never shortcuts."""
+"""Ensure four recovery streams remain exact-ID QA candidates, never shortcuts."""
 import json
 from pathlib import Path
 import unittest
@@ -17,6 +17,7 @@ class IndependentRecoveryStagingTests(unittest.TestCase):
             "BigTenNetwork.us@SD": "https://cache0.wonvt.st/live/12ttivn0fhm14f0yr8ber/master.m3u8",
             "OneAmericaNewsNetwork.us@SD": "https://a-cdn.klowdtv.com/live1/oan_720p/playlist.m3u8",
             "History.us@East": "https://tvsen5.aynascope.net/historyen/index.m3u8",
+            "CookingChannel.us@SD": "https://tvsen7.aynascope.net/cooking/index.m3u8",
         }
         for tvg_id, url in expected.items():
             with self.subTest(tvg_id=tvg_id):
@@ -30,15 +31,15 @@ class IndependentRecoveryStagingTests(unittest.TestCase):
     def test_all_candidates_survive_exact_identity_curation_without_cross_network_mapping(self):
         streams = [x for x in self.manual if x.get("family") in {"klowdtv", "tvnow"} and
                    x.get("tvg_id") in {"OneAmericaNewsNetwork.us@SD", "BigTenNetwork.us@SD"}]
-        streams += [x for x in self.manual if x.get("tvg_id")=="History.us@East" and
-                    "aynascope.net/historyen/" in x.get("url", "")]
+        streams += [x for x in self.manual if x.get("family")=="aynascope" and
+                    x.get("tvg_id") in {"History.us@East", "CookingChannel.us@SD"}]
         canonical = build.canonicalize_approved_sources(streams, self.config)
         curated, rejected = build.curate_entries(canonical, self.config)
-        self.assertEqual(len(curated), 3, f"Rejected wanted streams: {rejected!r}")
+        self.assertEqual(len(curated), 4, f"Rejected wanted streams: {rejected!r}")
         self.assertEqual(len(rejected), 0)
         self.assertEqual(
             {build.canonical_tvg_id(x["tvg_id"]) for x in curated},
-            {"bigtennetwork.us", "oneamericanewsnetwork.us", "history.us"},
+            {"bigtennetwork.us", "oneamericanewsnetwork.us", "history.us", "cookingchannel.us"},
         )
 
     def test_normal_deployment_guard_remains_enabled(self):
