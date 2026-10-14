@@ -1,7 +1,7 @@
 """MS NOW: previously controlled Local Test is now user-confirmed production source.
 
-Ten minutes of successful local Stremio playback plus 3x60 clean decoder
-windows justify a scoped stream promotion, without changing unrelated channels.
+Historical local checks remain documented, but every stream now requires normal
+GitHub transport and FFmpeg playback QA; no local-pass exception is allowed.
 """
 import json
 import pathlib
@@ -24,7 +24,7 @@ class MSNowPromotionRegressionTests(unittest.TestCase):
         new = items[0]
         self.assertEqual(new["url"], URL)
         self.assertEqual(new["family"], "aynaott")
-        self.assertTrue(new["local_verified_override"])
+        self.assertNotIn("local_verified_override", new)
         self.assertEqual(new["content_kind"], "full-linear")
         self.assertEqual(new["headers"], {})
         self.assertIn("10 minutes", new["local_verified_note"])
