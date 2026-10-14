@@ -785,6 +785,11 @@ class PlaybackContinuityTests(unittest.TestCase):
                 "primary_playback_qa": {"passed": True},
             },
         ]
+        results.append({
+            "status": "ok",
+            "detail": "later backup also decoded",
+            "primary_playback_qa": {"passed": True},
+        })
         with mock.patch.object(
             build,
             "_validate_primary_playback_stream",
