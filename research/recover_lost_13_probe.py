@@ -59,6 +59,15 @@ ALTERNATES = [
     ("CookingChannel.us@SD", "aynascope-cooking-tv-unverified", "https://tvsen7.aynascope.net/cooking/index.m3u8", "", "COOKING-TV-label-not-confirmed-as-US-Cooking-Channel"),
     ("truTV.us@East", "warner-east-slate", "https://turnerlive.warnermediacdn.com/hls/live/2023176/trueast/slate/VIDEO_0_3564000.m3u8", "", "SLATE-path-do-not-treat-as-live-programming"),
     ("TennisChannel.us@SD", "reseller-feed-unverified", "http://138.59.177.78:9999/play/a0gl/index.m3u8", "", "needs-same-US-programming-verification"),
+    # Secondary-origin feeds published in InsolenceWillow/insolencetvgo.
+    # Distinct media hosts, not independent providers until verified.
+    ("BigTenNetwork.us@SD", "insolence-btn-direct", "http://212.102.60.231/BIG_TEN_NETWORK/index.m3u8", "", "exact-BTN-label-unverified"),
+    ("CMT.us@East", "insolence-cmt-direct", "http://212.102.60.231/CMT/index.m3u8", "", "US-East-CMT-label-unverified"),
+    ("CookingChannel.us@SD", "insolence-cooking-direct", "http://212.102.60.231/COOKING_CHANNEL/index.m3u8", "", "Cooking-Channel-USA-label-unverified"),
+    ("WeTV.us@East", "insolence-wetv-direct", "http://212.102.60.231/WE_TV/index.m3u8", "", "US-East-WEtv-label-unverified"),
+    ("MLBStrikeZone.us@SD", "insolence-mlb-strike-direct", "http://74.48.44.156:1234/stream/asd/474/master.m3u8", "", "US-MLB-Strike-Zone-label-unverified"),
+    ("CinemaxHits.us@East", "insolence-moremax-east-direct", "http://74.48.44.156:1234/stream/asd/343/master.m3u8", "", "MoreMAX-East-not-all-Cinemax-feeds"),
+    ("StarzKidsFamily.us@East", "insolence-starz-kids-east-direct", "http://74.48.44.156:1234/stream/asd/468/master.m3u8", "", "Starz-Kids-and-Family-East-label-unverified"),
 ]
 
 
