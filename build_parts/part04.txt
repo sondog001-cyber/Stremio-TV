@@ -1995,21 +1995,6 @@ def _validate_primary_playback_stream(
             "primary_playback_qa": survival,
         }
 
-    if stream.get("local_verified_override"):
-        return {
-            "status": "ok",
-            "detail": "Published by local verification override after CI playback failure",
-            "primary_playback_qa": {
-                "local_verified_override": True,
-                "passed": True,
-                "ci_playback_status": result.get("status"),
-                "ci_playback_detail": result.get("detail"),
-                "ci_continuity_failure": result.get("continuity_failure"),
-                "ci_decoder_failure_class": result.get("decoder_failure_class"),
-                "ci_direct_media_survival": survival,
-            },
-        }
-
     failure = result.get("continuity_failure")
     mapped_failure = (
         "primary-playback-repeated-clip"
@@ -2093,7 +2078,9 @@ def apply_primary_playback_qa(
         streams = list(channel.get("streams") or [])
         passing_index: int | None = None
         passing_qa: dict[str, Any] | None = None
+        passing_stream_indexes: list[int] = []
 
+        # Decode EVERY proposed published stream, not just the primary.
         for stream_index, stream in enumerate(streams):
             result = _validate_primary_playback_stream(stream, settings)
             attempts.append({
@@ -2112,9 +2099,10 @@ def apply_primary_playback_qa(
                 "qa": result.get("primary_playback_qa"),
             })
             if result.get("status") == "ok":
-                passing_index = stream_index
-                passing_qa = result.get("primary_playback_qa") or {}
-                break
+                passing_stream_indexes.append(stream_index)
+                if passing_index is None:
+                    passing_index = stream_index
+                    passing_qa = result.get("primary_playback_qa") or {}
 
         rescued_stream: dict[str, Any] | None = None
         rescue_attempts: list[dict[str, Any]] = []
@@ -2199,6 +2187,7 @@ def apply_primary_playback_qa(
             "tvg_id": channel.get("tvg_id"),
             "name": channel.get("name"),
             "passing_index": passing_index,
+            "passing_stream_indexes": passing_stream_indexes,
             "passing_qa": passing_qa,
             "attempts": attempts,
             "rescue_attempts": rescue_attempts,
@@ -2258,18 +2247,22 @@ def apply_primary_playback_qa(
         passing_index = int(passing_index)
         updated = dict(channel)
         streams = [dict(stream) for stream in (channel.get("streams") or [])]
-        chosen = streams[passing_index]
-        chosen["primary_playback_qa"] = row.get("passing_qa") or {}
+        passing_indexes = row.get("passing_stream_indexes") or []
+        verified_streams = []
+        for stream_index in passing_indexes:
+            selected = streams[stream_index]
+            # Keep each selected backup's real decoder proof for auditing.
+            selected["primary_playback_qa"] = (row["attempts"][stream_index].get("qa") or {})
+            verified_streams.append(selected)
+        assert verified_streams, "A published channel must have decoded playback."
+        updated["streams"] = verified_streams
+        row["failed_streams_removed"] = len(streams) - len(verified_streams)
         if passing_index == 0:
             primary_passed += 1
             row["action"] = "kept-primary"
-            updated["streams"] = streams
         else:
             backup_promoted += 1
             row["action"] = "promoted-backup"
-            row["failed_streams_removed"] = passing_index
-            # Failed streams before the first passing backup are not published.
-            updated["streams"] = [chosen] + streams[passing_index + 1:]
         kept_channels.append(updated)
         rows.append(row)
 
@@ -4115,22 +4108,12 @@ def probe_candidate_entries(
     if not require_passed_only:
         return entries, rows, stability_state
 
+    # No local tags may override upstream health. Only actual 'ok' probes qualify.
     healthy = [
-        entry
-        for entry in entries
+        entry for entry in entries
         if (entry.get("health") or {}).get("status") == "ok"
-        or bool(entry.get("local_verified_override"))
     ]
-    local_verified_kept = sum(
-        1
-        for entry in healthy
-        if entry.get("local_verified_override")
-        and (entry.get("health") or {}).get("status") != "ok"
-    )
-    log(
-        f"Passed-only policy: keeping {len(healthy):,}/{len(entries):,} curated candidates"
-        + (f"; local-verified exceptions={local_verified_kept:,}" if local_verified_kept else "")
-    )
+    log(f"Passed-only policy: keeping {len(healthy):,}/{len(entries):,} curated candidates")
     return healthy, rows, stability_state
 
 
