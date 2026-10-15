@@ -383,6 +383,87 @@
       },
       "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
+    },
+    {
+      "tvg_id": "BigTenNetwork.us@SD",
+      "name": "Big Ten Network East",
+      "url": "https://cache0.wonvt.st/live/12ttivn0fhm14f0yr8ber/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow separate-host Big Ten Network — decoder-qualified candidate",
+      "family": "tvnow",
+      "priority": 42,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/",
+        "User-Agent": "Mozilla/5.0"
+      },
+      "content_kind": "full-linear"
+    },
+    {
+      "tvg_id": "OneAmericaNewsNetwork.us@SD",
+      "name": "One America News Network",
+      "url": "https://a-cdn.klowdtv.com/live1/oan_720p/playlist.m3u8",
+      "quality": "720P",
+      "source": "KlowdTV public OAN direct media candidate",
+      "family": "klowdtv",
+      "priority": 42,
+      "philly": false,
+      "headers": {},
+      "content_kind": "full-linear"
+    },
+    {
+      "tvg_id": "History.us@East",
+      "name": "History Channel US East",
+      "url": "https://tvsen5.aynascope.net/historyen/index.m3u8",
+      "quality": "SD",
+      "source": "AynaScope History English — 33 aligned programme frames over 74 seconds vs US East",
+      "family": "aynascope",
+      "priority": 42,
+      "philly": false,
+      "headers": {},
+      "content_kind": "full-linear"
+    },
+    {
+      "tvg_id": "SECNetwork.us@SD",
+      "name": "SEC Network US",
+      "url": "https://cache0.wonvt.st/live/0wvobh902biwzw08m7trv/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow SEC Network — 2x FFmpeg decoder + 65s continuity, visible SEC coverage",
+      "family": "tvnow",
+      "priority": 42,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/",
+        "User-Agent": "Mozilla/5.0"
+      },
+      "content_kind": "full-linear"
+    },
+    {
+      "tvg_id": "ScienceChannel.us",
+      "name": "Science Channel",
+      "url": "https://cache0.wonvt.st/live/1qy87o21k84k1r0zek1wt/master.m3u8",
+      "quality": "HD",
+      "source": "TVNow Science Channel — 2x FFmpeg decoder + 65s continuity, visible SCI logo",
+      "family": "tvnow",
+      "priority": 42,
+      "philly": false,
+      "headers": {
+        "Referer": "https://tvnow.st/",
+        "User-Agent": "Mozilla/5.0"
+      },
+      "content_kind": "full-linear"
+    },
+    {
+      "tvg_id": "History.us@East",
+      "name": "History US East — AynaOTT alternate",
+      "url": "https://tvsen3.aynaott.com/np3JstRE/index.m3u8",
+      "quality": "SD",
+      "source": "AynaOTT independent-host History — simultaneous Pawn Stars/History identity evidence; source still must pass full QA",
+      "family": "aynaott",
+      "priority": 43,
+      "philly": false,
+      "headers": {},
+      "content_kind": "full-linear"
     }
   ]
 }

@@ -506,7 +506,8 @@
       "The.Weather.Channel.us": "WeatherChannel.us",
       "Travel.US.-.East.us": "TravelChannel.us",
       "TV.Land.-.Eastern.us": "TVLand.us",
-      "Magnolia.-.East.us": "MagnoliaNetwork.us"
+      "Magnolia.-.East.us": "MagnoliaNetwork.us",
+      "NationalGeographic.us@HDEast": "NationalGeographic.us"
     },
     "approved_source_aliases": {
       "E.us": [
