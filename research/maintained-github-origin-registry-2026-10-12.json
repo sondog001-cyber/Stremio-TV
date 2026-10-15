@@ -1,0 +1,337 @@
+{
+  "generated_for": "research only, NOT production",
+  "as_of": "2026-10-12",
+  "references": [
+    {
+      "name": "Live curated IPTV-org US public list",
+      "url": "https://raw.githubusercontent.com/iptv-org/iptv/master/streams/us.m3u",
+      "repo": "iptv-org/iptv",
+      "kind": "curation"
+    },
+    {
+      "name": "Fresh TVPass playlist watch pages",
+      "url": "https://raw.githubusercontent.com/abusaeeidx/IPTV-Scraper-Zilla/main/TVPass.m3u",
+      "repo": "abusaeeidx/IPTV-Scraper-Zilla",
+      "kind": "watch-page"
+    },
+    {
+      "name": "Fresh Zilla local stations",
+      "url": "https://raw.githubusercontent.com/abusaeeidx/IPTV-Scraper-Zilla/main/US_LOCAL.m3u",
+      "repo": "abusaeeidx/IPTV-Scraper-Zilla",
+      "kind": "curation"
+    },
+    {
+      "name": "Nightah DaddyLive direct HLS and referers",
+      "url": "https://raw.githubusercontent.com/nightah/daddylive/main/daddylive-channels.m3u8",
+      "repo": "nightah/daddylive",
+      "kind": "scraper"
+    }
+  ],
+  "batches": {
+    "A": [
+      "Bravo.us",
+      "KYW.us",
+      "WCAU.us",
+      "WPVI.us",
+      "CinemaxClassics.us",
+      "HBOMovies.us"
+    ],
+    "B": [
+      "BET.us",
+      "CBSSportsNetwork.us",
+      "CNBC.us",
+      "ESPNews.us",
+      "MSNOW.us",
+      "Nicktoons.us"
+    ],
+    "C": [
+      "HallmarkFamily.us",
+      "HallmarkMystery.us",
+      "StarzCinema.us",
+      "StarzComedy.us",
+      "StarzEdge.us",
+      "StarzEncoreSpanish.us"
+    ],
+    "D": [
+      "RFDTV.us",
+      "SmithsonianChannel.us",
+      "SundanceTV.us",
+      "WPHL.us",
+      "NBCSportsPhiladelphiaPlus.us",
+      "WPSG.us"
+    ]
+  },
+  "channels": {
+    "Bravo.us": {
+      "aliases": [
+        "bravo",
+        "bravo-usa-eastern-feed"
+      ],
+      "names": [
+        "bravo east",
+        "bravo usa"
+      ]
+    },
+    "KYW.us": {
+      "aliases": [
+        "kywdt1"
+      ],
+      "names": [
+        "cbs 3 philadelphia"
+      ]
+    },
+    "WCAU.us": {
+      "aliases": [
+        "wcaudt1"
+      ],
+      "names": [
+        "nbc10 philadelphia"
+      ]
+    },
+    "WPVI.us": {
+      "aliases": [
+        "wpvidt1"
+      ],
+      "names": [
+        "abc 6 philadelphia"
+      ]
+    },
+    "CinemaxClassics.us": {
+      "aliases": [
+        "5starmax"
+      ],
+      "names": [
+        "cinemax classics"
+      ]
+    },
+    "HBOMovies.us": {
+      "aliases": [
+        "hbozone",
+        "hbo-zone-hd-east"
+      ],
+      "names": [
+        "hbo movies",
+        "hbo zone"
+      ]
+    },
+    "BET.us": {
+      "aliases": [
+        "bet",
+        "bet-eastern-feed"
+      ],
+      "names": [
+        "bet east",
+        "bet usa"
+      ]
+    },
+    "CBSSportsNetwork.us": {
+      "aliases": [
+        "cbssportsnetwork",
+        "cbs-sports-network-usa"
+      ],
+      "names": [
+        "cbs sports network"
+      ]
+    },
+    "CNBC.us": {
+      "aliases": [
+        "cnbc",
+        "cnbc-usa"
+      ],
+      "names": [
+        "cnbc usa"
+      ]
+    },
+    "ESPNews.us": {
+      "aliases": [
+        "espnews",
+        "espn-news"
+      ],
+      "names": [
+        "espnews",
+        "espn news"
+      ]
+    },
+    "MSNOW.us": {
+      "aliases": [
+        "msnow",
+        "msnbc-usa",
+        "msnbc"
+      ],
+      "names": [
+        "ms now",
+        "msnbc"
+      ]
+    },
+    "Nicktoons.us": {
+      "aliases": [
+        "nicktoons",
+        "nicktoons-east"
+      ],
+      "names": [
+        "nicktoons"
+      ]
+    },
+    "HallmarkFamily.us": {
+      "aliases": [
+        "hallmarkfamily",
+        "hallmark-family-hd",
+        "hallmarkdrama"
+      ],
+      "names": [
+        "hallmark family",
+        "hallmark drama"
+      ]
+    },
+    "HallmarkMystery.us": {
+      "aliases": [
+        "hallmarkmystery",
+        "hallmark-mystery-eastern-hd"
+      ],
+      "names": [
+        "hallmark mystery",
+        "hallmark movies & mysteries"
+      ]
+    },
+    "StarzCinema.us": {
+      "aliases": [
+        "starzcinema"
+      ],
+      "names": [
+        "starz cinema"
+      ]
+    },
+    "StarzComedy.us": {
+      "aliases": [
+        "starzcomedy"
+      ],
+      "names": [
+        "starz comedy"
+      ]
+    },
+    "StarzEdge.us": {
+      "aliases": [
+        "starzedge"
+      ],
+      "names": [
+        "starz edge"
+      ]
+    },
+    "StarzEncoreSpanish.us": {
+      "aliases": [
+        "starzencorespanish"
+      ],
+      "names": [
+        "starz encore spanish",
+        "starz encore español"
+      ]
+    },
+    "RFDTV.us": {
+      "aliases": [
+        "rfdtv"
+      ],
+      "names": [
+        "rfd-tv"
+      ]
+    },
+    "SmithsonianChannel.us": {
+      "aliases": [
+        "smithsonianchannel"
+      ],
+      "names": [
+        "smithsonian channel"
+      ]
+    },
+    "SundanceTV.us": {
+      "aliases": [
+        "sundancetv",
+        "sundancetv-usa-east"
+      ],
+      "names": [
+        "sundancetv"
+      ]
+    },
+    "WPHL.us": {
+      "aliases": [
+        "wphldt1"
+      ],
+      "names": [
+        "phl17"
+      ]
+    },
+    "NBCSportsPhiladelphiaPlus.us": {
+      "aliases": [
+        "nbcsportsphiladelphiaplus"
+      ],
+      "names": [
+        "nbc sports philadelphia plus"
+      ]
+    },
+    "WPSG.us": {
+      "aliases": [
+        "wpsgdt1"
+      ],
+      "names": [
+        "philly57",
+        "wpsg"
+      ]
+    }
+  },
+  "probes": [
+    {
+      "channel": "Bravo.us",
+      "url": "http://41.205.93.154/BRAVO/index.m3u8",
+      "source": "iptv-org/iptv",
+      "family": "41.205.93.154",
+      "note": "GitHub stream list; previous host has channel-specific HTTP 404 reports"
+    },
+    {
+      "channel": "Nicktoons.us",
+      "url": "http://41.205.93.154/NICKTOONS/index.m3u8",
+      "source": "iptv-org/iptv",
+      "family": "41.205.93.154",
+      "note": "Duplicate-link issue #48358 Aug 2026; recently reported broken"
+    },
+    {
+      "channel": "MSNOW.us",
+      "url": "http://41.205.93.154/MSNBC/index.m3u8",
+      "source": "iptv-org/iptv history",
+      "family": "41.205.93.154",
+      "note": "GitHub iptv-org issue #42525 July 2026 removed broken feed"
+    },
+    {
+      "channel": "MSNOW.us",
+      "url": "http://40.160.24.53/MSNBC/index.m3u8",
+      "source": "Freeman0501/freelist",
+      "family": "40.160.24.x",
+      "note": "2026-09-09 playlist, no proven current identity"
+    },
+    {
+      "channel": "StarzEncoreSpanish.us",
+      "url": "http://168.228.44.241:9998/play/a0e1/index.m3u8",
+      "source": "iptv-org/iptv",
+      "family": "168.228.44.241",
+      "note": "Prior public issue reports timeouts, not independently licensed original feed"
+    },
+    {
+      "channel": "Bravo.us",
+      "url": "http://tvsen7.aynascope.net/bravo/index.m3u8",
+      "source": "Enkinuri666/enktel; levi-45/iptvstream",
+      "family": "aynascope.net",
+      "note": "Separate Ayna gateway hostname from shared 41.205 relay; underlying video origin and permission unverified"
+    },
+    {
+      "channel": "Nicktoons.us",
+      "url": "http://tvsen7.aynascope.net/nicktoons/index.m3u8",
+      "source": "Enkinuri666/enktel; levi-45/iptvstream",
+      "family": "aynascope.net",
+      "note": "Different Ayna gateway hostname; may serve same origin, require manifest/media host comparison"
+    }
+  ],
+  "exclusions": [
+    "tvpass.org/live/<channel>/(hd|sd) paths are watch routes, not raw .m3u8 video origins",
+    "newkso.ru and mizhls.ru via DaddyLive resolve to a familiar provider/referer/proxy family; they do not establish an independent original video origin",
+    "23.237.104.106 legacy multiplex streams remain known/high-blast-radius/quarantined as applicable",
+    "All credentials, paywall tokens, Xtream account paths, DRM, encrypted/wrapped media requiring a restream or proxy, and FAST lookalike identities"
+  ]
+}
