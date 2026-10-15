@@ -33,3 +33,19 @@ could not access those three directory endpoints. Inaccessibility here is not
 evidence that the runner or upstream media will fail. A missing baseline stops
 the job rather than falsely calling old URLs new. The pinned baseline is dated
 research evidence and must be refreshed for future work/forks.
+
+## Actual runner result
+
+Run38745994387 completed its discovery and artifact upload steps successfully.
+Artifact11978291944 was downloaded and inspected:27 queries,8 player descriptors
+resolved,17 unique safe URLs,zero API errors. None is an exact missing-channel
+recovery. The10 jest.one feeds are unrelated international/national news services.
+VipOTV full-text search matched WKYT and CBS News Los Angeles for CBS Sports;
+Noor TV/Newsy for USA; Hala TV/MMTV for History; and CNBC Arabiya for CNBC US.
+Those are incorrect networks/regions and are rejected before any media probing.
+No feed is media-qualified, identity-verified or promoted. The zero matching URLs
+in the exact baseline means only that their literal URLs are new to that file,
+not that these unrelated services recover original curated identities.
+
+Keep the job as reproducible research evidence, not a release check. Do not retest
+these17 unrelated descriptors or represent the green job as17 recovered channels.
