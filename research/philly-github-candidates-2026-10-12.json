@@ -1,0 +1,153 @@
+{
+  "as_of": "2026-10-12",
+  "purpose": "GitHub-centric, unauthenticated research-only playback preflight for five Philadelphia missing full-linear affiliates. No production or client stream links.",
+  "channels": {
+    "KYW.us": {
+      "station": "KYW CBS 3 Philadelphia full linear",
+      "candidates": [
+        {
+          "family": "localbtv-mybtv",
+          "source": "eklins/FDTV tv USA",
+          "url": "https://v-pi.mybtv.net/live/318.m3u8?env=prd&uid=-1&x=1",
+          "source_url": "https://github.com/eklins/FDTV/blob/master/tv/tv%20USA.m3u"
+        },
+        {
+          "family": "localbtv-mybtv",
+          "source": "arkina1234-undenified/IPTV OTA",
+          "url": "https://v-pi.mybtv.net/live/418.m3u8",
+          "source_url": "https://github.com/arkina1234-undenified/IPTV/blob/main/local_pi.ota.m3u"
+        },
+        {
+          "family": "localbtv-theus6tv",
+          "source": "RedRobocon06/Live-TV-Stream-Files",
+          "url": "https://v-pi.theus6tv.tk/hls/3.1/playlist.m3u8",
+          "source_url": "https://github.com/RedRobocon06/Live-TV-Stream-Files/blob/main/Local%20Broadcast%20TV.m3u"
+        },
+        {
+          "family": "moveonjoy",
+          "source": "RichardBuet/EASYTVWEB",
+          "url": "https://fl1.moveonjoy.com/PA_PHILADELPHIA_CBS/index.m3u8",
+          "source_url": "https://github.com/RichardBuet/EASYTVWEB/blob/main/USA_stream_fixed.m3u"
+        },
+        {
+          "family": "iptvmate-gateway",
+          "source": "iptvmate/iptvchannels",
+          "url": "https://ch.iptvmate.net/ecb3ae9110bcb386e791189f8b6a00db.m3u8",
+          "source_url": "https://github.com/iptvmate/iptvchannels/blob/main/iptvmate.net_22.m3u8"
+        }
+      ]
+    },
+    "WPVI.us": {
+      "station": "WPVI ABC 6 Philadelphia full linear",
+      "candidates": [
+        {
+          "family": "localbtv-mybtv",
+          "source": "eklins/FDTV tv USA",
+          "url": "https://v-pi.mybtv.net/live/333.m3u8?env=prd&uid=-1&x=1",
+          "source_url": "https://github.com/eklins/FDTV/blob/master/tv/tv%20USA.m3u"
+        },
+        {
+          "family": "localbtv-theus6tv",
+          "source": "RedRobocon06/Live-TV-Stream-Files",
+          "url": "https://v-pi.theus6tv.tk/hls/6.1/playlist.m3u8",
+          "source_url": "https://github.com/RedRobocon06/Live-TV-Stream-Files/blob/main/Local%20Broadcast%20TV.m3u"
+        },
+        {
+          "family": "moveonjoy",
+          "source": "RichardBuet/EASYTVWEB",
+          "url": "https://fl1.moveonjoy.com/PA_PHILADELPHIA_ABC/index.m3u8",
+          "source_url": "https://github.com/RichardBuet/EASYTVWEB/blob/main/USA_stream_fixed.m3u"
+        },
+        {
+          "family": "iptvmate-gateway",
+          "source": "iptvmate/iptvchannels",
+          "url": "https://ch.iptvmate.net/e7131dda2eae16d5b908536b1a15cbae.m3u8",
+          "source_url": "https://github.com/iptvmate/iptvchannels/blob/main/iptvmate.net_393.m3u8"
+        }
+      ]
+    },
+    "WCAU.us": {
+      "station": "WCAU NBC 10 Philadelphia full linear",
+      "candidates": [
+        {
+          "family": "localbtv-mybtv",
+          "source": "eklins/FDTV tv USA",
+          "url": "https://v-pi.mybtv.net/live/345.m3u8?env=prd&uid=-1&x=1",
+          "source_url": "https://github.com/eklins/FDTV/blob/master/tv/tv%20USA.m3u"
+        },
+        {
+          "family": "localbtv-mybtv",
+          "source": "arkina1234-undenified/IPTV OTA",
+          "url": "https://v-pi.mybtv.net/live/322.m3u8",
+          "source_url": "https://github.com/arkina1234-undenified/IPTV/blob/main/local_pi.ota.m3u"
+        },
+        {
+          "family": "localbtv-theus6tv",
+          "source": "RedRobocon06/Live-TV-Stream-Files",
+          "url": "https://v-pi.theus6tv.tk/hls/10.1/playlist.m3u8",
+          "source_url": "https://github.com/RedRobocon06/Live-TV-Stream-Files/blob/main/Local%20Broadcast%20TV.m3u"
+        },
+        {
+          "family": "moveonjoy",
+          "source": "RichardBuet/EASYTVWEB",
+          "url": "https://fl1.moveonjoy.com/PA_PHILADELPHIA_NBC/index.m3u8",
+          "source_url": "https://github.com/RichardBuet/EASYTVWEB/blob/main/USA_stream_fixed.m3u"
+        },
+        {
+          "family": "iptvmate-gateway",
+          "source": "iptvmate/iptvchannels",
+          "url": "https://ch.iptvmate.net/95452613addfe26bfa423a7a8578aee8.m3u8",
+          "source_url": "https://github.com/iptvmate/iptvchannels/blob/main/iptvmate.net_22.m3u8"
+        },
+        {
+          "family": "daddylive-derived",
+          "source": "nightah/daddylive",
+          "url": "https://zekonew.newkso.ru/zeko/premium277/mono.m3u8",
+          "source_url": "https://github.com/nightah/daddylive/blob/main/daddylive-channels.m3u8",
+          "notes": "Retry with only three public non-credentialed playback-context headers supplied in nightah/daddylive GitHub playlist; no DRM bypass, cookies, sessions or auth. This remains research-only, not approved for publication.",
+          "public_headers": {
+            "Origin": "https://jxoxkplay.xyz",
+            "Referer": "https://jxoxkplay.xyz/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36"
+          }
+        }
+      ]
+    },
+    "WPHL.us": {
+      "station": "WPHL PHL17 full linear",
+      "candidates": [
+        {
+          "family": "localbtv-mybtv",
+          "source": "arkina1234-undenified/IPTV OTA",
+          "url": "https://v-pi.mybtv.net/live/355.m3u8",
+          "source_url": "https://github.com/arkina1234-undenified/IPTV/blob/main/local_pi.ota.m3u"
+        },
+        {
+          "family": "localbtv-theus6tv",
+          "source": "RedRobocon06/Live-TV-Stream-Files",
+          "url": "https://v-pi.theus6tv.tk/hls/17.1/playlist.m3u8",
+          "source_url": "https://github.com/RedRobocon06/Live-TV-Stream-Files/blob/main/Local%20Broadcast%20TV.m3u"
+        }
+      ]
+    },
+    "WPSG.us": {
+      "station": "WPSG Philadelphia 57 full linear",
+      "candidates": [],
+      "no_link_reason": "Search surfaced historical CW57/WPSG provider credentials and outdated 2020s CW branding; no eligible anonymous full-linear media candidate identified. Keep private-connector only."
+    }
+  },
+  "excluded": [
+    {
+      "kind": "credentialed-provider",
+      "description": "TVNow, Xtream /live/account/password/channel patterns, and explicit subscriber-token paths; reject rather than probe"
+    },
+    {
+      "kind": "lookalike",
+      "description": "CBS News Philadelphia FAST, 6abc 24/7 Action News, NBC10 Philadelphia News; distinct editorial feed, not the entire linear TV station"
+    },
+    {
+      "kind": "gateway",
+      "description": "Website video pages, unexpanded watch.php resolver URLs; require real manifest/video host first"
+    }
+  ]
+}

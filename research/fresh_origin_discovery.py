@@ -104,6 +104,28 @@ def valid_public_url(url):
         pass
     return True
 
+PUBLIC_HEADER_ALLOWLIST = {"referer", "origin", "user-agent"}
+
+
+def vetted_public_headers(headers):
+    """Accept only publicly documented playback context, never credentials."""
+    if not headers:
+        return {}
+    if not isinstance(headers, dict):
+        raise ValueError("Public playback headers must be a dict")
+    safe = {}
+    for name, value in headers.items():
+        key, val = str(name).strip(), str(value).strip()
+        if key.lower() not in PUBLIC_HEADER_ALLOWLIST or not val or len(val) > 512:
+            raise ValueError("Disallowed or oversized public playback header")
+        if any(ord(ch) < 32 for ch in key + val):
+            raise ValueError("Malformed public playback header")
+        if key.lower() in {"referer", "origin"} and not valid_public_url(val):
+            raise ValueError("Public origin/referer is not a permitted URL")
+        safe[key] = val
+    return safe
+
+
 class PublicRedirectOnly(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         if not valid_public_url(newurl):
@@ -112,10 +134,12 @@ class PublicRedirectOnly(urllib.request.HTTPRedirectHandler):
 
 OPENER = urllib.request.build_opener(PublicRedirectOnly)
 
-def fetch(url, limit, timeout=9):
+def fetch(url, limit, timeout=9, headers=None):
     if not valid_public_url(url):
         raise ValueError("unsafe-input-URL")
-    request = urllib.request.Request(url, headers={"User-Agent": DEFAULT_AGENT})
+    request_headers = {"User-Agent": DEFAULT_AGENT}
+    request_headers.update(vetted_public_headers(headers))
+    request = urllib.request.Request(url, headers=request_headers)
     with OPENER.open(request, timeout=timeout) as response:
         final = response.geturl()
         if not valid_public_url(final):
@@ -208,11 +232,11 @@ def parse_hls_snapshot(text):
             "segments": segments, "target_duration": int(duration.group(1)) if duration else 6}
 
 
-def media_snapshot(url):
+def media_snapshot(url, headers=None):
     """Follow only validated public HLS variant references (maximum two levels)."""
     current = url
     for _ in range(3):
-        p = fetch(current, MAX_MEDIA_MANIFEST, timeout=10)
+        p = fetch(current, MAX_MEDIA_MANIFEST, timeout=10, headers=headers)
         parsed = parse_hls_snapshot(p["data"].decode("utf-8-sig", "replace"))
         if parsed["kind"] != "master":
             return p, parsed
@@ -222,12 +246,13 @@ def media_snapshot(url):
     raise ValueError("excessive-master-indirection")
 
 
-def fetch_media_sample(url):
+def fetch_media_sample(url, headers=None):
     """Read at most 2KB from a direct segment; never save, proxy or retransmit video."""
     if not valid_public_url(url):
         raise ValueError("unsafe-media-segment-url")
-    req = urllib.request.Request(
-        url, headers={"User-Agent": DEFAULT_AGENT, "Range": "bytes=0-2047"})
+    request_headers = {"User-Agent": DEFAULT_AGENT, "Range": "bytes=0-2047"}
+    request_headers.update(vetted_public_headers(headers))
+    req = urllib.request.Request(url, headers=request_headers)
     with OPENER.open(req, timeout=10) as response:
         final_url = response.geturl()
         if response.status not in (200, 206) or not valid_public_url(final_url):
@@ -239,14 +264,14 @@ def fetch_media_sample(url):
         return {"readable": True, "final_media_host": host(final_url)}
 
 
-def probe_manifest(url):
+def probe_manifest(url, headers=None):
     """Isolated *preflight*, not authorization, exact-ID verification or decoder QA.
 
     Require two readable live media manifests showing actual segment-window movement
     plus nonempty segment bytes. Never mark production eligible based on this alone.
     """
     try:
-        first, before = media_snapshot(url)
+        first, before = media_snapshot(url, headers=headers)
         base = {"http_status": first["status"], "final_host": host(first["final"]),
                 "final_family": host_family(host(first["final"])),
                 "redirected": first["final"] != url,
@@ -256,7 +281,7 @@ def probe_manifest(url):
             return dict(base, stage="not-live-readable-hls")
         delay = min(15, max(6, before["target_duration"] * 1.5))
         time.sleep(delay)
-        second, after = media_snapshot(url)
+        second, after = media_snapshot(url, headers=headers)
         if after["kind"] != "media":
             return dict(base, stage="second-media-manifest-unreadable")
         seq_advanced = before["sequence"] is not None and after["sequence"] is not None and (
@@ -266,7 +291,7 @@ def probe_manifest(url):
             return dict(base, stage="hls-window-not-progressing",
                         sequence_before=before["sequence"], sequence_after=after["sequence"])
         segment_url = urllib.parse.urljoin(second["final"], after["segments"][-1])
-        sample = fetch_media_sample(segment_url)
+        sample = fetch_media_sample(segment_url, headers=headers)
         return dict(base, stage="progressing-hls-readable-not-decoded",
                     sequence_before=before["sequence"], sequence_after=after["sequence"],
                     media_host=sample["final_media_host"], media_bytes_readable=True,

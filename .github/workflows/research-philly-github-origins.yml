@@ -1,0 +1,50 @@
+name: Research GitHub Philadelphia Linear Origins (no deploy)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/research-philly-github-origins.yml"
+      - "research/philly_github_preflight.py"
+      - "research/philly-github-candidates-2026-10-12.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  preflight:
+    name: "Philly original feed preflight — ${{ matrix.station }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        station: ["KYW.us", "WPVI.us", "WCAU.us", "WPHL.us", "WPSG.us"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load latest already-successful production host inventory (optional)
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: stremio-tv-diagnostics
+          run-id: 38328228372
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          path: .research-baseline
+      - name: Compile research-only scan
+        run: python3 -m py_compile research/fresh_origin_discovery.py research/philly_github_preflight.py
+      - name: Inspect published public manifests (research only, never promote)
+        run: |
+          python3 -m research.philly_github_preflight \
+            --station "${{ matrix.station }}" \
+            --baseline .research-baseline/diagnostics/stream-health.json \
+            --output research-results/philly
+      - name: Save per-target HTTP/HLS provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: philly-github-research-${{ strategy.job-index }}
+          path: research-results/philly/
+          if-no-files-found: warn
+          retention-days: 14
