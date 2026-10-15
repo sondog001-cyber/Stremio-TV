@@ -1,0 +1,38 @@
+name: Five-minute broad public source discovery (research only)
+on:
+  pull_request:
+    paths:
+      - "research/five_minute_public_sweep.py"
+      - ".github/workflows/five-minute-public-sweep.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  broad-public-discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install FFmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Run six distinct public source families for at least 5 minutes
+        shell: bash
+        run: |
+          set -euo pipefail
+          START=$(date +%s)
+          for round in 1 2 3 4 5 6; do
+            echo "::group::Source family round $round"
+            python research/five_minute_public_sweep.py --round "$round"
+            echo "::endgroup::"
+            if [ "$round" -lt 6 ]; then sleep 65; fi
+          done
+          ELAPSED=$(( $(date +%s) - START ))
+          echo "ACTIVE_SOURCE_SEARCH_SECONDS=$ELAPSED"
+          if [ "$ELAPSED" -lt 300 ]; then exit 1; fi
+      - name: Upload all six source-family and media results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: six-round-five-minute-source-discovery
+          path: research/diagnostics/five-min-wide/
+          retention-days: 14
