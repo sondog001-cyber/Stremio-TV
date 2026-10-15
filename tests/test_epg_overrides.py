@@ -51,6 +51,30 @@ class EpgOverrideTests(unittest.TestCase):
         self.assertTrue(method.startswith("manual-unavailable:"))
         self.assertEqual(score, 1.0)
 
+    def test_six_published_gaps_use_observed_exact_services_not_pacific_or_fast(self):
+        # Definitions observed in the configured XMLTV feed on 2026-10-15.
+        known = {
+            "Nicktoons.us": "Nicktoons.us2",
+            "HGTV.us": "Home.and.Garden.Television.HD.us2",
+            "TravelChannel.us": "The.Travel.Channel.HD.us2",
+            "OWN.us": "Oprah.Winfrey.Network.HD.us2",
+            "Reelz.us": "ReelzChannel.HD.us2",
+            "CartoonNetwork.us@East": "Cartoon.Network.HD.us2",
+        }
+        guide = [{"id": value, "names": [value], "icon": ""} for value in known.values()]
+        guide += [{"id": value, "names": [value], "icon": ""} for value in (
+            "Cartoon.Network.(Pacific).us2", "AdultSwim.com.Cartoon.Network.us2",
+            "Home.and.Garden.Television.HD.(Pacific).us2",
+            "The.Travel.Channel.HD.(Pacific).us2", "Oprah.Winfrey.Network.(Pacific.A.Feed).us2")]
+        indexes = build.make_epg_indexes(guide)
+        aliases = build.load_json(build.DEFAULT_ALIASES)
+        for tvg_id, expected in known.items():
+            with self.subTest(tvg_id=tvg_id):
+                matched, method, _score = build.match_epg_channel(
+                    {"tvg_id": tvg_id, "name": "Unknown upstream display name"}, indexes, aliases)
+                self.assertEqual(matched, expected)
+                self.assertEqual(method, "manual-tvg-id")
+
 
 if __name__ == "__main__":
     unittest.main()
