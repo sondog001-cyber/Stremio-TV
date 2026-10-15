@@ -7,3 +7,6 @@ __pycache__/
 private_connectors.json
 private_sources.generated.json
 .DS_Store
+# Never commit a local OTA lineup, mapping override, or generated private test site
+private_ota.json
+private-ota-site/
