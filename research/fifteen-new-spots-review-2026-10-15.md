@@ -83,3 +83,25 @@ are manufactured. All206 current-branch unit tests pass.
 The research-only PR does not change production sources, the 86-channel floor,
 critical channel guard, two-hour cadence, decoder thresholds, version or release
 gate. Incorporate only a source with reviewed identity and full repeated QA.
+
+## Independent GitHub runner result
+
+Research run [38782282637](https://github.com/sondog001-cyber/Stremio-TV/actions/runs/38782282637)
+completed successfully; artifact **11995927775** was downloaded and inspected.
+It read the same 63 documents and 59,595 records across 37 projects/20 catalogs.
+There were 17 eligible exact-ID non-FAST novel candidate combinations.
+**Three passed advancing five-probe burn-in and normal 2-of-3 decoding:**
+
+| Candidate | Media host | Opportunity |
+|---|---|---|
+| ESPNews | `41.205.93.154` | Currently missing identity; host already known, exact media URL newly found |
+| NBA TV | `pb-5pdyic0cu7tri.akamaized.net` | Potential backup for an already published channel |
+| VICE TV | `d1ocru52bkg5e9.cloudfront.net` | Potential backup for an already published channel |
+
+These passing runner results supersede any inference that the local timeouts mean
+universally dead media. They do not certify programme identity, final Primary
+selection or repeated build stability. The adjacent runner-results JSON retains
+all successes and failures. A second isolated workflow tests three independent
+60-second windows per survivor, checks live-window advancement and short repeats,
+and captures on-screen programme/logo samples for identity review. No production
+promotion occurs in either research workflow.
