@@ -40,7 +40,22 @@
 
     selected = sorted(selected[:max_streams], key=priority_key)
     if selected:
-        preferred_primary_index = next(
+        # The final stability sort must respect a healthy, exact-URL channel
+        # primary pin. This is conditional: no failed/absent source is revived.
+        primary_pins = (config.get("stream_selection") or {}).get("primary_url_pins") or {}
+        pinned_url = next(
+            (str(url) for tvg_id, url in primary_pins.items()
+             if canonical_tvg_id(str(tvg_id)) == canonical_tvg_id(channel_id)),
+            "",
+        )
+        pinned_index = next(
+            (index for index, candidate in enumerate(selected)
+             if pinned_url
+             and not candidate.get("primary_deprioritized")
+             and str(candidate.get("url") or "") == pinned_url),
+            None,
+        )
+        preferred_primary_index = pinned_index if pinned_index is not None else next(
             (
                 index
                 for index, candidate in enumerate(selected)

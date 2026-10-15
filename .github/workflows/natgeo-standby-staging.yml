@@ -1,0 +1,103 @@
+name: Stage NatGeo HD East fallback (never deploy)
+
+on:
+  pull_request:
+    paths:
+      - "config.json"
+      - "tests/test_natgeo_hd_east_alias.py"
+      - ".github/workflows/natgeo-standby-staging.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: natgeo-staging-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  staging-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout diagnostic branch
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+      - name: Install build dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Assemble builder and run tests
+        run: |
+          python assemble_build.py
+          python -m unittest discover -s tests -v
+      - name: Start same pinned upstream resolver as production
+        shell: bash
+        run: |
+          set +e
+          rm -rf /tmp/daddylive-resolver
+          git clone --quiet https://github.com/sharoon7171/daddylive-stream-resolver.git /tmp/daddylive-resolver
+          cd /tmp/daddylive-resolver || exit 0
+          git checkout --quiet 5064460e16ca78f191473753b5696dea54ea134a
+          npm ci --silent
+          nohup npm start > /tmp/daddylive-resolver.log 2>&1 &
+          for i in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then
+              echo "Resolver ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "WARNING: Resolver unavailable; continuing without it"
+      - name: Build staging addon (do NOT deploy)
+        run: python build.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DADDYLIVE_RESOLVER_URL: http://127.0.0.1:3000
+      - name: Require original coverage guard
+        run: python deployment_guard.py
+      - name: Require zero fallback logos
+        run: python tests/verify_published_logos.py
+      - name: Inspect NatGeo alternative and primary order
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d = Path("site/diagnostics")
+          channels = json.loads((d / "channels.json").read_text())
+          order = json.loads((d / "source-ordering.json").read_text())
+          health = json.loads((d / "stream-health.json").read_text())
+          for cid in ("DisneyChannel.us", "History.us", "NationalGeographic.us"):
+              rows = [r for r in channels if r["tvg_id"].split("@")[0].lower() == cid.lower()]
+              print(cid, "published:", bool(rows))
+              if not rows:
+                  raise SystemExit("Coverage regression: " + cid)
+          for r in order:
+              if r.get("tvg_id", "").split("@")[0].lower() == "nationalgeographic.us":
+                  print("NatGeo source ordering:", r)
+          candidate = [r for r in health if "198.58.104.90:8989/natgeo/index.m3u8" in str(r.get("url") or "")]
+          print("NatGeo HD East candidate health:", candidate)
+          if not candidate:
+              raise SystemExit("HDEast backup was not admitted or health-probed")
+          if not any(r.get("health", {}).get("status") == "ok" for r in candidate):
+              raise SystemExit("HDEast backup failed validation; do not promote")
+          print("STAGING PASS: HDEast candidate validated, verify exact programme identity before merging")
+          PY
+      - name: Upload full diagnostics even on failure
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: natgeo-hd-east-staging
+          path: |
+            site/status.json
+            site/diagnostics/
+          if-no-files-found: warn
+          retention-days: 14
