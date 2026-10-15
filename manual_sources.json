@@ -383,6 +383,20 @@
       },
       "local_verified_override": true,
       "local_verified_note": "User locally verified TVNow playback; publish despite GitHub-runner rate-limit/edge failures."
+    },
+    {
+      "tvg_id": "ESPNews.us",
+      "name": "ESPNews",
+      "url": "http://41.205.93.154/ESPNNEWS/index.m3u8",
+      "quality": "HD",
+      "source": "sweetkitten07 US playlist — verified ESPNNEWS direct HLS",
+      "family": "research-seed",
+      "priority": 12,
+      "philly": false,
+      "headers": {},
+      "source_type": "public-third-party",
+      "content_kind": "full-linear",
+      "content_note": "Exact playlist ID plus visible ESPNNEWS/First Take matched US guide on 2026-10-15. Runner burn-in/normal decoder pass and three independent 60-second windows clean; normal production QA/stability still required. Research runs 38782282637 and 38783197891."
     }
   ]
 }
