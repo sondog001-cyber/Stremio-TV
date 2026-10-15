@@ -431,6 +431,11 @@ def load_manual_streams(config: dict[str, Any], config_path: Path) -> list[dict[
         item.setdefault("name_raw", item["name"])
         if not item.get("quality"):
             item["quality"] = extract_quality(item.get("name_raw", ""), item.get("tvg_id", ""))
+        # Ignore any serialized marker: approval is issued only for an explicit
+        # boolean opt-in in this local manual file, bound to this exact record.
+        item.pop("_local_verification_record", None)
+        if item.get("local_verified_override") is True:
+            item["_local_verification_record"] = _local_verification_record_key(item)
         result.append(item)
     return result
 

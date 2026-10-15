@@ -67,7 +67,7 @@ For each channel, the builder:
 
 The most reliable candidate becomes Primary. Sources explicitly marked as primary-deprioritized (currently SourPatchKid-derived direct streams) are kept out of Primary when another passing provider exists, but may remain as a last-resort Primary when they are the only source and have passed the decoder gate. Additional links are labeled Backup 1 and Backup 2.
 
-Runner/geo-blocked candidates are never mixed into the trusted lineup. When enabled, the addon publishes them in a separate **🧪 Local Test — Runner Blocked** catalog so they can be tested from the user's own Stremio/network. Required request headers are preserved through Stremio `proxyHeaders`, and each choice is labeled `LOCAL TEST 1`, `LOCAL TEST 2`, and so on.
+Runner/geo-blocked candidates can appear in a separate **🧪 Local Test — Runner Blocked** catalog for testing from the user's own Stremio/network. Required request headers are preserved through Stremio `proxyHeaders`, and choices are labeled `LOCAL TEST 1`, `LOCAL TEST 2`, and so on. Separately, explicit manual source approvals retain the existing user-local verification mechanism; accepted exceptions remain failed CI evidence and are excluded from normal decoder-qualified release coverage. See [local verification and diagnostics](docs/local-verification.md).
 
 ## Data sources
 
@@ -143,7 +143,41 @@ https://YOUR-GITHUB-USER.github.io/YOUR-REPOSITORY/manifest.json
 
 Scheduled builds refresh sources, short-lived public signed stream URLs, and guide data automatically. The resolver runs only inside the build job; the deployed addon remains static GitHub Pages and publishes validated direct upstream URLs with the required public request headers. The installation URL does not change between deployments.
 
+## v0.9.0 release evidence
+
+The target is **95 of the frozen original 111 identities**, with three consecutive
+successful **scheduled production** attempts. Development keeps the existing
+86-channel deployment floor and essential Disney/History/NatGeo guard. Do not
+raise the floor, bump the version, tag or publish from a standalone probe or audit.
+
+See the [verified baseline](research/v0.9.0-baseline-2026-10-15.md) and
+[original lineup](research/v0.9.0-original-lineup.json). The separate
+**Audit v0.9.0 release evidence (no deployment)** workflow runs after production
+completion and can also be dispatched manually. It only reads Actions artifacts;
+its own manual execution never counts toward the three scheduled builds.
+It works against the current repository, including forks, using read-only
+`contents` and `actions` permissions and the built-in `GITHUB_TOKEN`.
+
+```bash
+GITHUB_REPOSITORY=YOUR-USER/YOUR-REPO python release_readiness.py
+```
+
+The report includes failed/cancelled/latest pending scheduled attempts, checks
+artifact/run/revision provenance and normal upstream/decoded Primary evidence,
+excludes local verification overrides, rejects expanded lineups and wrong-feed
+variants, and checks that existing health, burn-in, decoder, repeat and deployment
+requirements remain enabled. Missing or expired artifacts block the audit.
+Reports are in `release-audit/` and retained as workflow artifacts for 30 days.
+An automated gate pass still requires programme identity, source provenance,
+new/replaced-source stability and all remaining acceptance review. The tool
+cannot tag, merge, change selection, raise the deployment floor or deploy.
+
 ## Local development
+
+See the [fork setup and troubleshooting guide](docs/fork-setup.md) for dependencies,
+Pages permissions, deployment URLs, workflow inventory, diagnostics and rollback.
+The [v0.9.0 release checklist](docs/v0.9.0-release-plan.md) records all acceptance
+criteria and the 111/111 v1.0.0 roadmap.
 
 Assemble and test the builder:
 
@@ -165,6 +199,7 @@ Build output includes `status.json` and structured reports under `site/diagnosti
 
 | Report | Purpose |
 |---|---|
+| `channel-readiness.json` | All curated IDs with per-URL Primary/backup/candidate evidence, normal QA versus local exceptions, stability, failures and unverified host alternatives |
 | `channel-changes.json` | Recovered, lost, stable, and still-missing channels |
 | `missing-source-diagnostics.json` | Actionable missing-channel classifications |
 | `stream-health.json` | Current candidate probe results |

@@ -1,0 +1,365 @@
+{
+  "research_only": true,
+  "environment": "local Codex runtime; not GitHub production",
+  "tested_at": "2026-10-15T03:02:46.746100+00:00",
+  "newly_qualified_recoveries": 0,
+  "results": [
+    {
+      "tvg_id": "HBOHits.us",
+      "url": "http://tvsen7.aynascope.net/hbo2/index.m3u8",
+      "source": "world_ip_tv verified US",
+      "family": "worldiptv",
+      "health": {
+        "status": "failed",
+        "detail": "timed out",
+        "latency_ms": 6012
+      },
+      "decoder": {
+        "status": "failed",
+        "detail": "Direct media passed 0/2 decoder attempts; requires 2 (best decode 0.0s)",
+        "continuity_failure": "direct-media-insufficient-survival",
+        "decoder_failure_class": "segment-or-http",
+        "direct_media_survival": {
+          "duration_seconds": 12,
+          "min_decoded_seconds": 10,
+          "fps": 2,
+          "attempts_required": 3,
+          "required_passes": 2,
+          "attempts_completed": 2,
+          "passed_attempts": 0,
+          "attempts": [
+            {
+              "attempt": 1,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 7.82,
+              "ffmpeg_exit_code": 8,
+              "ffmpeg_error": "[in#0 @ 0x5566c7f70c00] Error opening input: Server returned 5XX Server Error reply | Error opening input file [stream-url]. | Error opening input files: Server returned 5XX Server Error reply",
+              "repeat": null,
+              "passed": false
+            },
+            {
+              "attempt": 2,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 10.17,
+              "ffmpeg_exit_code": 146,
+              "ffmpeg_error": "[in#0 @ 0x563dd80fec00] Error opening input: Connection timed out | Error opening input file [stream-url]. | Error opening input files: Connection timed out",
+              "repeat": null,
+              "passed": false
+            }
+          ],
+          "passed": false
+        }
+      },
+      "identity_verified": false,
+      "promotable": false
+    },
+    {
+      "tvg_id": "MagnoliaNetwork.us",
+      "url": "http://190.197.41.183/MAGNOLIA_NETWORK/index.m3u8",
+      "source": "world_ip_tv verified US",
+      "family": "worldiptv",
+      "health": {
+        "status": "failed",
+        "detail": "timed out",
+        "latency_ms": 6011
+      },
+      "decoder": {
+        "status": "failed",
+        "detail": "Direct media passed 0/2 decoder attempts; requires 2 (best decode 0.0s)",
+        "continuity_failure": "direct-media-insufficient-survival",
+        "decoder_failure_class": "zero-frame",
+        "direct_media_survival": {
+          "duration_seconds": 12,
+          "min_decoded_seconds": 10,
+          "fps": 2,
+          "attempts_required": 3,
+          "required_passes": 2,
+          "attempts_completed": 2,
+          "passed_attempts": 0,
+          "attempts": [
+            {
+              "attempt": 1,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 10.23,
+              "ffmpeg_exit_code": 146,
+              "ffmpeg_error": "[in#0 @ 0x5560fc97fc00] Error opening input: Connection timed out | Error opening input file [stream-url]. | Error opening input files: Connection timed out",
+              "repeat": null,
+              "passed": false
+            },
+            {
+              "attempt": 2,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 10.16,
+              "ffmpeg_exit_code": 146,
+              "ffmpeg_error": "[in#0 @ 0x5574e3a81c00] Error opening input: Connection timed out | Error opening input file [stream-url]. | Error opening input files: Connection timed out",
+              "repeat": null,
+              "passed": false
+            }
+          ],
+          "passed": false
+        }
+      },
+      "identity_verified": false,
+      "promotable": false
+    },
+    {
+      "tvg_id": "RFDTV.us",
+      "url": "https://rfdtv-jw.cdn.vustreams.com/live/7cba1a3b-318a-4097-8492-374478370b91/live.isml/7cba1a3b-318a-4097-8492-374478370b91.m3u8",
+      "source": "Fresh public RFD-TV CDN lead",
+      "family": "vustreams-rfdtv",
+      "health": {
+        "status": "failed",
+        "detail": "<urlopen error timed out>",
+        "latency_ms": 6010
+      },
+      "decoder": {
+        "status": "failed",
+        "detail": "Direct media passed 0/2 decoder attempts; requires 2 (best decode 0.0s)",
+        "continuity_failure": "direct-media-insufficient-survival",
+        "decoder_failure_class": "segment-or-http",
+        "direct_media_survival": {
+          "duration_seconds": 12,
+          "min_decoded_seconds": 10,
+          "fps": 2,
+          "attempts_required": 3,
+          "required_passes": 2,
+          "attempts_completed": 2,
+          "passed_attempts": 0,
+          "attempts": [
+            {
+              "attempt": 1,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 12.14,
+              "ffmpeg_exit_code": 8,
+              "ffmpeg_error": "[in#0 @ 0x5601d1d55c00] Error opening input: Server returned 5XX Server Error reply | Error opening input file [stream-url]. | Error opening input files: Server returned 5XX Server Error reply",
+              "repeat": null,
+              "passed": false
+            },
+            {
+              "attempt": 2,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 14.6,
+              "ffmpeg_exit_code": 8,
+              "ffmpeg_error": "[in#0 @ 0x563129518c00] Error opening input: Server returned 5XX Server Error reply | Error opening input file [stream-url]. | Error opening input files: Server returned 5XX Server Error reply",
+              "repeat": null,
+              "passed": false
+            }
+          ],
+          "passed": false
+        }
+      },
+      "identity_verified": false,
+      "promotable": false
+    },
+    {
+      "tvg_id": "TeenNick.us",
+      "url": "http://tvsen7.aynascope.net/teennick/index.m3u8",
+      "source": "IPTV-By-Shovo US",
+      "family": "shovo",
+      "health": {
+        "status": "failed",
+        "detail": "timed out",
+        "latency_ms": 6007
+      },
+      "decoder": {
+        "status": "failed",
+        "detail": "Direct media passed 0/2 decoder attempts; requires 2 (best decode 0.0s)",
+        "continuity_failure": "direct-media-insufficient-survival",
+        "decoder_failure_class": "segment-or-http",
+        "direct_media_survival": {
+          "duration_seconds": 12,
+          "min_decoded_seconds": 10,
+          "fps": 2,
+          "attempts_required": 3,
+          "required_passes": 2,
+          "attempts_completed": 2,
+          "passed_attempts": 0,
+          "attempts": [
+            {
+              "attempt": 1,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 10.18,
+              "ffmpeg_exit_code": 146,
+              "ffmpeg_error": "[in#0 @ 0x557e0d893c00] Error opening input: Connection timed out | Error opening input file [stream-url]. | Error opening input files: Connection timed out",
+              "repeat": null,
+              "passed": false
+            },
+            {
+              "attempt": 2,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 8.65,
+              "ffmpeg_exit_code": 8,
+              "ffmpeg_error": "[in#0 @ 0x55ecba967c00] Error opening input: Server returned 5XX Server Error reply | Error opening input file [stream-url]. | Error opening input files: Server returned 5XX Server Error reply",
+              "repeat": null,
+              "passed": false
+            }
+          ],
+          "passed": false
+        }
+      },
+      "identity_verified": false,
+      "promotable": false
+    },
+    {
+      "tvg_id": "USANetwork.us",
+      "url": "http://190.197.41.183/USA_NETWORK/index.m3u8",
+      "source": "world_ip_tv verified US",
+      "family": "worldiptv",
+      "health": {
+        "status": "failed",
+        "detail": "timed out",
+        "latency_ms": 6007
+      },
+      "decoder": {
+        "status": "failed",
+        "detail": "Direct media passed 0/2 decoder attempts; requires 2 (best decode 0.0s)",
+        "continuity_failure": "direct-media-insufficient-survival",
+        "decoder_failure_class": "segment-or-http",
+        "direct_media_survival": {
+          "duration_seconds": 12,
+          "min_decoded_seconds": 10,
+          "fps": 2,
+          "attempts_required": 3,
+          "required_passes": 2,
+          "attempts_completed": 2,
+          "passed_attempts": 0,
+          "attempts": [
+            {
+              "attempt": 1,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 6.24,
+              "ffmpeg_exit_code": 8,
+              "ffmpeg_error": "[in#0 @ 0x557295868c00] Error opening input: Server returned 5XX Server Error reply | Error opening input file [stream-url]. | Error opening input files: Server returned 5XX Server Error reply",
+              "repeat": null,
+              "passed": false
+            },
+            {
+              "attempt": 2,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 10.16,
+              "ffmpeg_exit_code": 146,
+              "ffmpeg_error": "[in#0 @ 0x5625dea03c00] Error opening input: Connection timed out | Error opening input file [stream-url]. | Error opening input files: Connection timed out",
+              "repeat": null,
+              "passed": false
+            }
+          ],
+          "passed": false
+        }
+      },
+      "identity_verified": false,
+      "promotable": false
+    },
+    {
+      "tvg_id": "USANetwork.us@East",
+      "url": "http://200.32.231.178/USA_NETWORK/index.m3u8",
+      "source": "IPTV-org US Raw",
+      "family": "iptv-org",
+      "health": {
+        "status": "failed",
+        "detail": "timed out",
+        "latency_ms": 6007
+      },
+      "decoder": {
+        "status": "failed",
+        "detail": "Direct media passed 0/2 decoder attempts; requires 2 (best decode 0.0s)",
+        "continuity_failure": "direct-media-insufficient-survival",
+        "decoder_failure_class": "zero-frame",
+        "direct_media_survival": {
+          "duration_seconds": 12,
+          "min_decoded_seconds": 10,
+          "fps": 2,
+          "attempts_required": 3,
+          "required_passes": 2,
+          "attempts_completed": 2,
+          "passed_attempts": 0,
+          "attempts": [
+            {
+              "attempt": 1,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 10.16,
+              "ffmpeg_exit_code": 146,
+              "ffmpeg_error": "[in#0 @ 0x55b7c5855c00] Error opening input: Connection timed out | Error opening input file [stream-url]. | Error opening input files: Connection timed out",
+              "repeat": null,
+              "passed": false
+            },
+            {
+              "attempt": 2,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 10.16,
+              "ffmpeg_exit_code": 146,
+              "ffmpeg_error": "[in#0 @ 0x5614e0a2ac00] Error opening input: Connection timed out | Error opening input file [stream-url]. | Error opening input files: Connection timed out",
+              "repeat": null,
+              "passed": false
+            }
+          ],
+          "passed": false
+        }
+      },
+      "identity_verified": false,
+      "promotable": false
+    },
+    {
+      "tvg_id": "BET.us",
+      "url": "https://jmp2.uk/plu-61c1939b8929e40007ff6382.m3u8",
+      "source": "DearBulut best public playlist",
+      "family": "github-playlist",
+      "health": {
+        "status": "failed",
+        "detail": "<urlopen error timed out>",
+        "latency_ms": 10801
+      },
+      "decoder": {
+        "status": "failed",
+        "detail": "Direct media passed 0/2 decoder attempts; requires 2 (best decode 0.0s)",
+        "continuity_failure": "direct-media-insufficient-survival",
+        "decoder_failure_class": "codec-or-demux",
+        "direct_media_survival": {
+          "duration_seconds": 12,
+          "min_decoded_seconds": 10,
+          "fps": 2,
+          "attempts_required": 3,
+          "required_passes": 2,
+          "attempts_completed": 2,
+          "passed_attempts": 0,
+          "attempts": [
+            {
+              "attempt": 1,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 14.48,
+              "ffmpeg_exit_code": 234,
+              "ffmpeg_error": "Stream map '0:v:0' matches no streams. | To ignore this, add a trailing '?' to the map. | Failed to set value '0:v:0' for option 'map': Invalid argument | Error parsing options for output file -. | Error opening output files: Invalid argument",
+              "repeat": null,
+              "passed": false
+            },
+            {
+              "attempt": 2,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 14.12,
+              "ffmpeg_exit_code": 234,
+              "ffmpeg_error": "Stream map '0:v:0' matches no streams. | To ignore this, add a trailing '?' to the map. | Failed to set value '0:v:0' for option 'map': Invalid argument | Error parsing options for output file -. | Error opening output files: Invalid argument",
+              "repeat": null,
+              "passed": false
+            }
+          ],
+          "passed": false
+        }
+      },
+      "identity_verified": false,
+      "promotable": false
+    }
+  ]
+}

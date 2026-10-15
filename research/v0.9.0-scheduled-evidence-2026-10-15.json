@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "target": "v0.9.0",
+  "minimum_original_channels": 95,
+  "scheduled_attempts_required": 3,
+  "automated_schedule_gate_passed": false,
+  "release_approved": false,
+  "no_mutations": true,
+  "errors": [],
+  "manual_release_requirements": [
+    "Exact full-linear US East/local programme identity and source provenance review",
+    "Repeated stability, burn-in, cooldown, primary/backup promotion and no-loop review for new/replaced sources",
+    "All remaining user release acceptance criteria and review before raising the floor/tagging"
+  ],
+  "scheduled_attempts_newest_first": [
+    {
+      "run_id": 38671779540,
+      "url": "https://github.com/sondog001-cyber/Stremio-TV/actions/runs/38671779540",
+      "source_revision": "ad6c5a40f59d46d44ec9854de0923bb0cf9bda3f",
+      "published_original": 86,
+      "normal_decoded_original": 85,
+      "local_override_ids": [
+        "nicktoons.us"
+      ],
+      "errors": [
+        "only 85 original channels have normal health and decoded Primary QA; need 95"
+      ],
+      "unqualified_published_ids": [
+        "nicktoons.us"
+      ],
+      "artifact_id": 11945287468,
+      "build_id": "v0.7.0-20261015T023603Z-ad6c5a40f59d",
+      "missing_original_ids": [
+        "bet.us",
+        "cbssportsnetwork.us",
+        "cinemaxclassics.us",
+        "espnews.us",
+        "hallmarkchannel.us",
+        "hallmarkfamily.us",
+        "hallmarkmystery.us",
+        "hbohits.us",
+        "hbomovies.us",
+        "kyw.us",
+        "magnolianetwork.us",
+        "nbcsportsphiladelphiaplus.us",
+        "rfdtv.us",
+        "smithsonianchannel.us",
+        "starzcinema.us",
+        "starzcomedy.us",
+        "starzedge.us",
+        "starzencorespanish.us",
+        "sundancetv.us",
+        "teennick.us",
+        "usanetwork.us",
+        "wcau.us",
+        "wphl.us",
+        "wpsg.us",
+        "wpvi.us"
+      ]
+    },
+    {
+      "run_id": 38661796352,
+      "url": "https://github.com/sondog001-cyber/Stremio-TV/actions/runs/38661796352",
+      "source_revision": "6ac7e8ecd43d87e79bb800a901220f02bc979847",
+      "published_original": null,
+      "normal_decoded_original": null,
+      "local_override_ids": [],
+      "errors": [
+        "scheduled production attempt has not completed successfully"
+      ]
+    },
+    {
+      "run_id": 38648567774,
+      "url": "https://github.com/sondog001-cyber/Stremio-TV/actions/runs/38648567774",
+      "source_revision": "6ac7e8ecd43d87e79bb800a901220f02bc979847",
+      "published_original": null,
+      "normal_decoded_original": null,
+      "local_override_ids": [],
+      "errors": [
+        "scheduled production attempt has not completed successfully"
+      ]
+    }
+  ]
+}

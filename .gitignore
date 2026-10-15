@@ -7,3 +7,4 @@ __pycache__/
 private_connectors.json
 private_sources.generated.json
 .DS_Store
+release-audit/

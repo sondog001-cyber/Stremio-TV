@@ -31,6 +31,10 @@
         write_json(output / "diagnostics" / "decoder-stability-feedback.json", decoder_stability_feedback)
         write_json(output / "diagnostics" / "playback-classification.json", playback_classification)
         write_json(output / "diagnostics" / "stream-health.json", stream_health_results)
+        write_json(output / "diagnostics" / "channel-readiness.json", build_channel_readiness_diagnostics(
+            channels, stream_health_results, primary_playback_qa, stream_stability_state,
+            missing_source_diagnostics, five_build_reliability, config, build_info,
+        ))
         write_json(
             output / "diagnostics" / "tvnow-qa.json",
             build_tvnow_qa_diagnostics(stream_health_results, source_ordering_rows, primary_playback_qa),

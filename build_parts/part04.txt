@@ -1959,11 +1959,48 @@ def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, 
     }
 
 
+def _local_verification_record_key(stream: dict[str, Any]) -> str:
+    """Bind a manual approval to its exact identity, URL, family and headers."""
+    record = {key: stream.get(key) for key in ("tvg_id", "url", "family", "headers")}
+    return hashlib.sha256(json.dumps(record, sort_keys=True).encode()).hexdigest()
+
+
+def _has_observed_playback_defect(evidence: Any) -> bool:
+    """Access failures may be local exceptions; observed repeats/stalls may not."""
+    if isinstance(evidence, list):
+        return any(_has_observed_playback_defect(item) for item in evidence)
+    if not isinstance(evidence, dict):
+        return False
+    if evidence.get("repeat") is not None:
+        return True
+    for key in ("continuity_failure", "decoder_failure_class", "failure", "detail"):
+        if re.search(r"repeat(?:ed|ing)?[- _]?(?:clip|hls|segment)|frozen|freeze|stall|identical[- _](?:direct[- _]media[- _])?sample|segments?[- _]not[- _]advanc",
+                     str(evidence.get(key) or ""), re.I):
+            return True
+    return any(_has_observed_playback_defect(value)
+               for value in evidence.values() if isinstance(value, (dict, list)))
+
+
+def _approved_local_verification(stream: dict[str, Any], *evidence: Any) -> bool:
+    # Only the manual-file loader issues this in-memory approval. A playlist tag,
+    # family name or copied flag cannot opt another record into failed-QA access.
+    return (stream.get("local_verified_override") is True
+            and stream.get("_local_verification_record") == _local_verification_record_key(stream)
+            and not _has_observed_playback_defect([stream.get("health") or {}, *evidence]))
+
+
 def _validate_primary_playback_stream(
     stream: dict[str, Any],
     settings: dict[str, Any],
 ) -> dict[str, Any]:
     """Decode one selected stream end-to-end, regardless of HLS/direct transport."""
+    if _has_observed_playback_defect(stream.get("health") or {}):
+        return {
+            "status": "failed",
+            "detail": "Observed repeat/freeze/stall failure cannot use a local override",
+            "continuity_failure": "primary-playback-observed-defect",
+            "primary_playback_qa": {"passed": False, "observed_health": stream.get("health")},
+        }
     direct_survival = ((stream.get("health") or {}).get("direct_media_survival") or {})
     if direct_survival.get("passed") is True:
         return {
@@ -1995,13 +2032,15 @@ def _validate_primary_playback_stream(
             "primary_playback_qa": survival,
         }
 
-    if stream.get("local_verified_override"):
+    if _approved_local_verification(stream, result):
         return {
             "status": "ok",
             "detail": "Published by local verification override after CI playback failure",
             "primary_playback_qa": {
                 "local_verified_override": True,
-                "passed": True,
+                "passed": False,
+                "publication_accepted": True,
+                "approval_scope": "exact-manual-source-record",
                 "ci_playback_status": result.get("status"),
                 "ci_playback_detail": result.get("detail"),
                 "ci_continuity_failure": result.get("continuity_failure"),
@@ -4119,7 +4158,7 @@ def probe_candidate_entries(
         entry
         for entry in entries
         if (entry.get("health") or {}).get("status") == "ok"
-        or bool(entry.get("local_verified_override"))
+        or _approved_local_verification(entry)
     ]
     local_verified_kept = sum(
         1
@@ -4147,13 +4186,13 @@ def build_tvnow_qa_diagnostics(
 ) -> dict[str, Any]:
     """Expose CI health, real playback and local overrides independently."""
     roles = {
-        str(stream.get("url") or ""): (str(channel.get("tvg_id") or ""), stream.get("role"))
+        (str(channel.get("tvg_id") or ""), str(stream.get("url") or "")): stream.get("role")
         for channel in source_ordering_rows
         for stream in channel.get("streams", [])
         if str(stream.get("family") or "").lower() == "tvnow"
     }
     attempts = {
-        str(channel.get("tvg_id") or ""): attempt
+        (str(channel.get("tvg_id") or ""), str(attempt.get("url") or "")): attempt
         for channel in primary_playback_qa.get("channels", [])
         for attempt in channel.get("attempts", [])
         if str(attempt.get("family") or "").lower() == "tvnow"
@@ -4166,7 +4205,8 @@ def build_tvnow_qa_diagnostics(
         detail = str(health.get("detail") or "")
         http_status = health.get("http_status")
         rate_limited = http_status == 429 or "HTTP 429" in detail or "429 Too Many Requests" in detail
-        attempt = attempts.get(str(row.get("tvg_id") or ""), {})
+        record_key = (str(row.get("tvg_id") or ""), str(row.get("url") or ""))
+        attempt = attempts.get(record_key, {})
         qa = attempt.get("qa") or {}
         locally_overridden = bool(qa.get("local_verified_override"))
         playback_status = (
@@ -4178,8 +4218,8 @@ def build_tvnow_qa_diagnostics(
             "tvg_id": row.get("tvg_id"),
             "name": row.get("name"),
             "url": row.get("url"),
-            "role": roles.get(str(row.get("url") or ""), ("", None))[1],
-            "published": str(row.get("url") or "") in roles,
+            "role": roles.get(record_key),
+            "published": record_key in roles,
             "local_verified_tag": bool(row.get("local_verified_override")),
             "normal_health_status": health.get("status"),
             "health_detail": detail,
@@ -4190,6 +4230,7 @@ def build_tvnow_qa_diagnostics(
             "override_used_for_playback": locally_overridden,
             "ci_decoder_failure_class": qa.get("ci_decoder_failure_class") if locally_overridden else attempt.get("decoder_failure_class"),
             "ci_decoder_detail": qa.get("ci_playback_detail") if locally_overridden else attempt.get("detail"),
+            "ci_continuity_failure": qa.get("ci_continuity_failure") if locally_overridden else attempt.get("continuity_failure"),
             "ci_decoded_frames": max(
                 [int(a.get("decoded_frames") or 0) for a in
                  ((qa.get("ci_direct_media_survival") or {}).get("attempts") or [])],
@@ -4453,6 +4494,107 @@ def build_five_build_reliability(
         },
     }
     return scorecard
+
+
+def build_channel_readiness_diagnostics(
+    channels: list[dict[str, Any]],
+    health_rows: list[dict[str, Any]],
+    playback_qa: dict[str, Any],
+    stability_state: dict[str, Any],
+    missing: dict[str, Any],
+    reliability: dict[str, Any],
+    config: dict[str, Any],
+    build_info: dict[str, Any],
+) -> dict[str, Any]:
+    """Join per-source evidence for the whole curated roster without promotion.
+
+    A backup not decoded in this build stays not-tested. Different hosts are
+    potential alternatives, never proof of independently operated media origins.
+    """
+    def identity(value: Any) -> str:
+        value = str(value or "").lower()
+        base, sep, variant = value.partition("@")
+        # Preserve named affiliates, West and other non-equivalent variants.
+        return base if sep and variant in {"east", "hd", "fhd", "sd", "uhd", "720p", "1080p", "hdeast", "easthd"} else value
+
+    published = {identity(c.get("tvg_id")): c for c in channels}
+    attempts = {(identity(c.get("tvg_id")), str(a.get("url") or "")): a
+                for c in playback_qa.get("channels", []) for a in c.get("attempts", [])}
+    health_by_url = {(identity(h.get("tvg_id")), str(h.get("url") or "")): h for h in health_rows}
+    missing_by_id = {identity(c.get("tvg_id")): c for c in missing.get("channels", [])}
+    states = stability_state.get("streams") or {}
+
+    def source_evidence(stream: dict[str, Any], channel_id: str, role: str) -> dict[str, Any]:
+        url = str(stream.get("url") or "")
+        key = (identity(channel_id), url)
+        hrow = health_by_url.get(key, {})
+        health = hrow.get("health") or stream.get("health") or {}
+        a = attempts.get(key, {})
+        qa = a.get("qa") or {}
+        override = bool(qa.get("local_verified_override"))
+        decoder = (qa.get("ci_direct_media_survival") or {}) if override else qa
+        decoded = decoder.get("attempts") or []
+        normal_pass = (a.get("status") == "ok" and qa.get("passed") is True and not override
+                       and health.get("status") == "ok"
+                       and any(t.get("passed") is True and int(t.get("decoded_frames") or 0) >= 16
+                               and float(t.get("decoded_seconds") or 0) >= 8
+                               and t.get("repeat") is None for t in decoded))
+        state = states.get(str(a.get("stability_key") or hrow.get("stability_key") or ""), {})
+        normal_at = playback_qa.get("built_at") if normal_pass else None
+        return {
+            "role": role, "source": stream.get("source") or hrow.get("source"),
+            "source_family": stream.get("family") or hrow.get("family"),
+            "source_tvg_id": stream.get("tvg_id") or hrow.get("tvg_id"),
+            "url": url, "effective_url": stream.get("effective_url") or hrow.get("effective_url") or url,
+            "provider_host": stream_provider_host(stream) or hrow.get("provider_host"),
+            "normal_health_status": health.get("status", "not-tested"),
+            "health_detail": health.get("detail"),
+            "decoder_status": "local-override" if override else "passed" if normal_pass else "failed" if a else "not-tested",
+            "normal_full_qa_passed": normal_pass,
+            "local_approval_tag": bool(stream.get("local_verified_override") or hrow.get("local_verified_override")),
+            "local_override_used": override,
+            "underlying_ci_status": qa.get("ci_playback_status") if override else a.get("status"),
+            "underlying_ci_detail": qa.get("ci_playback_detail") if override else a.get("detail"),
+            "continuity_failure": qa.get("ci_continuity_failure") if override else a.get("continuity_failure") or health.get("continuity_failure"),
+            "decoder_failure_class": qa.get("ci_decoder_failure_class") if override else a.get("decoder_failure_class"),
+            "decoded_attempts": decoded,
+            "last_successful_normal_validation": normal_at,
+            "historical_last_decoder_check": state.get("last_decoder_at"),
+            "historical_last_decoder_result": state.get("last_decoder_result"),
+            "stability": hrow.get("stability") or stream.get("stability") or {},
+            "burn_in": health.get("burn_in"),
+        }
+
+    rows = []
+    for target in _exact_allowlist_ids(config):
+        key = identity(target)
+        channel = published.get(key, {})
+        sources = [source_evidence(s, target, "Primary" if i == 0 else f"Backup {i}")
+                   for i, s in enumerate(channel.get("streams", []))]
+        candidates = [source_evidence(h, target, "Candidate") for h in health_rows if identity(h.get("tvg_id")) == key]
+        hosts = sorted({s["provider_host"] for s in sources if s["provider_host"]})
+        rows.append({
+            "tvg_id": target, "published": bool(channel), "name": channel.get("name"),
+            "primary": sources[0] if sources else None, "backups": sources[1:],
+            "candidates": candidates, "failure_diagnosis": missing_by_id.get(key),
+            "epg_status": channel.get("epg_status"), "provider_hosts": hosts,
+            "single_observed_host": len(hosts) == 1,
+            "different_host_backup_observed": len(hosts) > 1,
+            "genuine_independent_backup_verified": None,
+            "independence_note": "Not established by hostname or source-family labels; requires origin/provenance review",
+            "stability_history": [
+                {"build_id": s.get("build_id"), "published": any(identity(v) == key for v in s.get("published_tvg_ids") or [])}
+                for s in reliability.get("history", [])],
+        })
+    return {
+        "version": 1, "build": build_info, "advisory_only": True,
+        "summary": {"curated": len(rows), "published": sum(r["published"] for r in rows),
+                    "missing": sum(not r["published"] for r in rows),
+                    "normal_primary_qa_passed": sum(bool(r["primary"] and r["primary"]["normal_full_qa_passed"]) for r in rows),
+                    "local_primary_overrides": sum(bool(r["primary"] and r["primary"]["local_override_used"]) for r in rows),
+                    "single_observed_host": sum(r["single_observed_host"] for r in rows)},
+        "channels": rows,
+    }
 
 
 def build_host_redundancy_diagnostics(channels: list[dict[str, Any]]) -> dict[str, Any]:
