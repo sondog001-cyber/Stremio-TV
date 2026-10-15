@@ -1,0 +1,30 @@
+name: Audit official US TV players (research only)
+on:
+  pull_request:
+    paths:
+      - "research/live_player_mechanism_audit.py"
+      - "tests/test_live_player_mechanism_audit.py"
+      - ".github/workflows/live-player-mechanism-audit.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  official-player-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Test safe player classification and token redaction
+        run: python -m unittest discover -s tests -p 'test_live_player_mechanism_audit.py' -v
+      - name: Inspect public official TV watch pages (no sign in, no DRM access)
+        run: python research/live_player_mechanism_audit.py
+      - name: Upload player classification and network identity evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: official-live-player-mechanism-audit
+          path: research/diagnostics/live-player-mechanisms.json
+          retention-days: 14
