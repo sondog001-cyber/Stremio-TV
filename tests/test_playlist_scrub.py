@@ -149,7 +149,7 @@ class PlaylistScrubTests(unittest.TestCase):
     def test_search_deadline_saves_completed_batch(self):
         lists = [{"name": "x", "url": "https://example.com/a.m3u"}] * 8
         with patch.object(scrub, "scan_source", return_value=sources(entry())[0]), \
-             patch.object(scrub.time, "monotonic", side_effect=[0, 0, 181]):
+             patch.object(scrub.time, "monotonic", side_effect=[0, 0, 601]):
             result, info = scrub.scan_until_target(self.config, ROSTER, {}, [], lists, NOW)
         self.assertEqual(len(result), 4)
         self.assertEqual(info["stop_reason"], "time-budget")

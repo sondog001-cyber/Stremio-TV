@@ -220,7 +220,7 @@ def new_link_count(rows, previous, baseline):
 
 
 def scan_until_target(config, roster, previous, baseline, sources, now,
-                      target=20, seconds=180):
+                      target=20, seconds=600):
     """Read distinct sources in batches; stop on target, exhaustion or deadline."""
     started = time.monotonic()
     results = []

@@ -38,7 +38,7 @@ subsequent builds. Healthy-channel backup leads can be reviewed from the scrub.
 
 The job uses the existing `7 */2 * * *` production schedule. It starts **after**
 `build` and `deploy`, even if either was blocked, and never gates Pages. It has
-read-only repository/Actions permissions, a 12-minute timeout and advisory failure
+read-only repository/Actions permissions, a 20-minute timeout and advisory failure
 behavior. It does not create another two-hour timer or enable GitHub code search.
 
 Open a production Actions run and read **Playlist scrub (advisory)** in its job
@@ -84,7 +84,7 @@ artifact download redirect.
 Each run aims for **20 previously unseen stream URLs** for the original111
 channels, using `--new-link-target 20`. Reads proceed in batches of four and stop
 when the target is met, every distinct available playlist has been read, or the
-180-second search budget expires. A batch can yield more than20; all discoveries
+600-second (10-minute) search budget expires. A batch can yield more than20; all discoveries
 are retained. Re-reading an unchanged playlist cannot produce genuinely new links.
 The report gives the target, distinct new URL count and exact stopping reason.
 Mirrors, header changes and the same URL under several IDs count only once.
