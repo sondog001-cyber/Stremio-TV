@@ -1,0 +1,26 @@
+name: Capture History Cooking Tennis identities (research only)
+on:
+  pull_request:
+    paths:
+      - "research/capture_identity_four_feeds.py"
+      - ".github/workflows/capture-identity-four-feeds.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install FFmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Capture three time-spaced frames per feed
+        run: python3 research/capture_identity_four_feeds.py
+      - name: Upload identity frames and report for human programme comparison
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: four-network-identity-review
+          path: research/diagnostics/identity-captures/
+          retention-days: 14
