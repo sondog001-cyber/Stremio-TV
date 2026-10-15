@@ -1,0 +1,40 @@
+name: Probe fragile US-East channels (diagnostic only)
+
+on:
+  pull_request:
+    paths:
+      - "research/three_channel_probe.py"
+      - ".github/workflows/fragile-channel-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  three-channel-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Test current hosts against independent-source leads
+        run: python3 research/three_channel_probe.py
+      - name: Collect paired program identity thumbnails
+        run: python3 research/capture_three_channel_frames.py
+      - name: Compare simultaneous History programme footage
+        run: python3 research/compare_history_programming.py
+      - name: Upload decoder/continuity diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fragile-three-channel-probe
+          path: |
+            research/diagnostics/three-channel-probe.json
+            research/diagnostics/frame-samples/
+            research/diagnostics/history-programme-parity.json
+          if-no-files-found: warn
+          retention-days: 14
