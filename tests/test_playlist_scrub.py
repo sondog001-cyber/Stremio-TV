@@ -83,6 +83,9 @@ class PlaylistScrubTests(unittest.TestCase):
                    entry(headers={"Authorization": "Bearer secret"}),
                    entry(url="https://example.com/x.m3u8?password=secret"),
                    entry(url="http://example.com:2095/secretuser/secretpass/164"),
+                   entry(url="https://example.com/live.php?mac=00:11:22:33:44:55"),
+                   entry(url="http://example.com/123456/987654/123.ts"),
+                   entry(url="https://example.com/x.m3u8?e=1600000000&token=secret"),
                    entry(url="https://proxy.workers.dev/history.m3u8")]
         report, seen = scrub.run(self.config, ROSTER, {}, [], sources(*samples), NOW, 3)
         self.assertEqual(report["candidates"], [])

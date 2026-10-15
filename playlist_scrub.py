@@ -42,6 +42,19 @@ def fingerprint(channel, url, headers):
 def safe_entry(entry, config, now):
     try:
         url = str(entry.get("url") or "")
+        parts = urllib.parse.urlsplit(url)
+        path = [p for p in parts.path.split("/") if p]
+        query = {k.lower(): v for k, v in urllib.parse.parse_qsl(parts.query)}
+        if any(k in query for k in ("mac", "stb_mac", "serial", "serial_number", "sessionid")):
+            return False
+        if len(path) == 3 and path[0].isdigit() and path[1].isdigit() and path[-1].split(".")[0].isdigit():
+            return False
+        for key in ("e", "exp", "expires", "expiry"):
+            value = str(query.get(key, ""))
+            if value.isdigit() and len(value) in (10, 13):
+                expires = int(value) / (1000 if len(value) == 13 else 1)
+                if expires < now.timestamp() + 900:
+                    return False
         if not valid_public_url(url):
             return False
         if not build._is_clean_github_media_url(url, allow_public_signed_urls=True):
