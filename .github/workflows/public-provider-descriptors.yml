@@ -1,0 +1,41 @@
+name: Public provider descriptors (research only)
+on:
+  pull_request:
+    paths:
+      - "research/public_provider_descriptors.py"
+      - ".github/workflows/public-provider-descriptors.yml"
+permissions:
+  contents: read
+  actions: read
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Assemble and compile research
+        run: |
+          python assemble_build.py
+          python -m py_compile research/public_provider_descriptors.py
+      - name: Read exact recent runner evidence for URL deduplication
+        uses: actions/download-artifact@v4
+        with:
+          name: stremio-tv-diagnostics
+          run-id: 38737164051
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          path: .provider-baseline
+      - name: Discover public descriptors without promotion or media rewrites
+        run: python research/public_provider_descriptors.py --baseline .provider-baseline/diagnostics/stream-health.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: public-provider-descriptors
+          path: provider-research/
+          if-no-files-found: warn
+          retention-days: 14
