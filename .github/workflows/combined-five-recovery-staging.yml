@@ -1,0 +1,108 @@
+name: Validate combined five recovery sources (staging only)
+
+on:
+  pull_request:
+    paths:
+      - "manual_sources.json"
+      - "tests/test_combined_five_recovery.py"
+      - ".github/workflows/combined-five-recovery-staging.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  staged-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+      - name: Install packages and FFmpeg
+        run: |
+          python -m pip install -r requirements.txt
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Assemble and unit-test
+        run: |
+          python assemble_build.py
+          python -m unittest discover -s tests -v
+      - name: Run same pinned resolver as production
+        shell: bash
+        run: |
+          set +e
+          git clone --quiet https://github.com/sharoon7171/daddylive-stream-resolver.git /tmp/daddylive-resolver
+          cd /tmp/daddylive-resolver || exit 0
+          git checkout --quiet 5064460e16ca78f191473753b5696dea54ea134a
+          npm ci --silent
+          nohup npm start >/tmp/daddylive-resolver.log 2>&1 &
+          for i in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then
+              echo "Resolver ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Resolver unavailable; continue without it"
+      - name: Full addon build with all upstream and FFmpeg QA (no deployment)
+        run: python build.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DADDYLIVE_RESOLVER_URL: http://127.0.0.1:3000
+      - name: Audit published logos independently
+        if: always()
+        run: python tests/verify_published_logos.py
+      - name: Report recovery candidate full QA independently
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          def read(name):
+              return json.loads((Path("site")/"diagnostics"/name).read_text())
+          health=read("stream-health.json")
+          published=read("channels.json")
+          qa=read("primary-playback-qa.json")
+          expected={
+              "BigTenNetwork.us": "https://cache0.wonvt.st/live/12ttivn0fhm14f0yr8ber/master.m3u8",
+              "OneAmericaNewsNetwork.us": "https://a-cdn.klowdtv.com/live1/oan_720p/playlist.m3u8",
+              "History.us": "https://tvsen5.aynascope.net/historyen/index.m3u8",
+              "SECNetwork.us": "https://cache0.wonvt.st/live/0wvobh902biwzw08m7trv/master.m3u8",
+              "ScienceChannel.us": "https://cache0.wonvt.st/live/1qy87o21k84k1r0zek1wt/master.m3u8",
+          }
+          fail=[]
+          ids={r.get("tvg_id","").split("@")[0] for r in published}
+          rows=qa.get("channels",[])
+          for identity,url in expected.items():
+              h=[r for r in health if r.get("url")==url]
+              transport=any((r.get("health") or {}).get("status")=="ok" for r in h)
+              final=any(
+                  c.get("tvg_id","").split("@")[0]==identity
+                  and any(a.get("url")==url and a.get("status")=="ok" for a in c.get("attempts",[]))
+                  for c in rows
+              )
+              present=identity in ids
+              print(identity,"published",present,"health_ok",transport,"final_decoder_ok",final)
+              if not (present and transport and final):
+                  fail.append(identity)
+          if fail:
+              raise SystemExit("Stage NOT qualified for promotion: "+", ".join(fail))
+          print("Only stage criteria met. Exact programme identity still needs review.")
+          PY
+      - name: Require original published channel-coverage and identity guard (final deployment gate)
+        run: python deployment_guard.py
+      - name: Upload diagnostics even if staging fails
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: staged-combined-five-recovery
+          path: |
+            site/status.json
+            site/diagnostics/
+          if-no-files-found: warn
+          retention-days: 14
