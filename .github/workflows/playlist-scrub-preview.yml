@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "playlist_scrub.py"
+      - "research/playlist-scrub-sources.json"
       - "tests/test_playlist_scrub.py"
       - ".github/workflows/playlist-scrub-preview.yml"
       - ".github/workflows/build-and-deploy.yml"
@@ -32,7 +33,7 @@ jobs:
           python assemble_build.py
           python -m unittest discover -s tests -q
       - name: Run live read-only scrub
-        run: python playlist_scrub.py --probe-limit 3
+        run: python playlist_scrub.py --new-link-target 20 --probe-limit 3
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Upload preview evidence (never trusted as production inventory)

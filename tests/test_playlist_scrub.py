@@ -123,6 +123,45 @@ class PlaylistScrubTests(unittest.TestCase):
         self.assertEqual(row["error_type"], "ValueError")
         self.assertNotIn("secret", json.dumps(row))
 
+    def test_search_continues_past_known_lists_and_stops_after_target_batch(self):
+        old = {"seen": {"old": {"url": entry()["url"]}}}
+        lists = [{"name": str(i), "url": f"https://example.com/{i}.m3u"} for i in range(12)]
+        def scan(source):
+            i = int(source["name"])
+            rows = [entry()] if i < 4 else [entry(url=f"https://media.example.com/{i}.m3u8")]
+            return {**source, "status": "ok"}, rows
+        with patch.object(scrub, "scan_source", side_effect=scan) as fetch:
+            result, info = scrub.scan_until_target(self.config, ROSTER, old, [], lists, NOW, target=3)
+        self.assertEqual(fetch.call_count, 8)
+        self.assertEqual(info["new_stream_links"], 4)
+        self.assertEqual(info["stop_reason"], "target-reached")
+        self.assertTrue(info["target_met"])
+
+    def test_search_exhaustion_does_not_invent_new_links(self):
+        lists = [{"name": "same", "url": "https://example.com/a.m3u"}] * 5
+        with patch.object(scrub, "scan_source", return_value=sources(entry())[0]) as fetch:
+            _, info = scrub.scan_until_target(self.config, ROSTER, {}, [], lists, NOW)
+        self.assertEqual(fetch.call_count, 5)
+        self.assertEqual(info["new_stream_links"], 0)
+        self.assertEqual(info["stop_reason"], "sources-exhausted")
+        self.assertFalse(info["target_met"])
+
+    def test_search_deadline_saves_completed_batch(self):
+        lists = [{"name": "x", "url": "https://example.com/a.m3u"}] * 8
+        with patch.object(scrub, "scan_source", return_value=sources(entry())[0]), \
+             patch.object(scrub.time, "monotonic", side_effect=[0, 0, 181]):
+            result, info = scrub.scan_until_target(self.config, ROSTER, {}, [], lists, NOW)
+        self.assertEqual(len(result), 4)
+        self.assertEqual(info["stop_reason"], "time-budget")
+
+    def test_target_counts_unique_urls_not_headers_or_channel_aliases(self):
+        url = entry()["url"]
+        rows = [{"newness": "new", "url": url}, {"newness": "new", "url": url},
+                {"newness": "new", "url": "https://media.example.com/new.m3u8"}]
+        self.assertEqual(scrub.new_link_count(rows, {}, []), 2)
+        self.assertEqual(scrub.new_link_count(rows, {"seen": {"old": {"url": url}}}, []), 1)
+        self.assertEqual(scrub.new_link_count(rows, {}, [{"url": url}]), 1)
+
     def test_prior_artifact_from_pr_cannot_poison_persistent_state(self):
         class API:
             repository = "owner/repo"

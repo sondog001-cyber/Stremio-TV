@@ -17,6 +17,7 @@ on:
       - "reliability_watchdog.py"
       - "upstream_exposure.py"
       - "playlist_scrub.py"
+      - "research/playlist-scrub-sources.json"
       - "deployment_guard.py"
       - ".github/workflows/build-and-deploy.yml"
   schedule:
@@ -151,7 +152,7 @@ jobs:
           name: stremio-tv-diagnostics
           path: .scrub-baseline
       - name: Scrub configured playlists and triage up to three unseen candidates
-        run: python playlist_scrub.py --branch "$SCRUB_BRANCH"
+        run: python playlist_scrub.py --new-link-target 20 --branch "$SCRUB_BRANCH"
         env:
           SCRUB_BRANCH: ${{ github.event.repository.default_branch }}
           GITHUB_TOKEN: ${{ github.token }}

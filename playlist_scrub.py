@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import re
+import time
 import urllib.parse
 import zipfile
 
@@ -69,17 +70,18 @@ def safe_entry(entry, config, now):
         return False
 
 
-def configured_sources(config):
+def configured_sources(config, additional=()):
     discovery = config.get("discovery") or {}
     sources = [*(config.get("sources") or {}).get("playlists", []),
                *(discovery.get("targeted_source_families") or {}).get("sources", []),
                *(discovery.get("philly_local_sources") or {}).get("playlists", [])]
+    sources.extend(additional)
     unique = {}
     for source in sources:
         url = source.get("url", "")
         if url and source.get("format", "m3u") == "m3u":
             unique.setdefault(url, source)
-    return list(unique.values())[:64]
+    return list(unique.values())[:128]
 
 
 def scan_source(source):
@@ -209,6 +211,37 @@ def run(config, roster, previous, baseline, source_results, now, probe_limit=0, 
             "sources": [s for s, _ in source_results], "candidates": rows}, seen
 
 
+def new_link_count(rows, previous, baseline):
+    # Header changes, duplicate IDs and mirrored lists cannot inflate the target.
+    known_urls = {r.get("url") for r in baseline}
+    known_urls.update(r.get("url") for r in (previous.get("seen") or {}).values())
+    return len({r["url"] for r in rows
+                if r["newness"] == "new" and r["url"] not in known_urls})
+
+
+def scan_until_target(config, roster, previous, baseline, sources, now,
+                      target=20, seconds=180):
+    """Read distinct sources in batches; stop on target, exhaustion or deadline."""
+    started = time.monotonic()
+    results = []
+    reason = "sources-exhausted"
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+        for offset in range(0, len(sources), 4):
+            if time.monotonic() - started >= seconds:
+                reason = "time-budget"
+                break
+            results.extend(pool.map(scan_source, sources[offset:offset + 4]))
+            rows, _, _ = inventory(config, roster, previous, baseline, results, now)
+            if new_link_count(rows, previous, baseline) >= target:
+                reason = "target-reached"
+                break
+    rows, _, _ = inventory(config, roster, previous, baseline, results, now)
+    found = new_link_count(rows, previous, baseline)
+    return results, {"target_new_links": target, "new_stream_links": found,
+                     "target_met": found >= target, "stop_reason": reason,
+                     "available_playlists": len(sources), "scan_budget_seconds": seconds}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repository", default=os.environ.get("GITHUB_REPOSITORY"))
@@ -217,7 +250,10 @@ def main():
     parser.add_argument("--previous", type=Path, help="Local prior state, for offline replay")
     parser.add_argument("--out", type=Path, default=Path("scrub-results"))
     parser.add_argument("--probe-limit", type=int, default=3)
+    parser.add_argument("--new-link-target", type=int, default=20)
     args = parser.parse_args()
+    if not 1 <= args.new_link_target <= 500:
+        parser.error("--new-link-target must be between 1 and 500")
     config = json.loads((ROOT / "config.json").read_text())
     roster = json.loads((ROOT / "research/v0.9.0-original-lineup.json").read_text())["channel_ids"]
     prior = {"status": "initial-inventory"}
@@ -237,10 +273,13 @@ def main():
             return []
     baseline = local_json("stream-health.json")
     channels = local_json("channels.json")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-        results = list(pool.map(scan_source, configured_sources(config)))
+    additional = json.loads((ROOT / "research/playlist-scrub-sources.json").read_text())["sources"]
+    results, search = scan_until_target(
+        config, roster, previous, baseline, configured_sources(config, additional),
+        dt.datetime.now(dt.timezone.utc), args.new_link_target)
     report, seen = run(config, roster, previous, baseline, results, dt.datetime.now(dt.timezone.utc),
                        args.probe_limit, [r.get("tvg_id") for r in channels])
+    report["summary"].update(search)
     report.update(previous_state=prior, current_build_baseline_available=bool(baseline))
     args.out.mkdir(parents=True, exist_ok=True)
     state = {"version": 1, "repository": args.repository, "run_id": os.environ.get("GITHUB_RUN_ID"),
