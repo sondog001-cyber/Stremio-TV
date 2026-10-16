@@ -8,5 +8,13 @@
       "provenance": "https://github.com/iptv-org/iptv/blob/master/streams/us.m3u",
       "note": "Explicit HDEast alias; staging passed HLS but backup lacked decoder evidence. Research only."
     }
-  ]
+  ],
+  "review_window_utc": "2026-10-16T13:30:00Z",
+  "expected_programme": {
+    "channel": "National.Geographic.HD.us2",
+    "title": "Atlas of Cursed Places",
+    "episode": "The Curse of West Virginia",
+    "start": "2026-10-16T13:00:00Z",
+    "end": "2026-10-16T14:00:00Z"
+  }
 }
