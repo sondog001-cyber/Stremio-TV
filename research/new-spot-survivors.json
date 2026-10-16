@@ -1,0 +1,12 @@
+{
+  "candidates": [
+    {
+      "tvg_id": "NationalGeographic.us",
+      "url": "http://198.58.104.90:8989/natgeo/index.m3u8",
+      "headers": {},
+      "family": "iptv-org",
+      "provenance": "https://github.com/iptv-org/iptv/blob/master/streams/us.m3u",
+      "note": "Explicit HDEast alias; staging passed HLS but backup lacked decoder evidence. Research only."
+    }
+  ]
+}

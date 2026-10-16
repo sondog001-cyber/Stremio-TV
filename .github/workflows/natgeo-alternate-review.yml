@@ -1,0 +1,35 @@
+name: Inspect NatGeo alternate decoder and identity (research only)
+on:
+  pull_request:
+    paths:
+      - "research/new-spot-survivors.json"
+      - "research/verify_spot_survivors.py"
+      - ".github/workflows/natgeo-alternate-review.yml"
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Independently decode the exact candidate and capture its programming
+        run: |
+          python assemble_build.py
+          python research/verify_spot_survivors.py
+      - name: Save actual media evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: natgeo-alternate-review
+          path: survivor-results/
+          if-no-files-found: warn
+          retention-days: 14
