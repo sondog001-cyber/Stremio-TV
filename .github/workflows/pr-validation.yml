@@ -15,6 +15,8 @@ on:
       - "requirements.txt"
       - "reliability_watchdog.py"
       - "upstream_exposure.py"
+      - "playlist_scrub.py"
+      - "research/playlist-scrub-sources.json"
       - ".github/workflows/pr-validation.yml"
 
 permissions:

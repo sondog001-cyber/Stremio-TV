@@ -1,0 +1,46 @@
+name: Preview automatic playlist scrub (no deployment)
+
+on:
+  pull_request:
+    paths:
+      - "playlist_scrub.py"
+      - "research/playlist-scrub-sources.json"
+      - "tests/test_playlist_scrub.py"
+      - ".github/workflows/playlist-scrub-preview.yml"
+      - ".github/workflows/build-and-deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Assemble and test
+        run: |
+          python assemble_build.py
+          python -m unittest discover -s tests -q
+      - name: Run live read-only scrub
+        run: python playlist_scrub.py --new-link-target 20 --probe-limit 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Upload preview evidence (never trusted as production inventory)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playlist-scrub-preview
+          path: scrub-results/
+          if-no-files-found: warn
+          retention-days: 14

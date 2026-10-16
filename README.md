@@ -83,6 +83,12 @@ The builder combines:
 
 Secondary sources are isolated: one unavailable playlist does not fail the entire build. Source families are measured over time so consistently unproductive scanners can be reviewed and removed. Missing-channel hunting is prioritized toward runner/geo-blocked exact IDs first, then cooldown/quarantined gaps, so scarce discovery work focuses on the most recoverable channels.
 
+Each production attempt also runs an advisory **playlist scrub** after deployment:
+it records new exact-channel URLs/hosts across the configured M3U lists, preserves
+the seen inventory between runs, and triages up to three unseen candidates with
+segment and FFmpeg checks. It cannot promote sources or block Pages. See
+[automatic discovery and scrub reports](docs/automatic-discovery.md).
+
 ## Channel curation
 
 The package is controlled by `config.json` under `curation`. It is a whitelist, so an upstream entry does not automatically appear in Stremio.

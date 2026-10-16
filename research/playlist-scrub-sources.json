@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "note": "Additional public research catalogs; not production source approvals.",
+  "sources": [
+    {
+      "name": "xJEYDAin/iptv-scraper / output/all_merged.m3u",
+      "url": "https://raw.githubusercontent.com/xJEYDAin/iptv-scraper/master/output/all_merged.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "xJEYDAin/iptv-scraper / filtered/epg-pw_20261015.m3u",
+      "url": "https://raw.githubusercontent.com/xJEYDAin/iptv-scraper/master/filtered/epg-pw_20261015.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "addue06-design/live-tv-scraper / sports_channels.m3u",
+      "url": "https://raw.githubusercontent.com/addue06-design/live-tv-scraper/main/sports_channels.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "Kingdavid3g/personal-free-tv / playlist.m3u",
+      "url": "https://raw.githubusercontent.com/Kingdavid3g/personal-free-tv/main/playlist.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "Kingdavid3g/personal-free-tv / channels.m3u",
+      "url": "https://raw.githubusercontent.com/Kingdavid3g/personal-free-tv/main/channels.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "PeterHeoi/IPTV-USA-HK / playlists/playlist_usa.m3u8",
+      "url": "https://raw.githubusercontent.com/PeterHeoi/IPTV-USA-HK/master/playlists/playlist_usa.m3u8",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "konanda-sg/Mrgify-Tv / playlist.m3u",
+      "url": "https://raw.githubusercontent.com/konanda-sg/Mrgify-Tv/main/playlist.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "sweetkitten07/US-iptv-playlists / playlist.m3u",
+      "url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "Mark-609/IPTV-IPRadio-United-States / ABC.m3u",
+      "url": "https://raw.githubusercontent.com/Mark-609/IPTV-IPRadio-United-States/main/ABC.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "Mark-609/IPTV-IPRadio-United-States / CBS.m3u",
+      "url": "https://raw.githubusercontent.com/Mark-609/IPTV-IPRadio-United-States/main/CBS.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "Mark-609/IPTV-IPRadio-United-States / NBC.m3u",
+      "url": "https://raw.githubusercontent.com/Mark-609/IPTV-IPRadio-United-States/main/NBC.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "Mark-609/IPTV-IPRadio-United-States / FOX.m3u",
+      "url": "https://raw.githubusercontent.com/Mark-609/IPTV-IPRadio-United-States/main/FOX.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "Mark-609/IPTV-IPRadio-United-States / PBS.m3u",
+      "url": "https://raw.githubusercontent.com/Mark-609/IPTV-IPRadio-United-States/main/PBS.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "Mark-609/IPTV-IPRadio-United-States / ESPN.m3u",
+      "url": "https://raw.githubusercontent.com/Mark-609/IPTV-IPRadio-United-States/main/ESPN.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "se7enfigureinc/iptv-english-north-america / iptv.m3u",
+      "url": "https://raw.githubusercontent.com/se7enfigureinc/iptv-english-north-america/main/iptv.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "CookCapitalInvest/iptv-playlist / english-tv.m3u",
+      "url": "https://raw.githubusercontent.com/CookCapitalInvest/iptv-playlist/main/english-tv.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "JColeLatt/vlc-iptv-playlist / English_TV_Essentials_US.m3u",
+      "url": "https://raw.githubusercontent.com/JColeLatt/vlc-iptv-playlist/main/English_TV_Essentials_US.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "Sunstar16/FULL-IPTV-CHANNEL-PLAYLIST / Main Necessary Channels.m3u",
+      "url": "https://raw.githubusercontent.com/Sunstar16/FULL-IPTV-CHANNEL-PLAYLIST/main/Main%20Necessary%20Channels.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "Sunstar16/FULL-IPTV-CHANNEL-PLAYLIST / Lol.m3u",
+      "url": "https://raw.githubusercontent.com/Sunstar16/FULL-IPTV-CHANNEL-PLAYLIST/main/Lol.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "raymo7/iptv-playlist / Ray_Ultimate_TV.m3u",
+      "url": "https://raw.githubusercontent.com/raymo7/iptv-playlist/main/Ray_Ultimate_TV.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "fortvna/iptv / playlist.m3u",
+      "url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "skkattamaney/iptv / english-channels.m3u",
+      "url": "https://raw.githubusercontent.com/skkattamaney/iptv/main/english-channels.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "MONIR1560/iptv-1 / bdiptv.m3u",
+      "url": "https://raw.githubusercontent.com/MONIR1560/iptv-1/master/bdiptv.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "karthiceaswar/IPTV / eng.m3u",
+      "url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    },
+    {
+      "name": "hmripon66/8kiptv-by-techedubyte / Tech Edu Byte 8000tv channel.m3u",
+      "url": "https://raw.githubusercontent.com/hmripon66/8kiptv-by-techedubyte/main/Tech%20Edu%20Byte%208000tv%20channel.m3u",
+      "format": "m3u",
+      "family": "github-playlist"
+    }
+  ]
+}
