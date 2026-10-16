@@ -5,6 +5,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 import zipfile
+from urllib.error import HTTPError
 
 import playlist_scrub as scrub
 
@@ -122,6 +123,26 @@ class PlaylistScrubTests(unittest.TestCase):
         self.assertEqual(entries, [])
         self.assertEqual(row["error_type"], "ValueError")
         self.assertNotIn("secret", json.dumps(row))
+
+    def test_source_http_status_is_visible_without_exception_details(self):
+        error = HTTPError("https://example.com/a.m3u", 404, "secret", {}, None)
+        with patch.object(scrub.build, "_fetch_public_text", side_effect=error):
+            row, entries = scrub.scan_source({"url": "https://example.com/a.m3u"})
+        self.assertEqual(row["http_status"], 404)
+        self.assertEqual(entries, [])
+        self.assertNotIn("secret", json.dumps(row))
+
+    def test_backlog_and_decoder_leads_include_retained_unread_sources(self):
+        samples = sources(entry(), entry(url="https://media.example.com/backup.m3u8"))
+        with patch.object(scrub.build, "_probe_stream", return_value={"status": "ok"}), \
+             patch.object(scrub.build, "_validate_direct_media_survival", return_value={"status": "ok"}):
+            report, seen = scrub.run(self.config, ROSTER, {}, [], samples, NOW, 1)
+        self.assertEqual(report["summary"]["unprobed_retained_candidates"], 1)
+        self.assertEqual(report["summary"]["decoder_passed_unapproved_leads"], 1)
+        replay, _ = scrub.run(self.config, ROSTER, {"seen": seen}, [], sources(status="failed"), NOW)
+        self.assertEqual(replay["summary"]["unprobed_retained_candidates"], 1)
+        self.assertEqual(replay["summary"]["decoder_passed_unapproved_leads"], 1)
+        self.assertEqual(replay["summary"]["promotions"], 0)
 
     def test_search_continues_past_known_lists_and_stops_after_target_batch(self):
         old = {"seen": {"old": {"url": entry()["url"]}}}

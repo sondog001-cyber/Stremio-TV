@@ -94,6 +94,10 @@ def scan_source(source):
         return row, entries
     except Exception as exc:
         row["error_type"] = type(exc).__name__
+        # Status codes help distinguish a removed document from throttling,
+        # without exposing exception text, query strings or response headers.
+        if isinstance(getattr(exc, "code", None), int):
+            row["http_status"] = exc.code
         return row, []
 
 
@@ -206,6 +210,12 @@ def run(config, roster, previous, baseline, source_results, now, probe_limit=0, 
                "initial_inventory_candidates": counts["initial-inventory"],
                "new_provider_hosts": len({r["provider_host"] for r in rows if r["new_provider_host"]}),
                "unsafe_or_quarantined_rejected": rejected, "media_probes": tested,
+               "unprobed_retained_candidates": sum(bool(r.get("needs_probe")) and not r.get("probe")
+                                                     for r in seen.values()),
+               "decoder_passed_unapproved_leads": sum(
+                   (r.get("probe") or {}).get("health", {}).get("status") == "ok"
+                   and (r.get("probe") or {}).get("decoder", {}).get("status") == "ok"
+                   for r in seen.values()),
                "promotions": 0}
     return {"version": 1, "advisory_only": True, "summary": summary,
             "sources": [s for s, _ in source_results], "candidates": rows}, seen

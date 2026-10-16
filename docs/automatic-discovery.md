@@ -9,7 +9,7 @@ limits. Playlist scraping does not depend on an active ChatGPT conversation.
 
 The `playlist-scrub` job adds a persistent view of changes across **all original
 111 identities**, including potential backups for currently healthy channels.
-It scans configured M3U lists plus 25 additional public research playlist documents,
+It scans configured M3U lists plus maintained additional public research playlist documents,
 deduplicates repeated exact channel/URL/header combinations, and distinguishes:
 
 - Known candidates from the current production attempt or prior scrub inventory.
@@ -94,3 +94,14 @@ at128 distinct documents. Missing history is reported honestly.
 This target concerns discovery, not20 playable streams or automatic additions.
 The three-candidate media triage budget and all production QA remain unchanged.
 Additional research catalogs are not automatically added to production sources.
+
+## Discovery follow-through
+
+The summary also reports retained candidates still awaiting a probe and leads that
+passed both HLS and decoder triage. These counts include saved leads even when a
+playlist disappears. Decoder-passing leads remain unapproved: full burn-in,
+programme identity, stability and guarded staging are still required. Source
+errors include HTTP status codes without publishing exception text or headers.
+
+The obsolete date-specific epg-pw mirror was removed after its daily filename
+expired; the same project's maintained `output/all_merged.m3u` stays configured.

@@ -1,16 +1,10 @@
 {
   "version": 1,
-  "note": "Additional public research catalogs; not production source approvals.",
+  "note": "Additional public research catalogs; not production source approvals. Dated epg-pw mirror removed on 2026-10-16; maintained output/all_merged.m3u remains.",
   "sources": [
     {
       "name": "xJEYDAin/iptv-scraper / output/all_merged.m3u",
       "url": "https://raw.githubusercontent.com/xJEYDAin/iptv-scraper/master/output/all_merged.m3u",
-      "format": "m3u",
-      "family": "github-playlist"
-    },
-    {
-      "name": "xJEYDAin/iptv-scraper / filtered/epg-pw_20261015.m3u",
-      "url": "https://raw.githubusercontent.com/xJEYDAin/iptv-scraper/master/filtered/epg-pw_20261015.m3u",
       "format": "m3u",
       "family": "github-playlist"
     },
