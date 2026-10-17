@@ -1,0 +1,291 @@
+{
+  "source_run": 38801238029,
+  "source_artifact": 12005632737,
+  "latest_inventory_artifact": 12042475259,
+  "candidates": [
+    {
+      "tvg_id": "ACCNetwork.us",
+      "url": "https://a.jsrdn.com/broadcast/542cb2ce3c/+0000/c.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "sweetkitten07/US-iptv-playlists / playlist.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u"
+        },
+        {
+          "source": "karthiceaswar/IPTV / eng.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "BloombergTV.us",
+      "url": "https://bloomberg-bloomberg-1-be.samsung.wurl.tv/playlist.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "sweetkitten07/US-iptv-playlists / playlist.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u"
+        }
+      ],
+      "review": "excluded",
+      "review_reason": "Belgian-region Samsung feed; US schedule not established"
+    },
+    {
+      "tvg_id": "BloombergTV.us",
+      "url": "https://dai.google.com/linear/hls/event/NiumF4GTSGe-pXM-iMsP0A/master.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "karthiceaswar/IPTV / eng.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "CNBC.us",
+      "url": "https://16live00.akamaized.net/CNBC/index.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "karthiceaswar/IPTV / eng.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "CNN.us",
+      "url": "https://service-stitcher.clusters.pluto.tv/stitch/hls/channel/5421f71da6af422839419cb3/master.m3u8?advertisingId=&appName=web&appStoreUrl=&appVersion=DNT&app_name=&architecture=&buildVersion=&deviceDNT=0&deviceId=5421f71da6af422839419cb3&deviceLat=&deviceLon=&deviceMake=web&deviceModel=web&deviceType=web&deviceVersion=DNT&includeExtendedEvents=false&marketingRegion=US&serverSideAds=false&sid=209&terminate=false&userId=",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "karthiceaswar/IPTV / eng.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u"
+        }
+      ],
+      "review": "excluded",
+      "review_reason": "CNN-branded Pluto FAST service is not full CNN US"
+    },
+    {
+      "tvg_id": "FoxNewsChannel.us",
+      "url": "http://trn03.tulix.tv/AsEAeOtIxz/playlist.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "karthiceaswar/IPTV / eng.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "NBATV.us",
+      "url": "https://cdn1.ayitistream.com/NBATV/index.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "fortvna/iptv / playlist.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "NBATV.us",
+      "url": "https://pb-5pdyic0cu7tri.akamaized.net/NBA.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "Kingdavid3g/personal-free-tv / channels.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/Kingdavid3g/personal-free-tv/main/channels.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "NewsmaxTV.us",
+      "url": "https://dai2.xumo.com/amagi_hls_data_xumo1212A-newsmaxxumo/CDN/playlist.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "sweetkitten07/US-iptv-playlists / playlist.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "NewsmaxTV.us",
+      "url": "https://newsmax-plex.amagi.tv/hls/amagi_hls_data_plexAAAAA-newsmax-plex/CDN/playlist.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "karthiceaswar/IPTV / eng.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "OneAmericaNewsNetwork.us",
+      "url": "http://oneamericanews-roku-us.amagi.tv/playlist.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "karthiceaswar/IPTV / eng.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "OneAmericaNewsNetwork.us",
+      "url": "https://cdn.klowdtv.net/803B48A/n1.klowdtv.net/live1/oan_720p/playlist.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "sweetkitten07/US-iptv-playlists / playlist.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "OutdoorChannel.us",
+      "url": "https://cdn-apse1-prod.tsv2.amagi.tv/linear/amg00718-outdoorchannela-outdoortvnz-samsungnz/playlist.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "sweetkitten07/US-iptv-playlists / playlist.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u"
+        }
+      ],
+      "review": "excluded",
+      "review_reason": "Explicit New Zealand Outdoor TV service; not US Outdoor Channel"
+    },
+    {
+      "tvg_id": "Reelz.us",
+      "url": "https://a.jsrdn.com/broadcast/d37066a396/+0000/c.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "sweetkitten07/US-iptv-playlists / playlist.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "Reelz.us",
+      "url": "https://live-news-manifest.tubi.video/live-news-manifest/csm/extlive/tubiprd01,Reelz.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "karthiceaswar/IPTV / eng.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u"
+        }
+      ],
+      "review": "excluded",
+      "review_reason": "Tubi Reelz FAST service is not full cable REELZ"
+    },
+    {
+      "tvg_id": "Showtime.us",
+      "url": "http://4.30.180.36:8420/showtime/mono.m3u8?token=test",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "fortvna/iptv / playlist.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "TennisChannel.us",
+      "url": "https://playoutengine.sinclairstoryline.com/playout/9f87522c-5a0e-4ff4-b82c-d5564216132f.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "karthiceaswar/IPTV / eng.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "USANetwork.us",
+      "url": "http://190.11.225.124:5000/live/usa_hd/playlist.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "fortvna/iptv / playlist.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "VICETV.us",
+      "url": "https://d1ocru52bkg5e9.cloudfront.net/VICE.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "Kingdavid3g/personal-free-tv / channels.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/Kingdavid3g/personal-free-tv/main/channels.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    },
+    {
+      "tvg_id": "VICETV.us",
+      "url": "https://d2do1g43aq7264.cloudfront.net/playlist.m3u8",
+      "headers": {},
+      "family": "github-playlist",
+      "provenance": [
+        {
+          "source": "sweetkitten07/US-iptv-playlists / playlist.m3u",
+          "playlist_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u"
+        }
+      ],
+      "review": "test",
+      "review_reason": "Playlist exact-ID lead only; full programming/schedule unverified"
+    }
+  ]
+}

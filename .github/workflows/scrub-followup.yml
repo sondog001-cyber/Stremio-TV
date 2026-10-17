@@ -1,0 +1,38 @@
+name: Validate scraper discoveries (research only)
+
+on:
+  pull_request:
+    paths:
+      - "research/scrub-followup-inputs.json"
+      - "research/scrub_followup.py"
+      - ".github/workflows/scrub-followup.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  candidate-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Burn-in, decode and capture candidates without promotion
+        run: |
+          python assemble_build.py
+          python research/scrub_followup.py
+      - name: Save media and identity evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: scrub-followup
+          path: scrub-followup-results/
+          if-no-files-found: warn
+          retention-days: 14
