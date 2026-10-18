@@ -3567,6 +3567,59 @@ def plan_priority_recovery_probes(
     return selected_keys, report
 
 
+def plan_host_revival_probes(
+    cooldown_entries: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]],
+    probe_jobs: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]],
+    results: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]],
+    previous_channel_state: dict[str, Any],
+    config: dict[str, Any],
+) -> dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, Any]]:
+    """Retest missing cooldown IDs only when a same-origin feed passes real HLS QA.
+
+    This is scheduling, not a passing health result. Every selected candidate
+    still needs its *own* network checks, 60s burn-in, and final FFmpeg QA.
+    """
+    recovery = (config.get("stream_health") or {}).get("priority_recovery") or {}
+    if not recovery.get("host_revival_enabled", False):
+        return {}
+    max_urls = max(0, int(recovery.get("max_host_revival_urls_per_build", 16)))
+    max_per_host = max(1, int(recovery.get("max_host_revival_per_host", 16)))
+    missing_ids = {
+        canonical_tvg_id(str(row.get("pattern") or ""))
+        for row in (previous_channel_state.get("channels") or {}).values()
+        if isinstance(row, dict) and not row.get("present") and row.get("pattern")
+    }
+    if not missing_ids or not max_urls:
+        return {}
+
+    def origin(key):
+        try:
+            return urllib.parse.urlsplit(str(key[0])).netloc.casefold()
+        except ValueError:
+            return ""
+
+    revived_origins = {
+        origin(key) for key in probe_jobs
+        if results.get(key, {}).get("status") == "ok" and origin(key)
+    }
+    selected = {}
+    host_counts: dict[str, int] = defaultdict(int)
+    for key, entry in sorted(cooldown_entries.items(), key=lambda row: str(row[0][0])):
+        address = origin(key)
+        tvg_id = canonical_tvg_id(str(entry.get("tvg_id") or ""))
+        if (not address or address not in revived_origins
+                or tvg_id not in missing_ids
+                or key in probe_jobs
+                or results.get(key, {}).get("status") != "cooldown"
+                or host_counts[address] >= max_per_host):
+            continue
+        selected[key] = entry
+        host_counts[address] += 1
+        if len(selected) >= max_urls:
+            break
+    return selected
+
+
 def probe_candidate_entries(
     entries: list[dict[str, Any]],
     config: dict[str, Any],
@@ -4038,6 +4091,95 @@ def probe_candidate_entries(
                     f"{second_health.get('detail', 'unknown')}"
                 ),
             )
+
+    # Host recovery fan-out: if a normally probed stream actually survived
+    # its full HLS continuity QA, retry *other* missing cooldown channels on
+    # that same host now, instead of restoring only two per scheduled build.
+    # No candidate is published without its own full burn-in and final FFmpeg.
+    revival_jobs = plan_host_revival_probes(
+        cooldown_entries, jobs, results, previous_channel_state, config
+    )
+    revival_report = {
+        "enabled": bool((settings.get("priority_recovery") or {}).get(
+            "host_revival_enabled", False
+        )),
+        "candidates": len(revival_jobs),
+        "passed": 0,
+        "failed": 0,
+        "origins": sorted({
+            urllib.parse.urlsplit(str(key[0])).netloc.casefold()
+            for key in revival_jobs
+        }),
+    }
+    if revival_jobs:
+        interval = burn_in_interval if burn_in_enabled else 15
+        duration = burn_in_duration if burn_in_enabled else 60
+        checks_after_first = max(1, (duration + interval - 1) // interval)
+        first = run_probe_batch(revival_jobs)
+        active = {
+            key: entry for key, entry in revival_jobs.items()
+            if first.get(key, {}).get("status") == "ok"
+        }
+        failures = {
+            key: {**first.get(key, {"status": "failed", "detail": "No first probe"}),
+                  "status": "failed", "stable": False,
+                  "validation_mode": "host-revival-full-burn-in"}
+            for key in revival_jobs if key not in active
+        }
+        most_recent = dict(first)
+        for step_index in range(2, checks_after_first + 2):
+            if not active:
+                break
+            time.sleep(interval)
+            updated = run_probe_batch(active)
+            for key in list(active):
+                current = updated.get(
+                    key, {"status": "failed", "detail": "Missing revival probe"}
+                )
+                if current.get("status") != "ok":
+                    failures[key] = {
+                        **current, "status": "failed", "stable": False,
+                        "validation_mode": "host-revival-full-burn-in",
+                        "continuity_failure": "host-revival-probe-failed",
+                        "detail": (
+                            f"Host revival check {step_index} failed: "
+                            f"{current.get('detail', 'unknown')}"
+                        ),
+                    }
+                    del active[key]
+                else:
+                    most_recent[key] = current
+        for key in revival_jobs:
+            if key not in active:
+                results[key] = failures.get(
+                    key, {"status": "failed", "detail": "Revival probe failed"}
+                )
+                continue
+            checked = finalize_continuity(
+                first[key], most_recent[key],
+                "Passed independent host-revival HLS burn-in",
+                failure_detail="Host revival last probe failed",
+                burn_in={
+                    "enabled": True, "scope": "host-revival",
+                    "duration_seconds": checks_after_first * interval,
+                    "interval_seconds": interval,
+                    "planned_probes": checks_after_first + 1,
+                    "probes_attempted": checks_after_first + 1,
+                    "passed": True,
+                },
+            )
+            checked["validation_mode"] = "host-revival-full-burn-in"
+            checked["host_revival"] = True
+            results[key] = checked
+        revival_report["passed"] = sum(
+            results[key].get("status") == "ok" for key in revival_jobs
+        )
+        revival_report["failed"] = len(revival_jobs) - revival_report["passed"]
+        log(
+            f"Host revival: individually validated {revival_report['passed']:,}/"
+            f"{len(revival_jobs):,} previously cooled missing-channel URLs"
+        )
+    priority_recovery["host_revival"] = revival_report
 
     direct_survival_settings = settings.get("direct_media_survival") or {}
     direct_survival_enabled = bool(direct_survival_settings.get("enabled", False))

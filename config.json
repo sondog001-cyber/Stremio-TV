@@ -1010,7 +1010,10 @@
       "max_forced_urls_per_build": 12,
       "min_retry_hours": 6,
       "max_per_host": 2,
-      "max_recently_present_per_build": 8
+      "max_recently_present_per_build": 8,
+      "host_revival_enabled": true,
+      "max_host_revival_urls_per_build": 16,
+      "max_host_revival_per_host": 16
     },
     "burn_in": {
       "enabled": true,
