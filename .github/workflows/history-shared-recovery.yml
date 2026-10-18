@@ -1,0 +1,26 @@
+name: Diagnose History and shared-origin recovery (no deploy)
+on:
+  pull_request:
+    paths:
+      - "research/history_shared_recovery.py"
+      - ".github/workflows/history-shared-recovery.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recovery-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install FFmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Probe History, original shared host, and diverse alternatives
+        run: python3 research/history_shared_recovery.py
+      - name: Upload independent decoder diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: history-shared-independent-media-diagnostics
+          path: research/diagnostics/history-shared-recovery.json
+          retention-days: 14
