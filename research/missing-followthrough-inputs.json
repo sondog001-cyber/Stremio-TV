@@ -1,0 +1,214 @@
+{
+  "missing_ids": [
+    "Bravo.us",
+    "CNBC.us",
+    "HBOHits.us",
+    "HallmarkFamily.us",
+    "HallmarkMystery.us",
+    "MagnoliaNetwork.us",
+    "SmithsonianChannel.us",
+    "SundanceTV.us",
+    "TeenNick.us",
+    "USANetwork.us"
+  ],
+  "priority_candidates": [
+    {
+      "tvg_id": "HBOHits.us",
+      "url": "https://raw.githubusercontent.com/Bluestraveller13/super-duper-spork/refs/heads/main/HBOHits.m3u8",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/xr3ed/xr3ed-tv/main/.raw_source_cache.m3u",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "HallmarkMystery.us",
+      "url": "http://23.237.22.82:8086/udp/127.0.0.1:56067",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/cunkiller/oklaj/master/gratisancuy.m3u",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "HBOHits.us",
+      "url": "http://203.77.246.50:5000/udp/239.1.3.82:5000",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/YOULUP92/YoulupTv/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "CNBC.us",
+      "url": "http://103.55.39.182/~dusktil2/a.m3u8?q=cnbc",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/Tukangsate/tukangsate.github.io/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "HBOHits.us",
+      "url": "http://need.sleep.codaytv.eu/c.m3u8?shinta=See_U&coday=6c7085a9ed944c97b3346aae7bf73057&cdy=c81e728d9d4c2f636f067f89cc14862cd045c59a90d7587d8d671b5f5aec4e7c",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/Tukangsate/tukangsate.github.io/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "HBOHits.us",
+      "url": "http://me.zichannels.my.id/ch/hits.m3u8",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/Tukangsate/tukangsate.github.io/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "HBOHits.us",
+      "url": "https://www.dropbox.com/s/y1p3h8qlgfvctx8/HBOHITSS.m3u8?dl=1",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/Tukangsate/tukangsate.github.io/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "HBOHits.us",
+      "url": "https://www.livedoomovies.com/02_HBOHit_720p/chunklist.m3u8",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/Tukangsate/tukangsate.github.io/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "CNBC.us",
+      "url": "https://tv.cpdev.us/Playlist/o/cnbc.m3u8?t=92eb5ffee6ae2fec3ad71c777531578f",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/Tukangsate/tukangsate.github.io/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "MagnoliaNetwork.us",
+      "url": "https://webhdrunns.mizhls.ru/lb/premium299/index.m3u8",
+      "headers": {
+        "Referer": "https://lewblivehdplay.ru/",
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+      },
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/rizadi/iptvott/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "SundanceTV.us",
+      "url": "https://webhdrunns.mizhls.ru/lb/premium658/index.m3u8",
+      "headers": {
+        "Referer": "https://lewblivehdplay.ru/",
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+      },
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/rizadi/iptvott/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "TeenNick.us",
+      "url": "https://webhdrunns.mizhls.ru/lb/premium650/index.m3u8",
+      "headers": {
+        "Referer": "https://lewblivehdplay.ru/",
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+      },
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/rizadi/iptvott/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "TeenNick.us",
+      "url": "https://regioplay.xyz/php/SR_REGIO_701023_/tpnuevo02.php?tokennn=Regio&c=2147&f=.m3u8",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/LeoCM10/ListChanel/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "Bravo.us",
+      "url": "https://fl3.moveonjoy.com/BRAVO/index.m3u8",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/tdog3344/Mine.m3u/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "CNBC.us",
+      "url": "https://ft.fbcdntv247.cfd/memfs/4268c138-3258-42b8-8192-f9a3873e7794_output_0.m3u8",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/tdog3344/Mine.m3u/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "HallmarkFamily.us",
+      "url": "https://fl3.moveonjoy.com/HALLMARK_DRAMA/index.m3u8",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/tdog3344/Mine.m3u/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "SmithsonianChannel.us",
+      "url": "https://fl3.moveonjoy.com/SMITHSONIAN_CHANNEL/index.m3u8",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/tdog3344/Mine.m3u/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "SundanceTV.us",
+      "url": "https://fl3.moveonjoy.com/SUNDANCE/index.m3u8",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/tdog3344/Mine.m3u/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "TeenNick.us",
+      "url": "https://fl3.moveonjoy.com/Teen_Nick/index.m3u8",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/tdog3344/Mine.m3u/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "USANetwork.us",
+      "url": "http://fl3.moveonjoy.com/USA_NETWORK/index.m3u8",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/tdog3344/Mine.m3u/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "TeenNick.us",
+      "url": "https://raw.githubusercontent.com/Cutsiffa/Kid/main/Tenic.m3u8",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/kuda111/tiviku/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "CNBC.us",
+      "url": "https://streaming.livescorethai.net/iptv/sd-cnbc.stream/playlist.m3u8",
+      "headers": {
+        "Referer": "https://freetvdd.com/"
+      },
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/JISCORP/kodenami/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    },
+    {
+      "tvg_id": "USANetwork.us",
+      "url": "http://185.59.223.135/usa/index.m3u8",
+      "headers": {},
+      "family": "manual-deep-dive-unverified",
+      "provenance": "https://raw.githubusercontent.com/waqasfire7/zoomtv/main/README.md",
+      "review_reason": "New URL from manual 33-project review; local environment failure is inconclusive. Name hint is not verified identity. No override or automatic promotion."
+    }
+  ],
+  "production_approved": false,
+  "target_working_sources": 32,
+  "counting_rule": "Only fresh distinct URLs with burn-in, decoder and three 60-second continuity windows passed; identity approval remains separate."
+}
