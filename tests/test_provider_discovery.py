@@ -44,6 +44,30 @@ class ProviderDiscoveryTests(unittest.TestCase):
         self.assertEqual(updated['cursor'], 2)
         self.assertNotEqual(report['query'], replay['query'])
 
+    def test_missing_channel_search_rotates_with_broad_exploration(self):
+        reports = []
+        previous = {}
+        for _ in range(4):
+            _, state, report = discovery.discover(previous, [], NOW, lambda p: {},
+                                                  missing_ids=["TeenNick.us", "CNBC.us"])
+            reports.append(report)
+            previous = {"provider_discovery": state}
+        self.assertEqual(reports[0]["target_channel"], "CNBC.us")
+        self.assertIn('"CNBC"', reports[0]["query"])
+        self.assertIsNone(reports[2]["target_channel"])
+        self.assertEqual(reports[3]["target_channel"], "TeenNick.us")
+
+    def test_measured_host_priority_preserves_exploration_slots(self):
+        catalogs = {f"https://raw.githubusercontent.com/o/r/main/{i:02}.m3u": {
+            "url": f"https://raw.githubusercontent.com/o/r/main/{i:02}.m3u",
+            "missing_unfamiliar_host_count": 3 if i == 19 else 0}
+            for i in range(20)}
+        selected, _, _ = discovery.discover({"provider_discovery": {"catalogs": catalogs}},
+                                             [], NOW, lambda p: {})
+        self.assertEqual(len(selected), 12)
+        self.assertTrue(any(x["url"].endswith("19.m3u") for x in selected))
+        self.assertEqual([x["url"] for x in selected[:6]], sorted(catalogs)[:6])
+
     def test_failed_search_preserves_retained_catalogs_and_advances_cursor(self):
         url = 'https://raw.githubusercontent.com/old/catalog/main/us.m3u'
         state = {'cursor': 8, 'catalogs': {url: {'url': url, 'discovered_at': NOW.isoformat()}}}

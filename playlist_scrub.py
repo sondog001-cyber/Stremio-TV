@@ -334,7 +334,10 @@ def main():
     discovered = []
     if args.discover_providers:
         discovered, discovery_state, discovery = provider_discovery.discover(
-            previous, sources, dt.datetime.now(dt.timezone.utc))
+            previous, sources, dt.datetime.now(dt.timezone.utc),
+            missing_ids=([x for x in roster if channel_key(x) not in
+                          {channel_key(r.get("tvg_id")) for r in channels}]
+                         if channels else ()))
     # Search for providers and scan playlists share the existing ten-minute budget.
     # New/rotating catalogs come first so a known-list target cannot starve discovery.
     results, search = scan_until_target(
@@ -343,6 +346,20 @@ def main():
         seconds=max(0, 600 - (time.monotonic() - search_started)))
     report, seen = run(config, roster, previous, baseline, results, dt.datetime.now(dt.timezone.utc),
                        args.probe_limit, [r.get("tvg_id") for r in channels])
+    # Score catalogs only after safe exact-ID parsing, never from repository claims.
+    published = {channel_key(r.get("tvg_id")) for r in channels}
+    host_scores = {}
+    for row in report["candidates"]:
+        if channels and channel_key(row["tvg_id"]) not in published and row["new_provider_host"]:
+            for origin in row["provenance"]:
+                host_scores.setdefault(origin["playlist_url"], set()).add(row["provider_host"])
+    scanned_urls = {source["url"] for source, _ in results if source.get("status") == "ok"}
+    for url, catalog in discovery_state.get("catalogs", {}).items():
+        if url in scanned_urls:
+            catalog["missing_unfamiliar_host_count"] = len(host_scores.get(url, ()))
+    report["summary"]["missing_channels_with_unfamiliar_host_candidates"] = len({
+        r["tvg_id"] for r in report["candidates"] if channels and
+        channel_key(r["tvg_id"]) not in published and r["new_provider_host"]})
     report["summary"].update(search)
     report["summary"]["scan_budget_seconds"] = 600
     report["summary"].update(
