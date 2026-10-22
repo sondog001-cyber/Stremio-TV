@@ -93,6 +93,9 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(discovery.endpoint('https://instreams.pro/live3/F191/index.m3u8?st=aaa&e=1'),
                          discovery.endpoint('https://instreams.xyz/live3/F191/index.m3u8?st=bbb&e=2'))
         self.assertEqual(discovery.family('gate4.st'), discovery.family('instreams.live'))
+        for token in ('access_token', 'hdnea', 'hmac', 'jwt'):
+            self.assertEqual(discovery.endpoint('https://a.example/usa.m3u8?' + token + '=old'),
+                             discovery.endpoint('https://a.example/usa.m3u8?' + token + '=new'))
         text = ('#EXTM3U\n#EXTINF:-1 tvg-id="USANetwork.us",USA\n'
                 'https://instreams.pro/live3/F191/index.m3u8?st=aaa&e=1999999999\n'
                 '#EXTINF:-1 tvg-id="USANetwork.us",USA\n'
@@ -170,6 +173,7 @@ class DiscoveryTests(unittest.TestCase):
     def test_account_shaped_player_routes_are_rejected(self):
         self.assertFalse(discovery.safe_document_url('https://a.example/play/user/pass/123.m3u8'))
         self.assertFalse(discovery.safe_document_url('https://a.example/stream/user/pass/123'))
+        self.assertFalse(discovery.safe_document_url('https://a.example/user/pass/123.m3u8'))
         self.assertFalse(discovery.safe_document_url('http://127.0.0.1/live'))
         self.assertTrue(discovery.safe_document_url('https://a.example/player?id=public'))
 

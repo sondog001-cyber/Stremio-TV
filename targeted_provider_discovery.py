@@ -19,7 +19,9 @@ import provider_discovery as github
 
 ROOT = Path(__file__).resolve().parent
 PUBLIC = 'https://sondog001-cyber.github.io/Stremio-TV'
-TOKEN_KEYS = {'st', 'e', 'exp', 'expires', 'expiry', 'token', 'signature', 'sig', 'auth', 'hdnts'}
+TOKEN_KEYS = {'st', 'e', 'exp', 'expires', 'expiry', 'token', 'access_token', 'signature',
+              'sig', 'auth', 'authorization', 'jwt', 'hdnts', 'hdnea', 'hmac',
+              'policy', 'key-pair-id'}
 # Verified related delivery hosts, not assertions of independent infrastructure.
 RELATED_HOSTS = {'instreams.xyz': 'instreams', 'instreams.live': 'instreams',
                  'instreams.pro': 'instreams', 'gate4.st': 'instreams',
@@ -129,6 +131,9 @@ def public_text(url):
 
 def safe_document_url(url):
     path = urlparse.unquote(urlparse.urlsplit(url).path)
+    parts = [p for p in path.split('/') if p]
+    if len(parts) == 3 and re.fullmatch(r'\d+(?:\.[A-Za-z0-9]+)?', parts[-1]):
+        return False  # Common prefix-free username/password/numeric-stream layout.
     return scrub.valid_public_url(url) and not re.search(
         r'/(?:play|stream)/[^/]+/[^/]+/\d+(?:\.[A-Za-z0-9]+)?$', path, re.I)
 

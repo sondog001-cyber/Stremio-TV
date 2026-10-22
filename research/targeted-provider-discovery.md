@@ -38,8 +38,10 @@ starving new projects. Repository timestamps and tree revisions are attributed.
 Neither recent maintenance nor an unfamiliar host establishes working playback.
 
 Media endpoints are grouped across subdomains and explicit known mirror families.
-Token expiry/signature changes do not create new endpoints; channel selector query
-parameters remain distinct. This is conservative lead grouping, not proof of
+Recognized token expiry/signature query changes do not create new endpoints;
+channel selector query parameters remain distinct. Unrecognized signature formats,
+including tokens embedded in paths, still require manual grouping.
+This is conservative lead grouping, not proof of
 independent infrastructure. Unknown cross-domain mirrors can remain unrecognized.
 
 Each candidate retains discovery timestamps, exact target, provider family, source
