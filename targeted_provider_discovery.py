@@ -265,8 +265,11 @@ def discover(config, targets, baseline, previous, now, get=github.api_get,
                     continue
                 repositories.add((name, target))
                 branch = urlparse.quote(repo.get('default_branch', 'main'), safe='')
-                tree = get('repos/' + name + '/git/trees/' + branch + '?recursive=1')
-                revision = tree.get('sha', branch)
+                # A Git tree SHA is not a raw-content revision. Pin a commit first.
+                revision = get('repos/' + name + '/commits/' + branch)['sha']
+                if not re.fullmatch(r'[A-Za-z0-9]+', revision):
+                    raise ValueError('invalid upstream revision')
+                tree = get('repos/' + name + '/git/trees/' + revision + '?recursive=1')
                 paths = [x['path'] for x in tree.get('tree', []) if x.get('type') == 'blob'
                          and 0 < x.get('size', 0) <= 2_000_000
                          and re.search(r'\.(?:m3u8?|md|html?|json)$', x.get('path', ''), re.I)]

@@ -52,7 +52,9 @@ class DiscoveryTests(unittest.TestCase):
         if path.startswith('search/'):
             return {'items': [{'full_name': 'fresh/catalog', 'default_branch': 'main',
                                'pushed_at': '2026-10-22T12:00:00Z'}]}
-        return {'sha': 'abc123', 'tree': [{'path': 'us.m3u', 'type': 'blob', 'size': 100}]}
+        if '/commits/' in path:
+            return {'sha': 'abc123'}
+        return {'sha': 'tree456', 'tree': [{'path': 'us.m3u', 'type': 'blob', 'size': 100}]}
 
     def playlist(self, url):
         return ('#EXTM3U\n#EXTINF:-1 tvg-id="USANetwork.us",USA Network\n'
@@ -73,6 +75,8 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(report['exact_channel_candidates'], 1)
         self.assertTrue(rows[0]['unfamiliar_provider'])
         self.assertEqual(rows[0]['provenance'][0]['revision'], 'abc123')
+        self.assertIn('/abc123/us.m3u', rows[0]['provenance'][0]['url'])
+        self.assertNotIn('/tree456/', rows[0]['provenance'][0]['url'])
         self.assertEqual(state['cursor'], 3)
 
     def test_alias_queries_rotate_beyond_first_names(self):
