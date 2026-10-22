@@ -92,6 +92,7 @@ class DiscoveryTests(unittest.TestCase):
     def test_mirrors_and_tokens_group_without_inflating_source_count(self):
         self.assertEqual(discovery.endpoint('https://instreams.pro/live3/F191/index.m3u8?st=aaa&e=1'),
                          discovery.endpoint('https://instreams.xyz/live3/F191/index.m3u8?st=bbb&e=2'))
+        self.assertEqual(discovery.family('gate4.st'), discovery.family('instreams.live'))
         text = ('#EXTM3U\n#EXTINF:-1 tvg-id="USANetwork.us",USA\n'
                 'https://instreams.pro/live3/F191/index.m3u8?st=aaa&e=1999999999\n'
                 '#EXTINF:-1 tvg-id="USANetwork.us",USA\n'

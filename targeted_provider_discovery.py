@@ -22,7 +22,8 @@ PUBLIC = 'https://sondog001-cyber.github.io/Stremio-TV'
 TOKEN_KEYS = {'st', 'e', 'exp', 'expires', 'expiry', 'token', 'signature', 'sig', 'auth', 'hdnts'}
 # Verified related delivery hosts, not assertions of independent infrastructure.
 RELATED_HOSTS = {'instreams.xyz': 'instreams', 'instreams.live': 'instreams',
-                 'instreams.pro': 'instreams', 'moveonjoy.com': 'moveonjoy'}
+                 'instreams.pro': 'instreams', 'gate4.st': 'instreams',
+                 'moveonjoy.com': 'moveonjoy'}
 LABELS = {'USANetwork.us': ['USA Network'], 'CBSSportsNetwork.us': ['CBS Sports Network', 'CBSSN'],
           'HallmarkMystery.us': ['Hallmark Mystery', 'Hallmark Movies & Mysteries'],
           'StarzEncoreSpanish.us': ['Starz Encore Spanish', 'Starz Encore Español'],
