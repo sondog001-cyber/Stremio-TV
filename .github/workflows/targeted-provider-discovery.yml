@@ -1,0 +1,57 @@
+name: Targeted missing-channel provider research
+
+on:
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Maximum discovery budget in seconds (no playback probes)
+        type: choice
+        options: ["120", "300"]
+        default: "120"
+
+permissions:
+  contents: read
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements.txt
+      - run: python assemble_build.py
+      - name: Restore prior research journal for this branch
+        uses: actions/cache/restore@v4
+        with:
+          path: .targeted-history/state.json
+          key: targeted-provider-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: targeted-provider-${{ github.ref_name }}-
+      - name: Search current missing identities without changing production
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SEARCH_SECONDS: ${{ inputs.seconds }}
+        shell: bash
+        run: |
+          args=()
+          if [ -f .targeted-history/state.json ]; then
+            args+=(--previous .targeted-history/state.json)
+          fi
+          python targeted_provider_discovery.py --seconds "$SEARCH_SECONDS" --out targeted-provider-results "${args[@]}"
+          mkdir -p .targeted-history
+          cp targeted-provider-results/state.json .targeted-history/state.json
+      - name: Retain bounded journal
+        uses: actions/cache/save@v4
+        with:
+          path: .targeted-history/state.json
+          key: targeted-provider-${{ github.ref_name }}-${{ github.run_id }}
+      - name: Preserve research evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: targeted-provider-discovery
+          path: targeted-provider-results/
+          if-no-files-found: warn
+          retention-days: 14
