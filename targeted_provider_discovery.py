@@ -11,11 +11,11 @@ from pathlib import Path
 import re
 import time
 import urllib.parse as urlparse
+import urllib.request
 
 import build
 import playlist_scrub as scrub
 import provider_discovery as github
-from research.fresh_origin_discovery import fetch as fetch_public
 
 ROOT = Path(__file__).resolve().parent
 PUBLIC = 'https://sondog001-cyber.github.io/Stremio-TV'
@@ -110,10 +110,33 @@ def digest(value):
 
 
 def public_text(url):
-    if not scrub.valid_public_url(url):
+    if not safe_document_url(url):
         raise ValueError('unsafe public document URL')
-    response = fetch_public(url, limit=2_000_000, timeout=8)
-    return response['data'].decode('utf-8', 'replace'), response['final']
+    class PublicRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            if not safe_document_url(newurl):
+                raise ValueError('unsafe public document redirect')
+            return super().redirect_request(req, fp, code, msg, headers, newurl)
+    request = urllib.request.Request(url, headers={'User-Agent': 'Stremio-TV-discovery',
+                                                  'Accept-Encoding': 'identity'})
+    with urllib.request.build_opener(PublicRedirect).open(request, timeout=8) as response:
+        body = response.read(2_000_001)
+        if len(body) > 2_000_000:
+            raise ValueError('public document exceeds byte limit')
+        return body.decode('utf-8', 'replace'), response.geturl()
+
+
+def safe_document_url(url):
+    path = urlparse.unquote(urlparse.urlsplit(url).path)
+    return scrub.valid_public_url(url) and not re.search(
+        r'/(?:play|stream)/[^/]+/[^/]+/\d+(?:\.[A-Za-z0-9]+)?$', path, re.I)
+
+
+def player_evidence(text):
+    """Track player delivery changes, excluding unrelated page text and token refreshes."""
+    scripts = re.findall(r'<script[^>]+src=["\x27]([^"\x27]+)', text, re.I)
+    scripts = [endpoint(u) for u in scripts if re.search(r'hls|player|clappr', u, re.I)]
+    return digest(scripts)
 
 
 def page_mentions(text, terms):
@@ -128,6 +151,23 @@ def page_mentions(text, terms):
 def entries_from_document(text, source, target, config):
     if '#EXTINF' in text:
         entries = build.parse_m3u(text, source)
+    elif text.lstrip().startswith(('{', '[')) and source.get('channel_context') != target:
+        entries = []
+        try:
+            def visit(value, depth=0):
+                if depth > 5:
+                    return
+                if isinstance(value, list):
+                    for child in value[:2000]:visit(child, depth + 1)
+                elif isinstance(value, dict):
+                    cid = value.get('tvg_id') or value.get('tvg-id') or value.get('id')
+                    url = value.get('url') or value.get('stream_url') or value.get('hls')
+                    if isinstance(cid, str) and isinstance(url, str) and re.search(r'\.m3u8(?:\?|$)', url):
+                        entries.append({'tvg_id': cid, 'url': url, 'headers': {}})
+                    for child in value.values():visit(child, depth + 1)
+            visit(json.loads(text))
+        except ValueError:
+            return []
     else:
         # A titled public page is a declared-channel lead, never verified identity.
         if source.get('channel_context') != target and not page_mentions(text, names(target, config)):
@@ -173,8 +213,10 @@ def prior_candidates(previous):
         probe = row.get('probe') or {}
         health = probe.get('health', {})
         decoder = probe.get('decoder', {})
+        status = ('failed' if 'failed' in {health.get('status'), decoder.get('status')}
+                  else 'ok' if health.get('status') == decoder.get('status') == 'ok' else 'pending')
         outcome = {'evidence': evidence, 'tested_at': probe.get('tested_at'),
-                   'status': 'ok' if health.get('status') == decoder.get('status') == 'ok' else 'failed',
+                   'status': status,
                    'health': health, 'decoder': decoder}
         old.setdefault(key, dict(row, outcomes=[outcome] if probe else []))
     return old
@@ -206,10 +248,12 @@ def discover(config, targets, baseline, previous, now, get=github.api_get,
         try:
             text, final = fetch(u)
             source = dict(source, url=final)
-            if not scrub.valid_public_url(final):
+            if not safe_document_url(final):
                 raise ValueError('unsafe document redirect')
+            if source.get('channel_context') == target or page_mentions(text, names(target, config)):
+                source['player_evidence'] = player_evidence(text)
             for e in entries_from_document(text, source, target, config):
-                if not scrub.safe_entry(e, config, now):
+                if not safe_document_url(e['url']) or not scrub.safe_entry(e, config, now):
                     continue
                 row = candidate(e, source, old, now, known)
                 if row['key'] in current:
@@ -231,7 +275,7 @@ def discover(config, targets, baseline, previous, now, get=github.api_get,
                     break
                 if link == final or re.search(r'\.(?:m3u8|mpd|png|jpg|svg)(?:\?|$)', link, re.I):
                     continue
-                if scrub.valid_public_url(link):
+                if safe_document_url(link):
                     inspect(dict(source, url=link, channel_context=target), target, depth + 1)
         except Exception as exc:
             report['errors'].append({'document': u.split('?')[0], 'type': type(exc).__name__})

@@ -121,6 +121,11 @@ class DiscoveryTests(unittest.TestCase):
         row = discovery.candidate(e, {'url': 'https://page.example/watch'}, old, NOW, set())
         self.assertFalse(row['needs_probe'])
         self.assertEqual(len(row['outcomes']), 1)
+        e['probe']['health']['status'] = 'ok'
+        old = discovery.prior_candidates({'seen': {'old': e}})
+        row = discovery.candidate(e, {'url': 'https://page.example/watch'}, old, NOW, set())
+        self.assertTrue(row['needs_probe'])
+        self.assertEqual(row['outcomes'][0]['status'], 'pending')
 
     def test_public_player_following_is_bounded_and_never_executes_scripts(self):
         def fetch(url):
@@ -137,6 +142,35 @@ class DiscoveryTests(unittest.TestCase):
         for k in ('manifest_and_segment_passes', 'sustained_decoder_passes',
                   'identity_confirmed_feeds', 'staging_published_recoveries', 'backup_candidates'):
             self.assertEqual(report[k], 0)
+
+    def test_structured_json_requires_exact_id_not_display_name(self):
+        text = json.dumps({'channels': [
+            {'tvg_id': 'USANetwork.us', 'url': 'https://a.example/usa.m3u8'},
+            {'name': 'USA Network', 'url': 'https://b.example/name-only.m3u8'},
+            {'tvg_id': 'ESPN.us', 'url': 'https://c.example/espn.m3u8'}]})
+        rows, _, _ = self.run_discovery(fetch=lambda u: (text, u))
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['url'], 'https://a.example/usa.m3u8')
+
+    def test_player_change_is_material_but_unrelated_text_is_not(self):
+        original = '<title>USA Network</title><script src="https://cdn.example/hls-v1.js"></script>'
+        same = original + '<p>A new advertisement</p>'
+        self.assertEqual(discovery.player_evidence(original), discovery.player_evidence(same))
+        changed = original.replace('hls-v1.js', 'hls-v2.js')
+        self.assertNotEqual(discovery.player_evidence(original), discovery.player_evidence(changed))
+        entry = {'tvg_id': 'USANetwork.us', 'url': 'https://a.example/usa.m3u8'}
+        source = {'url': 'https://watch.example/', 'player_evidence': discovery.player_evidence(original)}
+        row = discovery.candidate(entry, source, {}, NOW, set())
+        row['outcomes'] = [{'evidence': row['evidence'], 'status': 'failed'}]
+        source['player_evidence'] = discovery.player_evidence(changed)
+        revised = discovery.candidate(entry, source, {row['key']: row}, NOW, set())
+        self.assertTrue(revised['needs_probe'])
+
+    def test_account_shaped_player_routes_are_rejected(self):
+        self.assertFalse(discovery.safe_document_url('https://a.example/play/user/pass/123.m3u8'))
+        self.assertFalse(discovery.safe_document_url('https://a.example/stream/user/pass/123'))
+        self.assertFalse(discovery.safe_document_url('http://127.0.0.1/live'))
+        self.assertTrue(discovery.safe_document_url('https://a.example/player?id=public'))
 
     def test_no_name_only_playlist_matching_or_west_substitution(self):
         text = ('#EXTM3U\n#EXTINF:-1 tvg-id="",USA Network\nhttps://a.example/a.m3u8\n'

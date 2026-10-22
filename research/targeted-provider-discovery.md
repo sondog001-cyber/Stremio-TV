@@ -46,7 +46,7 @@ Each candidate retains discovery timestamps, exact target, provider family, sour
 documents, repository revision, relevant-declaration fingerprint and prior test
 outcomes. `--previous` accepts its own journal or an existing playlist-scrub state.
 Unchanged failed evidence is marked ineligible for another probe. A changed endpoint,
-headers or supplied player-evidence fingerprint can make it eligible again.
+headers or observed player-library declaration can make it eligible again.
 Unrelated repository edits and token rotations alone do not erase failed history.
 History is capped at 2,000 endpoints, 20 attributions per endpoint, and 100 project
 scores. Keep and reuse the journal; a run without prior state cannot know absent
@@ -93,6 +93,7 @@ exception, kill switches, quarantines and deployment guards are unchanged.
 
 Focused tests cover live missing-target selection, aliases and affiliate separation,
 search rotation, exact filtering, public-player traversal, mirror/signature dedup,
-failed-history import, material-change eligibility, bounded operation and honest
+failed-history import, material-change eligibility, exact-ID JSON, credential-shaped
+route rejection, bounded operation and honest
 zero promotion/verification counts. The existing PR workflow also runs the full
 suite and guarded staging catalog/logo audit before merge.
