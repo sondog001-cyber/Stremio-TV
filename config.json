@@ -3,7 +3,7 @@
     "id": "com.stremiotv.philly",
     "name": "Stremio TV",
     "description": "Curated Philadelphia-area live TV with native EPG, decoded playback QA, exact stream identity guards, and prioritized recovery hunting.",
-    "version": "0.7.0"
+    "version": "0.9.0"
   },
   "sources": {
     "playlists": [
