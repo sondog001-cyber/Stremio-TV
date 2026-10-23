@@ -267,7 +267,7 @@
                         nearby.append(p)
             dedup = {p["id"]: p for p in nearby}
             nearby = sorted(dedup.values(), key=lambda p: p["startTime"])
-            meta = channel_meta(ch, nearby)
+            meta = channel_meta(ch, nearby, live_fallback=True)
             write_json(
                 output / "meta" / "tv" / f"{ch['id']}.json",
                 cached_resource({"meta": meta}),
@@ -291,7 +291,7 @@
 
         local_test_preview_rows: list[dict[str, Any]] = []
         for ch in local_test_channels:
-            meta = channel_meta(ch, [])
+            meta = channel_meta(ch, [], live_fallback=True)
             write_json(
                 output / "meta" / "tv" / f"{ch['id']}.json",
                 cached_resource({"meta": meta}),

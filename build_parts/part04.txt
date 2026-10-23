@@ -115,7 +115,7 @@ def channel_preview(channel: dict[str, Any]) -> dict[str, Any]:
         "type": "tv",
         "name": channel["name"],
         "posterShape": "square",
-        "behaviorHints": {"isLive": True},
+        "behaviorHints": {"isLive": True, "defaultVideoId": channel["id"]},
     }
     if channel.get("logo"):
         meta["poster"] = channel["logo"]
@@ -5746,7 +5746,12 @@ def build_quality_measurements(
     }
 
 
-def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+def channel_meta(
+    channel: dict[str, Any],
+    programmes: list[dict[str, Any]] | None = None,
+    *,
+    live_fallback: bool = False,
+) -> dict[str, Any]:
     programmes = sorted(programmes or [], key=lambda p: p.get("startTime", ""))
 
     # Native Stremio Live TV renders current/next programme data from videos.
@@ -5776,7 +5781,7 @@ def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | Non
         "description": description,
         "genres": [category],
         "posterShape": "square",
-        "behaviorHints": {"isLive": True},
+        "behaviorHints": {"isLive": True, "defaultVideoId": channel["id"]},
         "stremioTvDiagnostics": {
             "epg_status": channel.get(
                 "epg_status",
@@ -5795,6 +5800,20 @@ def channel_meta(channel: dict[str, Any], programmes: list[dict[str, Any]] | Non
     if channel.get("epg_matched"):
         meta["behaviorHints"]["hasScheduledVideos"] = True
         meta["videos"] = programmes
+    if live_fallback:
+        # Older clients can render timed EPG entries as ordinary episodes and
+        # never request the channel stream. Give detail views an explicit live
+        # video using the existing channel endpoint, not a programme ID. Keep
+        # it untimed and out of date-filtered EPG catalogs (no fake programme,
+        # catch-up, inline streams, or changes to scheduled programme metadata).
+        meta["videos"] = [{
+            "id": channel["id"],
+            "title": "Watch live",
+            "released": "1970-01-01T00:00:00Z",
+            "available": True,
+            "overview": "Play this channel live now. Guide listings are not recordings or catch-up streams.",
+            **({"thumbnail": channel["logo"]} if channel.get("logo") else {}),
+        }, *meta.get("videos", [])]
     if build_id:
         meta["stremioTvBuild"] = {
             "build_id": build_id,
