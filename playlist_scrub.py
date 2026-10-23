@@ -232,7 +232,22 @@ def triage(rows, config, limit, published_ids):
     queue.sort(key=lambda r: (channel_key(r["tvg_id"]) in published_ids,
                               not r["new_provider_host"], r["first_seen"], r["key"]))
     tested = 0
-    for row in queue[:max(0, min(limit, 3))]:
+    # Round-robin hosts within missing-channel/backup tiers. Copies from one
+    # failing provider must not consume the entire small probe budget.
+    selected = []
+    for published in (False, True):
+        tier = [r for r in queue if (channel_key(r["tvg_id"]) in published_ids) == published]
+        while tier and len(selected) < max(0, min(limit, 3)):
+            hosts = set()
+            rest = []
+            for row in tier:
+                if row.get("provider_host") in hosts or len(selected) >= max(0, min(limit, 3)):
+                    rest.append(row)
+                else:
+                    hosts.add(row.get("provider_host"))
+                    selected.append(row)
+            tier = rest
+    for row in selected:
         entry = {"url": row["url"], "headers": row["headers"]}
         health, decoder = probe_research_candidate(entry, config)
         row["probe"] = {"tested_at": dt.datetime.now(dt.timezone.utc).isoformat(),
@@ -242,6 +257,26 @@ def triage(rows, config, limit, published_ids):
         row["needs_probe"] = False
         tested += 1
     return tested
+
+
+def candidate_status(row, now, published_ids):
+    """A historical decode is never an approval or a current recovery forecast."""
+    probe = row.get("probe") or {}
+    if not probe:
+        return "untested"
+    if probe.get("health", {}).get("status") != "ok":
+        return "failed_health"
+    if probe.get("decoder", {}).get("status") != "ok":
+        return "failed_decoder"
+    try:
+        tested = dt.datetime.fromisoformat(probe.get("tested_at", "").replace("Z", "+00:00"))
+        if not dt.timedelta(0) <= now - tested <= dt.timedelta(hours=24):
+            return "historical_decode_requires_recheck"
+    except (ValueError, TypeError):
+        return "historical_decode_requires_recheck"
+    published = {channel_key(x) for x in published_ids}
+    return ("backup_decode_requires_identity_and_full_qa" if channel_key(row["tvg_id"]) in published
+            else "missing_channel_decode_requires_identity_and_full_qa")
 
 
 def run(config, roster, previous, baseline, source_results, now, probe_limit=0, published_ids=()):
@@ -257,12 +292,17 @@ def run(config, roster, previous, baseline, source_results, now, probe_limit=0, 
                "unsafe_or_quarantined_rejected": rejected, "media_probes": tested,
                "unprobed_retained_candidates": sum(bool(r.get("needs_probe")) and not r.get("probe")
                                                      for r in seen.values()),
-               "decoder_passed_unapproved_leads": sum(
-                   (r.get("probe") or {}).get("health", {}).get("status") == "ok"
-                   and (r.get("probe") or {}).get("decoder", {}).get("status") == "ok"
-                   for r in seen.values()),
                "promotions": 0}
+    statuses = [candidate_status(r, now, published_ids) for r in seen.values()]
+    summary.update(Counter("candidate_" + status for status in statuses))
+    results = [{"channel": r["tvg_id"], "host": r.get("provider_host"),
+                "status": candidate_status(r, now, published_ids),
+                "tested_at": (r.get("probe") or {}).get("tested_at"),
+                "health": (r.get("probe") or {}).get("health", {}),
+                "decoder": (r.get("probe") or {}).get("decoder", {})}
+               for r in seen.values() if r.get("probe")]
     return {"version": 1, "advisory_only": True, "summary": summary,
+            "candidate_results": results,
             "sources": [s for s, _ in source_results], "candidates": rows}, seen
 
 
@@ -338,7 +378,10 @@ def main():
     discovered = []
     if args.discover_providers:
         discovered, discovery_state, discovery = provider_discovery.discover(
-            previous, sources, dt.datetime.now(dt.timezone.utc))
+            previous, sources, dt.datetime.now(dt.timezone.utc),
+            missing_ids=([x for x in roster if channel_key(x) not in
+                          {channel_key(r.get("tvg_id")) for r in channels}]
+                         if channels else ()))
     # Search for providers and scan playlists share the existing ten-minute budget.
     # New/rotating catalogs come first so a known-list target cannot starve discovery.
     results, search = scan_until_target(
@@ -347,6 +390,20 @@ def main():
         seconds=max(0, 600 - (time.monotonic() - search_started)))
     report, seen = run(config, roster, previous, baseline, results, dt.datetime.now(dt.timezone.utc),
                        args.probe_limit, [r.get("tvg_id") for r in channels])
+    # Score catalogs only after safe exact-ID parsing, never from repository claims.
+    published = {channel_key(r.get("tvg_id")) for r in channels}
+    host_scores = {}
+    for row in report["candidates"]:
+        if channels and channel_key(row["tvg_id"]) not in published and row["new_provider_host"]:
+            for origin in row["provenance"]:
+                host_scores.setdefault(origin["playlist_url"], set()).add(row["provider_host"])
+    scanned_urls = {source["url"] for source, _ in results if source.get("status") == "ok"}
+    for url, catalog in discovery_state.get("catalogs", {}).items():
+        if url in scanned_urls:
+            catalog["missing_unfamiliar_host_count"] = len(host_scores.get(url, ()))
+    report["summary"]["missing_channels_with_unfamiliar_host_candidates"] = len({
+        r["tvg_id"] for r in report["candidates"] if channels and
+        channel_key(r["tvg_id"]) not in published and r["new_provider_host"]})
     report["summary"].update(search)
     report["summary"]["scan_budget_seconds"] = 600
     report["summary"].update(
@@ -362,7 +419,11 @@ def main():
     (args.out / "playlist-scrub.json").write_text(json.dumps(report, indent=2))
     lines = ["## Playlist scrub (advisory)", "", f"Prior inventory: {prior['status']}.", "",
              *[f"- {k.replace('_', ' ')}: **{v}**" for k, v in report["summary"].items()], "",
+             "Decoder results expire from current leads after 24 hours. No count represents approved recoveries.",
              "Different hosts do not establish independent origins. Probe success is not promotion.",
+             "", "| Channel | Host | Result | Tested at |", "|---|---|---|---|",
+             *[f"| {r['channel']} | {r['host']} | {r['status']} | {r['tested_at']} |"
+               for r in report["candidate_results"]], "",
              "Full URLs, source provenance and probe evidence are in the playlist-scrub artifact."]
     summary = "\n".join(lines) + "\n"
     (args.out / "playlist-scrub.md").write_text(summary)

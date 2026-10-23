@@ -138,11 +138,37 @@ class PlaylistScrubTests(unittest.TestCase):
              patch.object(scrub.build, "_validate_direct_media_survival", return_value={"status": "ok"}):
             report, seen = scrub.run(self.config, ROSTER, {}, [], samples, NOW, 1)
         self.assertEqual(report["summary"]["unprobed_retained_candidates"], 1)
-        self.assertEqual(report["summary"]["decoder_passed_unapproved_leads"], 1)
+        self.assertEqual(report["summary"]["candidate_historical_decode_requires_recheck"], 1)
         replay, _ = scrub.run(self.config, ROSTER, {"seen": seen}, [], sources(status="failed"), NOW)
         self.assertEqual(replay["summary"]["unprobed_retained_candidates"], 1)
-        self.assertEqual(replay["summary"]["decoder_passed_unapproved_leads"], 1)
+        self.assertEqual(replay["summary"]["candidate_historical_decode_requires_recheck"], 1)
         self.assertEqual(replay["summary"]["promotions"], 0)
+
+    def test_current_decode_distinguishes_missing_from_backup_and_expires(self):
+        row = {"tvg_id": "History.us", "probe": {
+            "tested_at": NOW.isoformat(), "health": {"status": "ok"},
+            "decoder": {"status": "ok"}}}
+        self.assertEqual(scrub.candidate_status(row, NOW, []),
+                         "missing_channel_decode_requires_identity_and_full_qa")
+        self.assertEqual(scrub.candidate_status(row, NOW, ["History.us"]),
+                         "backup_decode_requires_identity_and_full_qa")
+        self.assertEqual(scrub.candidate_status(row, NOW + dt.timedelta(days=2), []),
+                         "historical_decode_requires_recheck")
+        row["probe"]["health"] = {"status": "failed", "http_status": 403}
+        self.assertEqual(scrub.candidate_status(row, NOW, []), "failed_health")
+
+    def test_probe_budget_diversifies_hosts_before_backups(self):
+        rows = [{"tvg_id": channel, "url": "https://" + host + "/" + str(i),
+                 "headers": {}, "provider_host": host, "needs_probe": True,
+                 "new_provider_host": True, "first_seen": "a", "key": str(i)}
+                for i, (channel, host) in enumerate([
+                    ("USANetwork.us", "a.example"), ("USANetwork.us", "a.example"),
+                    ("USANetwork.us", "b.example"), ("USANetwork.us", "c.example"),
+                    ("History.us", "d.example")])]
+        with patch.object(scrub.build, "_probe_stream", return_value={"status": "failed"}):
+            scrub.triage(rows, self.config, 3, {scrub.channel_key("History.us")})
+        self.assertEqual({r["provider_host"] for r in rows if r.get("probe")},
+                         {"a.example", "b.example", "c.example"})
 
     def test_search_continues_past_known_lists_and_stops_after_target_batch(self):
         old = {"seen": {"old": {"url": entry()["url"]}}}

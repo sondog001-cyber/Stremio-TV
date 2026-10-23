@@ -45,7 +45,7 @@ def repository_of(url):
     return None
 
 
-def discover(previous, configured, now, get=api_get, seconds=120):
+def discover(previous, configured, now, get=api_get, seconds=120, missing_ids=()):
     """Rotate search/page and retained catalogs across runs, including empty searches.
 
     Repository discovery is a lead, not evidence of a new independent media origin.
@@ -54,14 +54,22 @@ def discover(previous, configured, now, get=api_get, seconds=120):
     started = time.monotonic()
     state = previous.get('provider_discovery') or {}
     cursor = int(state.get('cursor', 0))
-    query = QUERIES[cursor % len(QUERIES)]
-    page = 1 + (cursor // len(QUERIES)) % 5
+    missing = sorted(set(missing_ids))
+    target = missing[(cursor // 3) % len(missing)] if missing and cursor % 3 != 2 else None
+    # Two targeted runs, then one broad run: avoid permanently narrowing discovery.
+    if target:
+        name = re.sub(r"[^A-Za-z0-9 ]", " ", target.split(".")[0])
+        query = f'"{name}" iptv in:name,description,readme fork:false archived:false'
+        page = 1
+    else:
+        query = QUERIES[(cursor // 3 if missing else cursor) % len(QUERIES)]
+        page = 1 + (cursor // len(QUERIES)) % 5
     stamp = now.isoformat()
     catalogs = dict(state.get('catalogs') or {})
     checked = dict(state.get('checked_repositories') or {})
     known_urls = {s['url'] for s in configured}
     known_repos = {repository_of(u) for u in known_urls}
-    report = {'query': query, 'page': page, 'repositories_inspected': 0,
+    report = {'query': query, 'target_channel': target, 'missing_channel_count': len(missing), 'page': page, 'repositories_inspected': 0,
               'new_playlist_documents': 0, 'errors': [], 'stop_reason': 'search-exhausted'}
     try:
         result = get('search/repositories?' + urllib.parse.urlencode(
@@ -115,8 +123,15 @@ def discover(previous, configured, now, get=api_get, seconds=120):
         report['stop_reason'] = 'search-unavailable'
     # Keep a bounded history; take the least recently scanned twelve next.
     catalogs = dict(sorted(catalogs.items(), key=lambda x: x[1].get('discovered_at', ''), reverse=True)[:128])
-    selected = sorted((v for u, v in catalogs.items() if u not in known_urls),
-                      key=lambda x: (x.get('last_scan', ''), x['url']))[:12]
+    available = [v for u, v in catalogs.items() if u not in known_urls]
+    # Reserve half the catalog slots for exploration so past winners cannot starve
+    # unscanned projects. Rank the remainder by measured safe missing-channel hosts.
+    exploration = sorted(available, key=lambda x: (x.get('last_scan', ''), x['url']))[:6]
+    chosen = {x['url'] for x in exploration}
+    promising = sorted((x for x in available if x['url'] not in chosen),
+                       key=lambda x: (-x.get('missing_unfamiliar_host_count', 0),
+                                      x.get('last_scan', ''), x['url']))[:12-len(exploration)]
+    selected = exploration + promising
     for row in selected:
         catalogs[row['url']] = {**row, 'last_scan': stamp}
     checked = dict(sorted(checked.items(), key=lambda x: x[1].get('checked_at', ''), reverse=True)[:500])
