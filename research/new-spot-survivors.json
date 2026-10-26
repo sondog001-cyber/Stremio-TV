@@ -1,0 +1,42 @@
+{
+  "research_run_id": 38782282637,
+  "artifact_id": 11995927775,
+  "candidates": [
+    {
+      "tvg_id": "NBATV.us",
+      "url": "https://pb-5pdyic0cu7tri.akamaized.net/NBA.m3u8",
+      "headers": {},
+      "provenance": [
+        {
+          "repo": "Kingdavid3g/personal-free-tv",
+          "document_url": "https://raw.githubusercontent.com/Kingdavid3g/personal-free-tv/main/channels.m3u",
+          "observed_sha256": "c18c57d6722594d73674d74f7bb841c7b0ad8b0da7e3ec47967048d9060796c6"
+        }
+      ]
+    },
+    {
+      "tvg_id": "VICETV.us",
+      "url": "https://d1ocru52bkg5e9.cloudfront.net/VICE.m3u8",
+      "headers": {},
+      "provenance": [
+        {
+          "repo": "Kingdavid3g/personal-free-tv",
+          "document_url": "https://raw.githubusercontent.com/Kingdavid3g/personal-free-tv/main/channels.m3u",
+          "observed_sha256": "c18c57d6722594d73674d74f7bb841c7b0ad8b0da7e3ec47967048d9060796c6"
+        }
+      ]
+    },
+    {
+      "tvg_id": "ESPNews.us",
+      "url": "http://41.205.93.154/ESPNNEWS/index.m3u8",
+      "headers": {},
+      "provenance": [
+        {
+          "repo": "fortvna/iptv",
+          "document_url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u",
+          "observed_sha256": "417d299f31f53256d5b63ce28be5d43490387ac9e4a37e26a319da5f8700c6af"
+        }
+      ]
+    }
+  ]
+}
