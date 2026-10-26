@@ -1,0 +1,13 @@
+{
+  "baseline_run": 39067124923,
+  "inventory_run": 39075316592,
+  "production_approved": false,
+  "missing_ids": ["WPVI.us", "WCAU.us", "KYW.us", "WPHL.us", "WPSG.us", "CNBC.us", "CBSSportsNetwork.us", "NBCSportsPhiladelphiaPlus.us", "USANetwork.us", "SundanceTV.us", "MagnoliaNetwork.us", "HallmarkMystery.us", "SmithsonianChannel.us", "HallmarkFamily.us", "StarzCinema.us", "StarzComedy.us", "StarzEdge.us", "StarzEncoreSpanish.us", "CinemaxClassics.us", "HBOHits.us", "HBOMovies.us", "TeenNick.us", "RFDTV.us"],
+  "priority_candidates": [
+    {"tvg_id":"CNBC.us", "url":"http://4.30.180.36:8420/cnbc/index.m3u8?token=test", "headers":{}, "family":"github-playlist", "provenance":"https://raw.githubusercontent.com/wizakorhd/iptv/main/playlist.m3u", "review_reason":"Fresh scrub at 2026-10-17T20:54:04Z passed 2/2 normal decoder checks after production burn-in 403. Isolated follow-up only; do not clear production cooldown or grant override."},
+    {"tvg_id":"NationalGeographic.us", "url":"http://198.58.104.90:8989/natgeo/index.m3u8", "headers":{}, "family":"iptv-org", "provenance":"https://raw.githubusercontent.com/iptv-org/iptv/master/streams/us.m3u", "review_reason":"Verified branded NatGeo footage and guide consistency in run38908305953; fresh playback resilience review only, not a new recovery."},
+    {"tvg_id":"History.us", "url":"http://4.30.180.36:8420/history/index.m3u8?token=test", "headers":{}, "family":"github-playlist", "provenance":"https://raw.githubusercontent.com/wizakorhd/iptv/main/playlist.m3u", "review_reason":"Scrub normal decoder pass 2026-10-17T05:00:43Z; independent programming capture required, no approval or cooldown change."},
+    {"tvg_id":"DisneyChannel.us", "url":"http://4.30.180.36:8420/disneychannel/index.m3u8?token=test", "headers":{}, "family":"github-playlist", "provenance":"https://raw.githubusercontent.com/wizakorhd/iptv/main/playlist.m3u", "review_reason":"Scrub normal decoder pass 2026-10-17T18:57:02Z; independent programming capture required, no approval or cooldown change."}
+  ],
+  "excluded_decoder_lead": {"tvg_id":"VICETV.us", "reason":"Already published identity; earlier exact candidate samples did not match configured US programme. Not counted as a recovery and not blindly repeated."}
+}
