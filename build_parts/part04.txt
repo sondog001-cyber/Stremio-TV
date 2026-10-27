@@ -5809,6 +5809,8 @@ def channel_meta(
         meta["videos"] = [{
             "id": channel["id"],
             "title": "Watch live",
+            "season": 0,
+            "episode": 0,
             "released": "1970-01-01T00:00:00Z",
             "available": True,
             "overview": "Play this channel live now. Guide listings are not recordings or catch-up streams.",

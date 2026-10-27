@@ -13,6 +13,10 @@ We do not have a device request trace, so the exact client failure is unproven.
 - Channel detail metadata includes an explicit, untimed `Watch live` video
   using that same ID. Its historical `released` value avoids an Upcoming gate;
   it describes live playback, not an actual historical broadcast.
+- Following a failed device test of the untimed entry, the live video explicitly
+  declares `season: 0` and `episode: 0` for clients requiring series coordinates.
+  This single fallback retains the channel ID and existing live stream resource;
+  the timed guide programmes keep their original metadata.
 - Date-filtered EPG catalogs retain only their original timed programmes.
   Detail metadata retains the timed programmes and native scheduling hint.
 - No inline video streams, programme-ID aliases, catch-up claims, alternate

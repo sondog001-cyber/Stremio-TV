@@ -30,10 +30,12 @@ class LivePlaybackFallbackTests(unittest.TestCase):
         detail = build.channel_meta(self.channel, self.programmes, live_fallback=True)
         live = detail["videos"][0]
         self.assertEqual(live["title"], "Watch live")
+        self.assertEqual(live["season"], 0)
+        self.assertEqual(live["episode"], 0)
         self.assertTrue(live["available"])
         self.assertEqual(live["released"], "1970-01-01T00:00:00Z")
         self.assertIn("not recordings", live["overview"])
-        for field in ("startTime", "endTime", "season", "episode", "streams"):
+        for field in ("startTime", "endTime", "streams"):
             self.assertNotIn(field, live)
 
     def test_native_guide_and_future_programmes_are_unchanged(self):
