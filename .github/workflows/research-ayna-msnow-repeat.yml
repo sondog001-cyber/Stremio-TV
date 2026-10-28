@@ -1,0 +1,41 @@
+name: Research AynaOTT MS NOW three-window continuity (no deploy)
+
+on:
+  pull_request:
+    paths:
+      - "research/ayna_bravo_msnow_research.py"
+      - "research/ayna_msnow_repeat.py"
+      - "tests/test_ayna_msnow_repeat.py"
+      - ".github/workflows/research-ayna-msnow-repeat.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  msnow-three-windows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate bounded three-window analysis
+        run: |
+          python3 -m compileall -q research/ayna_msnow_repeat.py
+          python3 -m unittest tests.test_ayna_msnow_repeat -v
+      - name: Install real FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq -y ffmpeg
+      - name: Verify advancing HLS and three separate 60s decodes
+        run: |
+          python3 -m research.ayna_msnow_repeat \
+            --pause-seconds 15 \
+            --output research-results/ayna-hosts/msnow-3x60.json
+      - name: Store redacted research-only findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: msnow-ayna-three-window-no-deploy
+          path: research-results/ayna-hosts/msnow-3x60.json
+          if-no-files-found: warn
+          retention-days: 7
