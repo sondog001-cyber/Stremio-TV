@@ -1,0 +1,39 @@
+name: Verify three new source survivors (research only)
+
+on:
+  pull_request:
+    paths:
+      - "research/new-spot-survivors.json"
+      - "research/verify_spot_survivors.py"
+      - ".github/workflows/verify-spot-survivors.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repeated-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Assemble and verify the three direct upstream candidates
+        run: |
+          python assemble_build.py
+          python research/verify_spot_survivors.py
+      - name: Save actual channel frames and repeated decoder evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: new-spot-survivors
+          path: survivor-results/
+          if-no-files-found: warn
+          retention-days: 14

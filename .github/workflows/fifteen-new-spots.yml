@@ -1,0 +1,41 @@
+name: Test fifteen additional source spots (research only)
+
+on:
+  pull_request:
+    paths:
+      - "research/fifteen_new_spots.py"
+      - "research/fifteen-new-spots-*.json"
+      - ".github/workflows/fifteen-new-spots.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-and-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Assemble and test trusted project helpers
+        run: |
+          python assemble_build.py
+          python -m unittest discover -s tests -q
+      - name: Inspect new projects and probe exact non-FAST candidates
+        run: python research/fifteen_new_spots.py --out spot-results
+      - name: Preserve source-level compatibility and actual media evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fifteen-new-spots
+          path: spot-results/
+          if-no-files-found: warn
+          retention-days: 14

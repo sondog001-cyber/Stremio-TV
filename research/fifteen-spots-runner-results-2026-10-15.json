@@ -1,0 +1,2364 @@
+{
+  "advisory_only": true,
+  "spots": [
+    {
+      "repo": "yowmamasita/usa-tv-next",
+      "documents": [
+        {
+          "repo": "yowmamasita/usa-tv-next",
+          "path": "sources.yaml",
+          "url": "https://raw.githubusercontent.com/yowmamasita/usa-tv-next/main/sources.yaml",
+          "blob_sha": "f15f04489960bd3eaffa63f21cb2e5af1758b85a",
+          "sha256": "11720e502a876f464993e895fad847f59846c9474ac653dbda1b50a70e2f6450",
+          "status": "ok",
+          "bytes": 22171,
+          "observed_sha256": "11720e502a876f464993e895fad847f59846c9474ac653dbda1b50a70e2f6450",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "yowmamasita/usa-tv-next",
+          "path": "catalog/tv/all.json",
+          "url": "https://raw.githubusercontent.com/yowmamasita/usa-tv-next/main/catalog/tv/all.json",
+          "blob_sha": "c7b0589592670728b3c0449889b35252159c68e9",
+          "sha256": "dfdf439872600b388b0b16c116d1ceb3196dc0b5f31d8a5f6d4fe207090bb594",
+          "status": "ok",
+          "bytes": 137465,
+          "observed_sha256": "dfdf439872600b388b0b16c116d1ceb3196dc0b5f31d8a5f6d4fe207090bb594",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "yowmamasita/usa-tv-next",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/yowmamasita/usa-tv-next/main/README.md",
+          "blob_sha": "c3154f716b52ce5988335443919d269742c54860",
+          "sha256": "3531b5e7a55c5eda4778091958fe1d650640cc7fa43993e5ae40f424277828c4",
+          "status": "ok",
+          "bytes": 986,
+          "observed_sha256": "3531b5e7a55c5eda4778091958fe1d650640cc7fa43993e5ae40f424277828c4",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 240,
+      "exact_matches": 0,
+      "name_hints": 137,
+      "rejected": 35,
+      "known_urls": 7,
+      "new_urls": 95
+    },
+    {
+      "repo": "mrcanelas/aiolivetv",
+      "documents": [
+        {
+          "repo": "mrcanelas/aiolivetv",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/mrcanelas/aiolivetv/main/README.md",
+          "blob_sha": "a1db7ff4ed534242ab55580e38076b2af9314a07",
+          "sha256": "75154e1daf8bca6df32156826768c9c8a9738144b7120c5a5faa51377ed35d0f",
+          "status": "ok",
+          "bytes": 7576,
+          "observed_sha256": "75154e1daf8bca6df32156826768c9c8a9738144b7120c5a5faa51377ed35d0f",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "mrcanelas/aiolivetv",
+          "path": "packages/core/src/config/schema/builtins.ts",
+          "url": "https://raw.githubusercontent.com/mrcanelas/aiolivetv/main/packages/core/src/config/schema/builtins.ts",
+          "blob_sha": "514b7b2711499e7dea79e050c59ac8644c9cc931",
+          "sha256": "ca530b8653d69b3070b549b99aa21f5c356151a2aa0aaef22f56fe6321f2fbec",
+          "status": "ok",
+          "bytes": 14121,
+          "observed_sha256": "ca530b8653d69b3070b549b99aa21f5c356151a2aa0aaef22f56fe6321f2fbec",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "benedyktdryl/live-tv",
+      "documents": [
+        {
+          "repo": "benedyktdryl/live-tv",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/benedyktdryl/live-tv/main/README.md",
+          "blob_sha": "1f3f79fd6df144c2c129b0872394a292e04ddf05",
+          "sha256": "68c532f0c8e60e0fc7b06cb914dd80ec6c58f742557bcc382289b47854a85330",
+          "status": "ok",
+          "bytes": 20567,
+          "observed_sha256": "68c532f0c8e60e0fc7b06cb914dd80ec6c58f742557bcc382289b47854a85330",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "benedyktdryl/live-tv",
+          "path": "packages/core/src/scraper.ts",
+          "url": "https://raw.githubusercontent.com/benedyktdryl/live-tv/main/packages/core/src/scraper.ts",
+          "blob_sha": "c0f00b4b293452594a3d6fb6c7661e4e425ee35c",
+          "sha256": "935f356dce926ba870278e3dd570f59849fed4aa8629fe73786b699b33955457",
+          "status": "ok",
+          "bytes": 313,
+          "observed_sha256": "935f356dce926ba870278e3dd570f59849fed4aa8629fe73786b699b33955457",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "dev1niscool/stremio-live-tv",
+      "documents": [
+        {
+          "repo": "dev1niscool/stremio-live-tv",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/dev1niscool/stremio-live-tv/main/README.md",
+          "blob_sha": "174a5df19805e8d50fed2246919ea64c077b485e",
+          "sha256": "1f44fb48139609876c904167e2510ab00b282fec6fa758974dc057232f39113b",
+          "status": "ok",
+          "bytes": 19195,
+          "observed_sha256": "1f44fb48139609876c904167e2510ab00b282fec6fa758974dc057232f39113b",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "dev1niscool/stremio-live-tv",
+          "path": "playlists.example.json",
+          "url": "https://raw.githubusercontent.com/dev1niscool/stremio-live-tv/main/playlists.example.json",
+          "blob_sha": "3a127c240bd0ddf48062e24f5a1549feb0b70456",
+          "sha256": "80a00d1e118b83ff3386265617393aa0879e62a7b833380a7c73e31c925a1b64",
+          "status": "ok",
+          "bytes": 230,
+          "observed_sha256": "80a00d1e118b83ff3386265617393aa0879e62a7b833380a7c73e31c925a1b64",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "harshmhta/astra-stremio-addon",
+      "documents": [
+        {
+          "repo": "harshmhta/astra-stremio-addon",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/harshmhta/astra-stremio-addon/main/README.md",
+          "blob_sha": "f4ef46cc3f38f0c81389a2c4cdd47faa8828ae41",
+          "sha256": "042a9cc7e75934cfefb1dad886d42a4203ee69f7e116bdd969a451cc57bd113c",
+          "status": "ok",
+          "bytes": 9692,
+          "observed_sha256": "042a9cc7e75934cfefb1dad886d42a4203ee69f7e116bdd969a451cc57bd113c",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "harshmhta/astra-stremio-addon",
+          "path": "src/live/channels.js",
+          "url": "https://raw.githubusercontent.com/harshmhta/astra-stremio-addon/main/src/live/channels.js",
+          "blob_sha": "021e467b666c140f6badd6717711ec9777d00664",
+          "sha256": "2b2208720def343c29de928a925a16992212aa582b58d81e911367743d045a96",
+          "status": "ok",
+          "bytes": 3481,
+          "observed_sha256": "2b2208720def343c29de928a925a16992212aa582b58d81e911367743d045a96",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "gauravsuman007/stremio-tv-plugin-live-tv",
+      "documents": [
+        {
+          "repo": "gauravsuman007/stremio-tv-plugin-live-tv",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/gauravsuman007/stremio-tv-plugin-live-tv/main/README.md",
+          "blob_sha": "3041dd2d0bc2a6751081bf2a6405a56dbf8ccd2f",
+          "sha256": "ca98b8430bc495d56e8df4d92fd0ca9d5277d29f200e0d0746a683e355ff6988",
+          "status": "ok",
+          "bytes": 1616,
+          "observed_sha256": "ca98b8430bc495d56e8df4d92fd0ca9d5277d29f200e0d0746a683e355ff6988",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "gauravsuman007/stremio-tv-plugin-live-tv",
+          "path": "scrapers/iptv-org.mts",
+          "url": "https://raw.githubusercontent.com/gauravsuman007/stremio-tv-plugin-live-tv/main/scrapers/iptv-org.mts",
+          "blob_sha": "ddeaaba98d3993998f286ac06ff9d01bcffd6316",
+          "sha256": "70f8ff964126582780966a8d58bf741a65d127997a77c52b4e156da5164b1e17",
+          "status": "ok",
+          "bytes": 7890,
+          "observed_sha256": "70f8ff964126582780966a8d58bf741a65d127997a77c52b4e156da5164b1e17",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "cyrillekey/onair-stack",
+      "documents": [
+        {
+          "repo": "cyrillekey/onair-stack",
+          "path": "readme.md",
+          "url": "https://raw.githubusercontent.com/cyrillekey/onair-stack/main/readme.md",
+          "blob_sha": "3ef280026dd0b5da64f9ea04f3148500da57ac09",
+          "sha256": "c19100d5e0f648e81c4025c3fc3a0340bb5d542727492b35ccc761655b474bdb",
+          "status": "ok",
+          "bytes": 3904,
+          "observed_sha256": "c19100d5e0f648e81c4025c3fc3a0340bb5d542727492b35ccc761655b474bdb",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "cyrillekey/onair-stack",
+          "path": "collector/README.md",
+          "url": "https://raw.githubusercontent.com/cyrillekey/onair-stack/main/collector/README.md",
+          "blob_sha": "3cf50a82c2fa5d7837545dc56f5991ce4bba0be9",
+          "sha256": "2303a5a8c4df2d301f40a890c56988ea803d3f3bd9e0e07e3dd196d431c67b2e",
+          "status": "ok",
+          "bytes": 2022,
+          "observed_sha256": "2303a5a8c4df2d301f40a890c56988ea803d3f3bd9e0e07e3dd196d431c67b2e",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "xJEYDAin/iptv-scraper",
+      "documents": [
+        {
+          "repo": "xJEYDAin/iptv-scraper",
+          "path": "output/all_merged.m3u",
+          "url": "https://raw.githubusercontent.com/xJEYDAin/iptv-scraper/master/output/all_merged.m3u",
+          "blob_sha": "975061fce2c46069be1683cd0145f2dd7f9c0171",
+          "sha256": "a8a2884b2f27454de3f9c84d10c41842bf353f3cda88e601a767378b5751016f",
+          "status": "ok",
+          "bytes": 511388,
+          "observed_sha256": "a8a2884b2f27454de3f9c84d10c41842bf353f3cda88e601a767378b5751016f",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "xJEYDAin/iptv-scraper",
+          "path": "fetch/sources.py",
+          "url": "https://raw.githubusercontent.com/xJEYDAin/iptv-scraper/master/fetch/sources.py",
+          "blob_sha": "aba1ad6514eb6f73cd2d3eb36966c6fb22e32bdc",
+          "sha256": "ed1f1accd8a0f0db2a1f1510a65301c27a8043afeaf2d8f0f9c45a596e6ecf48",
+          "status": "ok",
+          "bytes": 726,
+          "observed_sha256": "ed1f1accd8a0f0db2a1f1510a65301c27a8043afeaf2d8f0f9c45a596e6ecf48",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "xJEYDAin/iptv-scraper",
+          "path": "filtered/epg-pw_20261015.m3u",
+          "url": "https://raw.githubusercontent.com/xJEYDAin/iptv-scraper/master/filtered/epg-pw_20261015.m3u",
+          "blob_sha": "1dec971d134d510bca0c367131ed1d99a37c3e4f",
+          "sha256": "da83c7222982c5438d22dceaf2e0b3d672b4d97d35f3fbf9549e7d4cc1890d07",
+          "status": "ok",
+          "bytes": 746362,
+          "observed_sha256": "da83c7222982c5438d22dceaf2e0b3d672b4d97d35f3fbf9549e7d4cc1890d07",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 4800,
+      "exact_matches": 0,
+      "name_hints": 39,
+      "rejected": 3,
+      "known_urls": 11,
+      "new_urls": 25
+    },
+    {
+      "repo": "rajhodedara/live-sport-plugin",
+      "documents": [
+        {
+          "repo": "rajhodedara/live-sport-plugin",
+          "path": "src/providers/CdnLiveProvider.js",
+          "url": "https://raw.githubusercontent.com/rajhodedara/live-sport-plugin/main/src/providers/CdnLiveProvider.js",
+          "blob_sha": "5ad76c0d2701ff1763b38603021de335fc7a69d4",
+          "sha256": "03adec8c4a6371d172556ea2e1ebfed22bfdb93f33aad52c5369a1c6b40f7268",
+          "status": "ok",
+          "bytes": 15023,
+          "observed_sha256": "03adec8c4a6371d172556ea2e1ebfed22bfdb93f33aad52c5369a1c6b40f7268",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "rajhodedara/live-sport-plugin",
+          "path": "src/providers/DamiTvProvider.js",
+          "url": "https://raw.githubusercontent.com/rajhodedara/live-sport-plugin/main/src/providers/DamiTvProvider.js",
+          "blob_sha": "2a7d564990cbe035e25c29c506b0421be4052784",
+          "sha256": "5d807ce60a0dc83182a449342aaeed586cb025486ebaa89b6dd8e5932fb30372",
+          "status": "ok",
+          "bytes": 14287,
+          "observed_sha256": "5d807ce60a0dc83182a449342aaeed586cb025486ebaa89b6dd8e5932fb30372",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "rajhodedara/live-sport-plugin",
+          "path": "src/providers/TimStreamsProvider.js",
+          "url": "https://raw.githubusercontent.com/rajhodedara/live-sport-plugin/main/src/providers/TimStreamsProvider.js",
+          "blob_sha": "eefca2989a14646d7fd2c96676c9e46e02748ba1",
+          "sha256": "25b57ccbcbc497800d9c0311d8ce9bb059f4a5c08375f24dd3c715aadc4be111",
+          "status": "ok",
+          "bytes": 8247,
+          "observed_sha256": "25b57ccbcbc497800d9c0311d8ce9bb059f4a5c08375f24dd3c715aadc4be111",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "rajhodedara/live-sport-plugin",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/rajhodedara/live-sport-plugin/main/README.md",
+          "blob_sha": "2711090213f1c9cd801ba84511710353dec762a6",
+          "sha256": "0a4e698b29e37c168dd26b94696da18697367ab927f7724fdcf7c565b1f815b6",
+          "status": "ok",
+          "bytes": 16218,
+          "observed_sha256": "0a4e698b29e37c168dd26b94696da18697367ab927f7724fdcf7c565b1f815b6",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "addue06-design/live-tv-scraper",
+      "documents": [
+        {
+          "repo": "addue06-design/live-tv-scraper",
+          "path": "sports_channels.m3u",
+          "url": "https://raw.githubusercontent.com/addue06-design/live-tv-scraper/main/sports_channels.m3u",
+          "blob_sha": "73f8765375ca79554c84fd2cd34dbbbd01fa3424",
+          "sha256": "0043aaef76927e2fb2adb7c6fb7e513c7b9b32c3a9280a4c560f70365b6c1ffe",
+          "status": "ok",
+          "bytes": 217,
+          "observed_sha256": "0043aaef76927e2fb2adb7c6fb7e513c7b9b32c3a9280a4c560f70365b6c1ffe",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "addue06-design/live-tv-scraper",
+          "path": "scraper.py",
+          "url": "https://raw.githubusercontent.com/addue06-design/live-tv-scraper/main/scraper.py",
+          "blob_sha": "f6dd082139321e3263418305e7fb26f326b47c60",
+          "sha256": "1b2c02d9b3d270de20b36118986b4dae9122c46ea77ad3ea55f9493ee400533b",
+          "status": "ok",
+          "bytes": 5963,
+          "observed_sha256": "1b2c02d9b3d270de20b36118986b4dae9122c46ea77ad3ea55f9493ee400533b",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 1,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "Kingdavid3g/personal-free-tv",
+      "documents": [
+        {
+          "repo": "Kingdavid3g/personal-free-tv",
+          "path": "playlist.m3u",
+          "url": "https://raw.githubusercontent.com/Kingdavid3g/personal-free-tv/main/playlist.m3u",
+          "blob_sha": "847c3aae31d16f81544633ecc61b2aaa86047e68",
+          "sha256": "2fa4851f7bf19c5156aefb8b84fa4cdc018b3227bc8567e8586f164bca7699fc",
+          "status": "ok",
+          "bytes": 285013,
+          "observed_sha256": "2fa4851f7bf19c5156aefb8b84fa4cdc018b3227bc8567e8586f164bca7699fc",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "Kingdavid3g/personal-free-tv",
+          "path": "channels.m3u",
+          "url": "https://raw.githubusercontent.com/Kingdavid3g/personal-free-tv/main/channels.m3u",
+          "blob_sha": "27e6d3523bb77809c0a90de0ba35f28558dbab28",
+          "sha256": "c18c57d6722594d73674d74f7bb841c7b0ad8b0da7e3ec47967048d9060796c6",
+          "status": "ok",
+          "bytes": 169729,
+          "observed_sha256": "c18c57d6722594d73674d74f7bb841c7b0ad8b0da7e3ec47967048d9060796c6",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 2334,
+      "exact_matches": 5,
+      "name_hints": 0,
+      "rejected": 1,
+      "known_urls": 2,
+      "new_urls": 2
+    },
+    {
+      "repo": "kateurvas27/english-m3u-playlists",
+      "documents": [
+        {
+          "repo": "kateurvas27/english-m3u-playlists",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/kateurvas27/english-m3u-playlists/main/README.md",
+          "blob_sha": "a9ea7f62fddfd4d8a37baac51d60403ac228fe3f",
+          "sha256": "183d506cb80b16ac8542470e818e29e7d3e20321d9a7fe36692b1558da43a74e",
+          "status": "ok",
+          "bytes": 3162,
+          "observed_sha256": "183d506cb80b16ac8542470e818e29e7d3e20321d9a7fe36692b1558da43a74e",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "PeterHeoi/IPTV-USA-HK",
+      "documents": [
+        {
+          "repo": "PeterHeoi/IPTV-USA-HK",
+          "path": "playlists/playlist_usa.m3u8",
+          "url": "https://raw.githubusercontent.com/PeterHeoi/IPTV-USA-HK/master/playlists/playlist_usa.m3u8",
+          "blob_sha": "5f2b1ff797e727ea3e92051cb5f755a49f12964a",
+          "sha256": "171258edfb99c13938c635643a108bda83abe156801538aa16b759488c114f32",
+          "status": "ok",
+          "bytes": 11357,
+          "observed_sha256": "171258edfb99c13938c635643a108bda83abe156801538aa16b759488c114f32",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "PeterHeoi/IPTV-USA-HK",
+          "path": "lists/usa.md",
+          "url": "https://raw.githubusercontent.com/PeterHeoi/IPTV-USA-HK/master/lists/usa.md",
+          "blob_sha": "3eef7342d5acf469ad421c6a0676c4de94e57774",
+          "sha256": "9ed83c57064156511597a2b7dd0fca4947cd4316bc8f706d26dcdbb47290a841",
+          "status": "ok",
+          "bytes": 5164,
+          "observed_sha256": "9ed83c57064156511597a2b7dd0fca4947cd4316bc8f706d26dcdbb47290a841",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 20,
+      "exact_matches": 3,
+      "name_hints": 0,
+      "rejected": 1,
+      "known_urls": 2,
+      "new_urls": 0
+    },
+    {
+      "repo": "rebeliptv/iptv",
+      "documents": [
+        {
+          "repo": "rebeliptv/iptv",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/rebeliptv/iptv/master/README.md",
+          "blob_sha": "b9636b49cd55a88476b265fc2595b6d81e73757d",
+          "sha256": "557a3d57d91bc0b9a597f4ee454519019b10b0472fc6a13f6351a897fb8f9bdd",
+          "status": "ok",
+          "bytes": 50714,
+          "observed_sha256": "557a3d57d91bc0b9a597f4ee454519019b10b0472fc6a13f6351a897fb8f9bdd",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "konanda-sg/Mrgify-Tv",
+      "documents": [
+        {
+          "repo": "konanda-sg/Mrgify-Tv",
+          "path": "playlist.m3u",
+          "url": "https://raw.githubusercontent.com/konanda-sg/Mrgify-Tv/main/playlist.m3u",
+          "blob_sha": "21d7b24d09dc120746cea3f93bfb1442de77d48f",
+          "sha256": "4314e1e69f93a10222234fcaea133a2f96e86e97291c3c0438381677b2c76ad6",
+          "status": "ok",
+          "bytes": 143822,
+          "observed_sha256": "4314e1e69f93a10222234fcaea133a2f96e86e97291c3c0438381677b2c76ad6",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "konanda-sg/Mrgify-Tv",
+          "path": "Readme.md",
+          "url": "https://raw.githubusercontent.com/konanda-sg/Mrgify-Tv/main/Readme.md",
+          "blob_sha": "497fa7cc986ed8933fa7d9e11accca689aa4ad90",
+          "sha256": "d625c90419766cd66432e7f3f3ff9904c620445ded363076e0c28238368523d1",
+          "status": "ok",
+          "bytes": 4165,
+          "observed_sha256": "d625c90419766cd66432e7f3f3ff9904c620445ded363076e0c28238368523d1",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 545,
+      "exact_matches": 0,
+      "name_hints": 31,
+      "rejected": 27,
+      "known_urls": 2,
+      "new_urls": 2
+    },
+    {
+      "repo": "hmlendea/iptv-playlist-aggregator",
+      "documents": [
+        {
+          "repo": "hmlendea/iptv-playlist-aggregator",
+          "path": "IptvPlaylistAggregator/Data/providers.xml",
+          "url": "https://raw.githubusercontent.com/hmlendea/iptv-playlist-aggregator/master/IptvPlaylistAggregator/Data/providers.xml",
+          "blob_sha": "6f0a70fb629ac161c4f8684a2e1d24e0082815a2",
+          "sha256": "7484d07fa5c4f395f21bc7118b2f372b2b86fbb8a112c489e21e185ed3499e8c",
+          "status": "ok",
+          "bytes": 8161,
+          "observed_sha256": "7484d07fa5c4f395f21bc7118b2f372b2b86fbb8a112c489e21e185ed3499e8c",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "windozalmi/Playlist_IPTV_Pribadi",
+      "documents": [
+        {
+          "repo": "windozalmi/Playlist_IPTV_Pribadi",
+          "path": "IPTV Indonesia by WINDO ZALMI",
+          "url": "https://raw.githubusercontent.com/windozalmi/Playlist_IPTV_Pribadi/m3u-ipvt/IPTV%20Indonesia%20by%20WINDO%20ZALMI",
+          "blob_sha": "7f07c8ae24e7d85b9367c6344be42885d8e50225",
+          "sha256": "0bd1faf78fc499f5e520b40c103258db4b4d654d3ff56cbe2fb067c00676091e",
+          "status": "ok",
+          "bytes": 42966,
+          "observed_sha256": "0bd1faf78fc499f5e520b40c103258db4b4d654d3ff56cbe2fb067c00676091e",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "windozalmi/Playlist_IPTV_Pribadi",
+          "path": "Lancartech tv",
+          "url": "https://raw.githubusercontent.com/windozalmi/Playlist_IPTV_Pribadi/m3u-ipvt/Lancartech%20tv",
+          "blob_sha": "392d4e09e965bf9080508579e8ea4f939988de72",
+          "sha256": "1462e1adf851c9ef2a41d5ae28ac1fead90682a423c15f9f358b074e2e7bc3cf",
+          "status": "ok",
+          "bytes": 39312,
+          "observed_sha256": "1462e1adf851c9ef2a41d5ae28ac1fead90682a423c15f9f358b074e2e7bc3cf",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 304,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "EdenwareApps/Megacubo",
+      "documents": [
+        {
+          "repo": "EdenwareApps/Megacubo",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/EdenwareApps/Megacubo/master/README.md",
+          "blob_sha": "72e90f6c7e25e904b2e83a9c53d7b5f6f6432fb4",
+          "sha256": "a7907a509e43ee8332af74982f09ea6af0b443d931e6ab98af04b7a11d0a8356",
+          "status": "ok",
+          "bytes": 9803,
+          "observed_sha256": "a7907a509e43ee8332af74982f09ea6af0b443d931e6ab98af04b7a11d0a8356",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "sweetkitten07/US-iptv-playlists",
+      "documents": [
+        {
+          "repo": "sweetkitten07/US-iptv-playlists",
+          "path": "playlist.m3u",
+          "url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+          "blob_sha": "caf305100ae6558dfa5638690538baf59dd15d2e",
+          "sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec",
+          "status": "ok",
+          "bytes": 410946,
+          "observed_sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 1523,
+      "exact_matches": 12,
+      "name_hints": 0,
+      "rejected": 3,
+      "known_urls": 2,
+      "new_urls": 7
+    },
+    {
+      "repo": "Mark-609/IPTV-IPRadio-United-States",
+      "documents": [
+        {
+          "repo": "Mark-609/IPTV-IPRadio-United-States",
+          "path": "ABC.m3u",
+          "url": "https://raw.githubusercontent.com/Mark-609/IPTV-IPRadio-United-States/main/ABC.m3u",
+          "blob_sha": "8f29eaa902a18960de21871bd449abe47bf52ac1",
+          "sha256": "31bd4c7cd4b9bb5c18cedc757001184fe86a23280462dd55298b32f95b01412f",
+          "status": "ok",
+          "bytes": 18165,
+          "observed_sha256": "31bd4c7cd4b9bb5c18cedc757001184fe86a23280462dd55298b32f95b01412f",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "Mark-609/IPTV-IPRadio-United-States",
+          "path": "CBS.m3u",
+          "url": "https://raw.githubusercontent.com/Mark-609/IPTV-IPRadio-United-States/main/CBS.m3u",
+          "blob_sha": "088ef7228b34d57c23d2ff7bf693f17fc40de274",
+          "sha256": "a4acd8a4dd17e0b65fc2d45b57d01448688211c617cd0d349d72c3b2a194aabc",
+          "status": "ok",
+          "bytes": 27385,
+          "observed_sha256": "a4acd8a4dd17e0b65fc2d45b57d01448688211c617cd0d349d72c3b2a194aabc",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "Mark-609/IPTV-IPRadio-United-States",
+          "path": "NBC.m3u",
+          "url": "https://raw.githubusercontent.com/Mark-609/IPTV-IPRadio-United-States/main/NBC.m3u",
+          "blob_sha": "b3013540ac3e203767da08810cc861b943a7af6b",
+          "sha256": "313a707bb6aec2cb3a5a31b5b4fe3129940fc69f45bd52eb3b1b066aa3f440bc",
+          "status": "ok",
+          "bytes": 3270,
+          "observed_sha256": "313a707bb6aec2cb3a5a31b5b4fe3129940fc69f45bd52eb3b1b066aa3f440bc",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "Mark-609/IPTV-IPRadio-United-States",
+          "path": "FOX.m3u",
+          "url": "https://raw.githubusercontent.com/Mark-609/IPTV-IPRadio-United-States/main/FOX.m3u",
+          "blob_sha": "175f567986e80a7ea16dbeca00de0389546f7a89",
+          "sha256": "8ea0f587dd4bdda0d5a57a3ce827c3121c9227aabc0456bee1e249f4992e7fda",
+          "status": "ok",
+          "bytes": 20684,
+          "observed_sha256": "8ea0f587dd4bdda0d5a57a3ce827c3121c9227aabc0456bee1e249f4992e7fda",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "Mark-609/IPTV-IPRadio-United-States",
+          "path": "PBS.m3u",
+          "url": "https://raw.githubusercontent.com/Mark-609/IPTV-IPRadio-United-States/main/PBS.m3u",
+          "blob_sha": "6817097518dbbeb6be0e45bcc78cbc2e407ae877",
+          "sha256": "1b978212816722bcd9b25c8de847796f5d896255ce0c006828c834b852ba37d3",
+          "status": "ok",
+          "bytes": 5023,
+          "observed_sha256": "1b978212816722bcd9b25c8de847796f5d896255ce0c006828c834b852ba37d3",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "Mark-609/IPTV-IPRadio-United-States",
+          "path": "ESPN.m3u",
+          "url": "https://raw.githubusercontent.com/Mark-609/IPTV-IPRadio-United-States/main/ESPN.m3u",
+          "blob_sha": "701197b763eb55ec646c2fe7466cbe4e623ee029",
+          "sha256": "8a8501ed90de4f14a3a4450b0785dad4b37a56c8c42b624f83f99deb88468e50",
+          "status": "ok",
+          "bytes": 755,
+          "observed_sha256": "8a8501ed90de4f14a3a4450b0785dad4b37a56c8c42b624f83f99deb88468e50",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 232,
+      "exact_matches": 0,
+      "name_hints": 29,
+      "rejected": 1,
+      "known_urls": 0,
+      "new_urls": 28
+    },
+    {
+      "repo": "UKTVHUB/IPTVUNITEDSTATE2",
+      "documents": [
+        {
+          "repo": "UKTVHUB/IPTVUNITEDSTATE2",
+          "path": "index.html",
+          "url": "https://raw.githubusercontent.com/UKTVHUB/IPTVUNITEDSTATE2/main/index.html",
+          "blob_sha": "95b44c2db72a763695782d5be4e7c5e9de25f4a5",
+          "sha256": "ce26e077386236751d15efce237a8d24d2b30c79b3ce2449100545974b8a225e",
+          "status": "ok",
+          "bytes": 24604,
+          "observed_sha256": "ce26e077386236751d15efce237a8d24d2b30c79b3ce2449100545974b8a225e",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "1Gryfox/USA-Repository",
+      "documents": [
+        {
+          "repo": "1Gryfox/USA-Repository",
+          "path": "iptv test.txt",
+          "url": "https://raw.githubusercontent.com/1Gryfox/USA-Repository/master/iptv%20test.txt",
+          "blob_sha": "d3715a3ab988eee01159a16bfbde03be886062c2",
+          "sha256": "bc8dbdddfd5e1d9e8ee61b3a850690dd50bb279635058333ff530d2937f9b8c3",
+          "status": "ok",
+          "bytes": 14591,
+          "observed_sha256": "bc8dbdddfd5e1d9e8ee61b3a850690dd50bb279635058333ff530d2937f9b8c3",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 80,
+      "exact_matches": 0,
+      "name_hints": 5,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 5
+    },
+    {
+      "repo": "pjor94/IPTV",
+      "documents": [
+        {
+          "repo": "pjor94/IPTV",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/pjor94/IPTV/master/README.md",
+          "blob_sha": "5a0f85ac4d2f0d7e28e849bab5e10f98ae0964fc",
+          "sha256": "34262e7e95e8a7f34986c974c76becaa084f3a01bad280a1f5dcba0ab3448e0d",
+          "status": "ok",
+          "bytes": 1056,
+          "observed_sha256": "34262e7e95e8a7f34986c974c76becaa084f3a01bad280a1f5dcba0ab3448e0d",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "se7enfigureinc/iptv-english-north-america",
+      "documents": [
+        {
+          "repo": "se7enfigureinc/iptv-english-north-america",
+          "path": "iptv.m3u",
+          "url": "https://raw.githubusercontent.com/se7enfigureinc/iptv-english-north-america/main/iptv.m3u",
+          "blob_sha": "0547aefa3aced442e58e77bd8078f153af94e540",
+          "sha256": "97983c4e7eabe8ee743085f0667e9993a71b727fd2093dfd533d7855308b62da",
+          "status": "ok",
+          "bytes": 809617,
+          "observed_sha256": "97983c4e7eabe8ee743085f0667e9993a71b727fd2093dfd533d7855308b62da",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "se7enfigureinc/iptv-english-north-america",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/se7enfigureinc/iptv-english-north-america/main/README.md",
+          "blob_sha": "f25a62cd62262af47f0eef06afc5dfb6250f24bc",
+          "sha256": "06b01e163a36400aca1a35e3faa8809eb092dae88c4057a98684932d24ecf830",
+          "status": "ok",
+          "bytes": 2812,
+          "observed_sha256": "06b01e163a36400aca1a35e3faa8809eb092dae88c4057a98684932d24ecf830",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 3011,
+      "exact_matches": 79,
+      "name_hints": 0,
+      "rejected": 6,
+      "known_urls": 73,
+      "new_urls": 0
+    },
+    {
+      "repo": "CookCapitalInvest/iptv-playlist",
+      "documents": [
+        {
+          "repo": "CookCapitalInvest/iptv-playlist",
+          "path": "english-tv.m3u",
+          "url": "https://raw.githubusercontent.com/CookCapitalInvest/iptv-playlist/main/english-tv.m3u",
+          "blob_sha": "bcac80a4b26d57095909d0b3e84a6c3a5784a689",
+          "sha256": "2d4a1e7db16c28d74904ec2bfd0e2a2ab4f219ebb9d70520beee13c35f045e36",
+          "status": "ok",
+          "bytes": 735204,
+          "observed_sha256": "2d4a1e7db16c28d74904ec2bfd0e2a2ab4f219ebb9d70520beee13c35f045e36",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 3547,
+      "exact_matches": 0,
+      "name_hints": 141,
+      "rejected": 17,
+      "known_urls": 81,
+      "new_urls": 43
+    },
+    {
+      "repo": "JColeLatt/vlc-iptv-playlist",
+      "documents": [
+        {
+          "repo": "JColeLatt/vlc-iptv-playlist",
+          "path": "English_TV_Essentials_US.m3u",
+          "url": "https://raw.githubusercontent.com/JColeLatt/vlc-iptv-playlist/main/English_TV_Essentials_US.m3u",
+          "blob_sha": "923e3a5132086c68e4ff45d4f68803146fe27bcd",
+          "sha256": "78d1605ee2f3473c69791b10d25babef7e46a898087278ba58d53f07220e6640",
+          "status": "ok",
+          "bytes": 14578,
+          "observed_sha256": "78d1605ee2f3473c69791b10d25babef7e46a898087278ba58d53f07220e6640",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 67,
+      "exact_matches": 2,
+      "name_hints": 0,
+      "rejected": 1,
+      "known_urls": 1,
+      "new_urls": 0
+    },
+    {
+      "repo": "Sunstar16/FULL-IPTV-CHANNEL-PLAYLIST",
+      "documents": [
+        {
+          "repo": "Sunstar16/FULL-IPTV-CHANNEL-PLAYLIST",
+          "path": "Main Necessary Channels.m3u",
+          "url": "https://raw.githubusercontent.com/Sunstar16/FULL-IPTV-CHANNEL-PLAYLIST/main/Main%20Necessary%20Channels.m3u",
+          "blob_sha": "4e60386bd132c5e100717f07165cbee6e1fe86e8",
+          "sha256": "ec4ef41151e995074157304869e9937c3dfc295c232eb2312a28c95e9987799e",
+          "status": "ok",
+          "bytes": 17621,
+          "observed_sha256": "ec4ef41151e995074157304869e9937c3dfc295c232eb2312a28c95e9987799e",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "Sunstar16/FULL-IPTV-CHANNEL-PLAYLIST",
+          "path": "Lol.m3u",
+          "url": "https://raw.githubusercontent.com/Sunstar16/FULL-IPTV-CHANNEL-PLAYLIST/main/Lol.m3u",
+          "blob_sha": "b8e4535b36a9c93cc1a9933824858a8e64db9592",
+          "sha256": "e699349350d90d56e1a5c7e599ae38d6bfd085a9bf80deff6f319f2867133a7e",
+          "status": "ok",
+          "bytes": 2957265,
+          "observed_sha256": "e699349350d90d56e1a5c7e599ae38d6bfd085a9bf80deff6f319f2867133a7e",
+          "captured_content_unchanged": true
+        },
+        {
+          "repo": "Sunstar16/FULL-IPTV-CHANNEL-PLAYLIST",
+          "path": "README",
+          "url": "https://raw.githubusercontent.com/Sunstar16/FULL-IPTV-CHANNEL-PLAYLIST/main/README",
+          "blob_sha": "709e72cb91af14d69644e9e45415e7524fc89ac1",
+          "sha256": "686666c3c5b525b045a79c97c08e3bc493fd2ad55b37f210267a5b2fda004dae",
+          "status": "ok",
+          "bytes": 3390,
+          "observed_sha256": "686666c3c5b525b045a79c97c08e3bc493fd2ad55b37f210267a5b2fda004dae",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 13110,
+      "exact_matches": 0,
+      "name_hints": 12,
+      "rejected": 1,
+      "known_urls": 4,
+      "new_urls": 7
+    },
+    {
+      "repo": "6erny6urns/iptv-fr-en-flux-capacitor",
+      "documents": [
+        {
+          "repo": "6erny6urns/iptv-fr-en-flux-capacitor",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/6erny6urns/iptv-fr-en-flux-capacitor/main/README.md",
+          "blob_sha": "c8f4540e2535092a7ecf4500bcf94a8917e6832c",
+          "sha256": "76c20ec789a5a34f28fa0f4fdab891b909cb1f54ecbabca422a70b36734675b1",
+          "status": "ok",
+          "bytes": 4213,
+          "observed_sha256": "76c20ec789a5a34f28fa0f4fdab891b909cb1f54ecbabca422a70b36734675b1",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "raymo7/iptv-playlist",
+      "documents": [
+        {
+          "repo": "raymo7/iptv-playlist",
+          "path": "Ray_Ultimate_TV.m3u",
+          "url": "https://raw.githubusercontent.com/raymo7/iptv-playlist/main/Ray_Ultimate_TV.m3u",
+          "blob_sha": "88fee319ec423ced3adbc29c0b66af219f07ce0d",
+          "sha256": "987b242d8fb16b9bb98d2108c0b30aa9b2fc51d3b50047d194a6d0a7aa1fdb3e",
+          "status": "ok",
+          "bytes": 130643,
+          "observed_sha256": "987b242d8fb16b9bb98d2108c0b30aa9b2fc51d3b50047d194a6d0a7aa1fdb3e",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 522,
+      "exact_matches": 22,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 22,
+      "new_urls": 0
+    },
+    {
+      "repo": "fortvna/iptv",
+      "documents": [
+        {
+          "repo": "fortvna/iptv",
+          "path": "playlist.m3u",
+          "url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u",
+          "blob_sha": "526681e4ad13c00a4e0da53ea65e7100227a9b59",
+          "sha256": "417d299f31f53256d5b63ce28be5d43490387ac9e4a37e26a319da5f8700c6af",
+          "status": "ok",
+          "bytes": 621485,
+          "observed_sha256": "417d299f31f53256d5b63ce28be5d43490387ac9e4a37e26a319da5f8700c6af",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 2023,
+      "exact_matches": 39,
+      "name_hints": 11,
+      "rejected": 5,
+      "known_urls": 32,
+      "new_urls": 13
+    },
+    {
+      "repo": "skkattamaney/iptv",
+      "documents": [
+        {
+          "repo": "skkattamaney/iptv",
+          "path": "english-channels.m3u",
+          "url": "https://raw.githubusercontent.com/skkattamaney/iptv/main/english-channels.m3u",
+          "blob_sha": "09830690f605e060c824a1c930481b9b3be31e92",
+          "sha256": "eae403491dcb7fc9a4f38540e5b915fe6911f4c8aba0974d99fb433912720682",
+          "status": "ok",
+          "bytes": 512784,
+          "observed_sha256": "eae403491dcb7fc9a4f38540e5b915fe6911f4c8aba0974d99fb433912720682",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 2217,
+      "exact_matches": 59,
+      "name_hints": 0,
+      "rejected": 5,
+      "known_urls": 54,
+      "new_urls": 0
+    },
+    {
+      "repo": "CurtisColby/IPTV-Curator",
+      "documents": [
+        {
+          "repo": "CurtisColby/IPTV-Curator",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/CurtisColby/IPTV-Curator/main/README.md",
+          "blob_sha": "223b2868126f30e370f43211f46a15ffeef99e9c",
+          "sha256": "343b79037150a79a435f92a8c0e6a1c3d5478eb181432ebe9b4478ab93efce68",
+          "status": "ok",
+          "bytes": 4218,
+          "observed_sha256": "343b79037150a79a435f92a8c0e6a1c3d5478eb181432ebe9b4478ab93efce68",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "MONIR1560/iptv-1",
+      "documents": [
+        {
+          "repo": "MONIR1560/iptv-1",
+          "path": "bdiptv.m3u",
+          "url": "https://raw.githubusercontent.com/MONIR1560/iptv-1/master/bdiptv.m3u",
+          "blob_sha": "d686a5cb3a7500ad2dc95e2a78029be20090ca9b",
+          "sha256": "2dbbf83967c4bd9c8d334056afa6ca79997c035239079d1fdc67d5e173f33f63",
+          "status": "ok",
+          "bytes": 59957,
+          "observed_sha256": "2dbbf83967c4bd9c8d334056afa6ca79997c035239079d1fdc67d5e173f33f63",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 644,
+      "exact_matches": 0,
+      "name_hints": 28,
+      "rejected": 1,
+      "known_urls": 0,
+      "new_urls": 27
+    },
+    {
+      "repo": "Khairul180101/iptv2",
+      "documents": [
+        {
+          "repo": "Khairul180101/iptv2",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/Khairul180101/iptv2/main/README.md",
+          "blob_sha": "72bac2fd710c2b8028f5a8b91cdc7bbcde6072f4",
+          "sha256": "03580fad6828da6cbd3992bbda4c6a74c63032a5bec375794dbae408bdb15cfc",
+          "status": "ok",
+          "bytes": 64858,
+          "observed_sha256": "03580fad6828da6cbd3992bbda4c6a74c63032a5bec375794dbae408bdb15cfc",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "karthiceaswar/IPTV",
+      "documents": [
+        {
+          "repo": "karthiceaswar/IPTV",
+          "path": "eng.m3u",
+          "url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+          "blob_sha": "6e92c0f146b090aee8492b0decdbc0dae517268e",
+          "sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633",
+          "status": "ok",
+          "bytes": 507199,
+          "observed_sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 1816,
+      "exact_matches": 9,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 9
+    },
+    {
+      "repo": "hmripon66/8kiptv-by-techedubyte",
+      "documents": [
+        {
+          "repo": "hmripon66/8kiptv-by-techedubyte",
+          "path": "Tech Edu Byte 8000tv channel.m3u",
+          "url": "https://raw.githubusercontent.com/hmripon66/8kiptv-by-techedubyte/main/Tech%20Edu%20Byte%208000tv%20channel.m3u",
+          "blob_sha": "da7a41c20ccf66148caf96e462883745382addb1",
+          "sha256": "98bd392246561feb52bf888b20d7d3b18a74150c05e8772078587e90cf338139",
+          "status": "ok",
+          "bytes": 5866818,
+          "observed_sha256": "98bd392246561feb52bf888b20d7d3b18a74150c05e8772078587e90cf338139",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 22559,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    },
+    {
+      "repo": "cttynul/opentivu",
+      "documents": [
+        {
+          "repo": "cttynul/opentivu",
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/cttynul/opentivu/master/README.md",
+          "blob_sha": "80c9478f9798d6b0a48850e9b1b4bdace971246f",
+          "sha256": "85b3b2b5c1c70e94aaf5240ac45f45fec4547d8944270ea3d1e02d181a611eee",
+          "status": "ok",
+          "bytes": 6899,
+          "observed_sha256": "85b3b2b5c1c70e94aaf5240ac45f45fec4547d8944270ea3d1e02d181a611eee",
+          "captured_content_unchanged": true
+        }
+      ],
+      "playlist_records": 0,
+      "exact_matches": 0,
+      "name_hints": 0,
+      "rejected": 0,
+      "known_urls": 0,
+      "new_urls": 0
+    }
+  ],
+  "eligible_candidates": [
+    {
+      "tvg_id": "NBATV.us",
+      "url": "https://pb-5pdyic0cu7tri.akamaized.net/NBA.m3u8",
+      "headers": {},
+      "provider_host": "pb-5pdyic0cu7tri.akamaized.net",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "Kingdavid3g/personal-free-tv",
+          "document_url": "https://raw.githubusercontent.com/Kingdavid3g/personal-free-tv/main/channels.m3u",
+          "observed_sha256": "c18c57d6722594d73674d74f7bb841c7b0ad8b0da7e3ec47967048d9060796c6"
+        }
+      ]
+    },
+    {
+      "tvg_id": "VICETV.us",
+      "url": "https://d1ocru52bkg5e9.cloudfront.net/VICE.m3u8",
+      "headers": {},
+      "provider_host": "d1ocru52bkg5e9.cloudfront.net",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "Kingdavid3g/personal-free-tv",
+          "document_url": "https://raw.githubusercontent.com/Kingdavid3g/personal-free-tv/main/channels.m3u",
+          "observed_sha256": "c18c57d6722594d73674d74f7bb841c7b0ad8b0da7e3ec47967048d9060796c6"
+        }
+      ]
+    },
+    {
+      "tvg_id": "ACCNetwork.us",
+      "url": "https://a.jsrdn.com/broadcast/542cb2ce3c/+0000/c.m3u8",
+      "headers": {},
+      "provider_host": "a.jsrdn.com",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "sweetkitten07/US-iptv-playlists",
+          "document_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+          "observed_sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec"
+        },
+        {
+          "repo": "karthiceaswar/IPTV",
+          "document_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+          "observed_sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633"
+        }
+      ]
+    },
+    {
+      "tvg_id": "BloombergTV.us",
+      "url": "https://bloomberg-bloomberg-1-be.samsung.wurl.tv/playlist.m3u8",
+      "headers": {},
+      "provider_host": "bloomberg-bloomberg-1-be.samsung.wurl.tv",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "sweetkitten07/US-iptv-playlists",
+          "document_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+          "observed_sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec"
+        }
+      ]
+    },
+    {
+      "tvg_id": "NewsmaxTV.us",
+      "url": "https://dai2.xumo.com/amagi_hls_data_xumo1212A-newsmaxxumo/CDN/playlist.m3u8",
+      "headers": {},
+      "provider_host": "dai2.xumo.com",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "sweetkitten07/US-iptv-playlists",
+          "document_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+          "observed_sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec"
+        }
+      ]
+    },
+    {
+      "tvg_id": "OneAmericaNewsNetwork.us",
+      "url": "https://cdn.klowdtv.net/803B48A/n1.klowdtv.net/live1/oan_720p/playlist.m3u8",
+      "headers": {},
+      "provider_host": "cdn.klowdtv.net",
+      "new_provider_host": false,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "sweetkitten07/US-iptv-playlists",
+          "document_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+          "observed_sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec"
+        }
+      ]
+    },
+    {
+      "tvg_id": "Reelz.us",
+      "url": "https://a.jsrdn.com/broadcast/d37066a396/+0000/c.m3u8",
+      "headers": {},
+      "provider_host": "a.jsrdn.com",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "sweetkitten07/US-iptv-playlists",
+          "document_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+          "observed_sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec"
+        }
+      ]
+    },
+    {
+      "tvg_id": "VICETV.us",
+      "url": "https://d2do1g43aq7264.cloudfront.net/playlist.m3u8",
+      "headers": {},
+      "provider_host": "d2do1g43aq7264.cloudfront.net",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "sweetkitten07/US-iptv-playlists",
+          "document_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+          "observed_sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec"
+        }
+      ]
+    },
+    {
+      "tvg_id": "ESPNews.us",
+      "url": "http://41.205.93.154/ESPNNEWS/index.m3u8",
+      "headers": {},
+      "provider_host": "41.205.93.154",
+      "new_provider_host": false,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "fortvna/iptv",
+          "document_url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u",
+          "observed_sha256": "417d299f31f53256d5b63ce28be5d43490387ac9e4a37e26a319da5f8700c6af"
+        }
+      ]
+    },
+    {
+      "tvg_id": "NBATV.us",
+      "url": "https://cdn1.ayitistream.com/NBATV/index.m3u8",
+      "headers": {},
+      "provider_host": "cdn1.ayitistream.com",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "fortvna/iptv",
+          "document_url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u",
+          "observed_sha256": "417d299f31f53256d5b63ce28be5d43490387ac9e4a37e26a319da5f8700c6af"
+        }
+      ]
+    },
+    {
+      "tvg_id": "Showtime.us",
+      "url": "http://4.30.180.36:8420/showtime/mono.m3u8?token=test",
+      "headers": {},
+      "provider_host": "4.30.180.36",
+      "new_provider_host": false,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "fortvna/iptv",
+          "document_url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u",
+          "observed_sha256": "417d299f31f53256d5b63ce28be5d43490387ac9e4a37e26a319da5f8700c6af"
+        }
+      ]
+    },
+    {
+      "tvg_id": "USANetwork.us",
+      "url": "http://190.11.225.124:5000/live/usa_hd/playlist.m3u8",
+      "headers": {},
+      "provider_host": "190.11.225.124",
+      "new_provider_host": false,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "fortvna/iptv",
+          "document_url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u",
+          "observed_sha256": "417d299f31f53256d5b63ce28be5d43490387ac9e4a37e26a319da5f8700c6af"
+        }
+      ]
+    },
+    {
+      "tvg_id": "BloombergTV.us",
+      "url": "https://dai.google.com/linear/hls/event/NiumF4GTSGe-pXM-iMsP0A/master.m3u8",
+      "headers": {},
+      "provider_host": "dai.google.com",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "karthiceaswar/IPTV",
+          "document_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+          "observed_sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633"
+        }
+      ]
+    },
+    {
+      "tvg_id": "CNBC.us",
+      "url": "https://16live00.akamaized.net/CNBC/index.m3u8",
+      "headers": {},
+      "provider_host": "16live00.akamaized.net",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "karthiceaswar/IPTV",
+          "document_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+          "observed_sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633"
+        }
+      ]
+    },
+    {
+      "tvg_id": "FoxNewsChannel.us",
+      "url": "http://trn03.tulix.tv/AsEAeOtIxz/playlist.m3u8",
+      "headers": {},
+      "provider_host": "trn03.tulix.tv",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "karthiceaswar/IPTV",
+          "document_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+          "observed_sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633"
+        }
+      ]
+    },
+    {
+      "tvg_id": "NewsmaxTV.us",
+      "url": "https://newsmax-plex.amagi.tv/hls/amagi_hls_data_plexAAAAA-newsmax-plex/CDN/playlist.m3u8",
+      "headers": {},
+      "provider_host": "newsmax-plex.amagi.tv",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "karthiceaswar/IPTV",
+          "document_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+          "observed_sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633"
+        }
+      ]
+    },
+    {
+      "tvg_id": "TennisChannel.us",
+      "url": "https://playoutengine.sinclairstoryline.com/playout/9f87522c-5a0e-4ff4-b82c-d5564216132f.m3u8",
+      "headers": {},
+      "provider_host": "playoutengine.sinclairstoryline.com",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "karthiceaswar/IPTV",
+          "document_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+          "observed_sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "projects": 37,
+    "actual_channel_catalogs": 20,
+    "records_read": 59595,
+    "novel_safe_candidate_combinations": 256,
+    "name_only_candidates": 236,
+    "fast_standins_not_probed": 48,
+    "exact_non_fast_candidates": 17,
+    "promotions": 0,
+    "media_probes": 17,
+    "normal_decoder_passes": 3
+  },
+  "environment": "GitHub runner",
+  "known_inventory": {
+    "baseline_artifact_id": 11991554291,
+    "baseline_run_id": 38770608444,
+    "additional_research_inventory_artifact_id": 11995117504
+  },
+  "media_results": [
+    {
+      "tvg_id": "NBATV.us",
+      "url": "https://pb-5pdyic0cu7tri.akamaized.net/NBA.m3u8",
+      "headers": {},
+      "provider_host": "pb-5pdyic0cu7tri.akamaized.net",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "Kingdavid3g/personal-free-tv",
+          "document_url": "https://raw.githubusercontent.com/Kingdavid3g/personal-free-tv/main/channels.m3u",
+          "observed_sha256": "c18c57d6722594d73674d74f7bb841c7b0ad8b0da7e3ec47967048d9060796c6"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "ok",
+        "detail": "Valid HLS playlist + segment",
+        "http_status": 200,
+        "final_url": "https://pb-5pdyic0cu7tri.akamaized.net/NBA1920sp.m3u8",
+        "latency_ms": 539,
+        "hls_is_live": true,
+        "hls_media_sequence": 2754848,
+        "hls_tail_sha256": "521dc0afc79839a419b35291e52b0387288340461f0981bcd5b40655442f7927",
+        "hls_segment_count": 10,
+        "measured_width": 1920,
+        "measured_height": 1080,
+        "measured_quality": "1080P",
+        "quality_source": "hls-master",
+        "available_resolutions": [
+          "1920x1080",
+          "1280x720",
+          "854x480",
+          "640x360"
+        ]
+      },
+      "burn_in": [
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "https://pb-5pdyic0cu7tri.akamaized.net/NBA1920sp.m3u8",
+          "latency_ms": 539,
+          "hls_is_live": true,
+          "hls_media_sequence": 2754848,
+          "hls_tail_sha256": "521dc0afc79839a419b35291e52b0387288340461f0981bcd5b40655442f7927",
+          "hls_segment_count": 10,
+          "measured_width": 1920,
+          "measured_height": 1080,
+          "measured_quality": "1080P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1920x1080",
+            "1280x720",
+            "854x480",
+            "640x360"
+          ]
+        },
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "https://pb-5pdyic0cu7tri.akamaized.net/NBA1920sp.m3u8",
+          "latency_ms": 403,
+          "hls_is_live": true,
+          "hls_media_sequence": 2754851,
+          "hls_tail_sha256": "171bd41ada2a65edbc68d99ee16a0a95f9341f5f3c2bcae23445e7dbf8fc9c48",
+          "hls_segment_count": 10,
+          "measured_width": 1920,
+          "measured_height": 1080,
+          "measured_quality": "1080P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1920x1080",
+            "1280x720",
+            "854x480",
+            "640x360"
+          ]
+        },
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "https://pb-5pdyic0cu7tri.akamaized.net/NBA1920sp.m3u8",
+          "latency_ms": 472,
+          "hls_is_live": true,
+          "hls_media_sequence": 2754853,
+          "hls_tail_sha256": "3c341911815c1e534bcbe0d54b53349cfb8d3692f763215cfcab9bab0e49d1bb",
+          "hls_segment_count": 10,
+          "measured_width": 1920,
+          "measured_height": 1080,
+          "measured_quality": "1080P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1920x1080",
+            "1280x720",
+            "854x480",
+            "640x360"
+          ]
+        },
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "https://pb-5pdyic0cu7tri.akamaized.net/NBA1920sp.m3u8",
+          "latency_ms": 323,
+          "hls_is_live": true,
+          "hls_media_sequence": 2754856,
+          "hls_tail_sha256": "d8bdd1b5ae65cf77e1154bca75d1301416ef71a413871508aadf9b8228d599d3",
+          "hls_segment_count": 10,
+          "measured_width": 1920,
+          "measured_height": 1080,
+          "measured_quality": "1080P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1920x1080",
+            "1280x720",
+            "854x480",
+            "640x360"
+          ]
+        },
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "https://pb-5pdyic0cu7tri.akamaized.net/NBA1920sp.m3u8",
+          "latency_ms": 435,
+          "hls_is_live": true,
+          "hls_media_sequence": 2754858,
+          "hls_tail_sha256": "1db647fc9e06a6e49558b4095a42e28948b100468405de8d0a6ae82ccc6fe49d",
+          "hls_segment_count": 10,
+          "measured_width": 1920,
+          "measured_height": 1080,
+          "measured_quality": "1080P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1920x1080",
+            "1280x720",
+            "854x480",
+            "640x360"
+          ]
+        }
+      ],
+      "decoder": {
+        "status": "ok",
+        "detail": "Passed 2/2 direct-media decoder attempts (requires 2)",
+        "direct_media_survival": {
+          "duration_seconds": 12,
+          "min_decoded_seconds": 10,
+          "fps": 2,
+          "attempts_required": 3,
+          "required_passes": 2,
+          "attempts_completed": 2,
+          "passed_attempts": 2,
+          "attempts": [
+            {
+              "attempt": 1,
+              "decoded_frames": 24,
+              "decoded_seconds": 12.0,
+              "elapsed_seconds": 7.05,
+              "ffmpeg_exit_code": 0,
+              "ffmpeg_error": "",
+              "repeat": null,
+              "passed": true
+            },
+            {
+              "attempt": 2,
+              "decoded_frames": 24,
+              "decoded_seconds": 12.0,
+              "elapsed_seconds": 6.89,
+              "ffmpeg_exit_code": 0,
+              "ffmpeg_error": "",
+              "repeat": null,
+              "passed": true
+            }
+          ],
+          "passed": true
+        }
+      },
+      "burn_in_passed": true,
+      "live_window_advanced": true
+    },
+    {
+      "tvg_id": "VICETV.us",
+      "url": "https://d1ocru52bkg5e9.cloudfront.net/VICE.m3u8",
+      "headers": {},
+      "provider_host": "d1ocru52bkg5e9.cloudfront.net",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "Kingdavid3g/personal-free-tv",
+          "document_url": "https://raw.githubusercontent.com/Kingdavid3g/personal-free-tv/main/channels.m3u",
+          "observed_sha256": "c18c57d6722594d73674d74f7bb841c7b0ad8b0da7e3ec47967048d9060796c6"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "ok",
+        "detail": "Valid HLS playlist + segment",
+        "http_status": 200,
+        "final_url": "https://d1ocru52bkg5e9.cloudfront.net/1080p-vtt/index.m3u8",
+        "latency_ms": 651,
+        "hls_is_live": true,
+        "hls_media_sequence": 1050765,
+        "hls_tail_sha256": "bbe9a0cddf940af21fbc0598da763bfc378de811f0821ed77de73b59b3d32ace",
+        "hls_segment_count": 9,
+        "measured_width": 1920,
+        "measured_height": 1080,
+        "measured_quality": "1080P",
+        "quality_source": "hls-master",
+        "available_resolutions": [
+          "1920x1080",
+          "1280x720",
+          "960x540",
+          "640x360"
+        ]
+      },
+      "burn_in": [
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "https://d1ocru52bkg5e9.cloudfront.net/1080p-vtt/index.m3u8",
+          "latency_ms": 651,
+          "hls_is_live": true,
+          "hls_media_sequence": 1050765,
+          "hls_tail_sha256": "bbe9a0cddf940af21fbc0598da763bfc378de811f0821ed77de73b59b3d32ace",
+          "hls_segment_count": 9,
+          "measured_width": 1920,
+          "measured_height": 1080,
+          "measured_quality": "1080P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1920x1080",
+            "1280x720",
+            "960x540",
+            "640x360"
+          ]
+        },
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "https://d1ocru52bkg5e9.cloudfront.net/1080p-vtt/index.m3u8",
+          "latency_ms": 550,
+          "hls_is_live": true,
+          "hls_media_sequence": 1050767,
+          "hls_tail_sha256": "0a31114b6ae50f2012b7a2b58499dc5d3080e7c8dfd3fd558292699bb620596b",
+          "hls_segment_count": 9,
+          "measured_width": 1920,
+          "measured_height": 1080,
+          "measured_quality": "1080P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1920x1080",
+            "1280x720",
+            "960x540",
+            "640x360"
+          ]
+        },
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "https://d1ocru52bkg5e9.cloudfront.net/1080p-vtt/index.m3u8",
+          "latency_ms": 546,
+          "hls_is_live": true,
+          "hls_media_sequence": 1050770,
+          "hls_tail_sha256": "24170c76289b54f9b2d0f11cd15a1ba2d73d2cfcbe496b392bd347f5a773eb3b",
+          "hls_segment_count": 9,
+          "measured_width": 1920,
+          "measured_height": 1080,
+          "measured_quality": "1080P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1920x1080",
+            "1280x720",
+            "960x540",
+            "640x360"
+          ]
+        },
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "https://d1ocru52bkg5e9.cloudfront.net/1080p-vtt/index.m3u8",
+          "latency_ms": 644,
+          "hls_is_live": true,
+          "hls_media_sequence": 1050773,
+          "hls_tail_sha256": "61e13a8ccb3bf3f84eeeee98b161f536c8291866631c6eeb93eb2aefae81cf9f",
+          "hls_segment_count": 9,
+          "measured_width": 1920,
+          "measured_height": 1080,
+          "measured_quality": "1080P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1920x1080",
+            "1280x720",
+            "960x540",
+            "640x360"
+          ]
+        },
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "https://d1ocru52bkg5e9.cloudfront.net/1080p-vtt/index.m3u8",
+          "latency_ms": 640,
+          "hls_is_live": true,
+          "hls_media_sequence": 1050775,
+          "hls_tail_sha256": "5cb0fccdb10d8e026d1602aa78414f7d1a14619c241013f5b6f18e22db4e7315",
+          "hls_segment_count": 9,
+          "measured_width": 1920,
+          "measured_height": 1080,
+          "measured_quality": "1080P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1920x1080",
+            "1280x720",
+            "960x540",
+            "640x360"
+          ]
+        }
+      ],
+      "decoder": {
+        "status": "ok",
+        "detail": "Passed 2/2 direct-media decoder attempts (requires 2)",
+        "direct_media_survival": {
+          "duration_seconds": 12,
+          "min_decoded_seconds": 10,
+          "fps": 2,
+          "attempts_required": 3,
+          "required_passes": 2,
+          "attempts_completed": 2,
+          "passed_attempts": 2,
+          "attempts": [
+            {
+              "attempt": 1,
+              "decoded_frames": 24,
+              "decoded_seconds": 12.0,
+              "elapsed_seconds": 3.2,
+              "ffmpeg_exit_code": 0,
+              "ffmpeg_error": "",
+              "repeat": null,
+              "passed": true
+            },
+            {
+              "attempt": 2,
+              "decoded_frames": 24,
+              "decoded_seconds": 12.0,
+              "elapsed_seconds": 2.51,
+              "ffmpeg_exit_code": 0,
+              "ffmpeg_error": "",
+              "repeat": null,
+              "passed": true
+            }
+          ],
+          "passed": true
+        }
+      },
+      "burn_in_passed": true,
+      "live_window_advanced": true
+    },
+    {
+      "tvg_id": "ACCNetwork.us",
+      "url": "https://a.jsrdn.com/broadcast/542cb2ce3c/+0000/c.m3u8",
+      "headers": {},
+      "provider_host": "a.jsrdn.com",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "sweetkitten07/US-iptv-playlists",
+          "document_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+          "observed_sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec"
+        },
+        {
+          "repo": "karthiceaswar/IPTV",
+          "document_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+          "observed_sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "failed",
+        "detail": "HTTP 301",
+        "http_status": 301,
+        "latency_ms": 448
+      },
+      "burn_in": [],
+      "decoder": {
+        "status": "not-tested"
+      }
+    },
+    {
+      "tvg_id": "BloombergTV.us",
+      "url": "https://bloomberg-bloomberg-1-be.samsung.wurl.tv/playlist.m3u8",
+      "headers": {},
+      "provider_host": "bloomberg-bloomberg-1-be.samsung.wurl.tv",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "sweetkitten07/US-iptv-playlists",
+          "document_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+          "observed_sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "failed",
+        "detail": "<urlopen error [Errno -2] Name or service not known>",
+        "latency_ms": 59
+      },
+      "burn_in": [],
+      "decoder": {
+        "status": "not-tested"
+      }
+    },
+    {
+      "tvg_id": "NewsmaxTV.us",
+      "url": "https://dai2.xumo.com/amagi_hls_data_xumo1212A-newsmaxxumo/CDN/playlist.m3u8",
+      "headers": {},
+      "provider_host": "dai2.xumo.com",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "sweetkitten07/US-iptv-playlists",
+          "document_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+          "observed_sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "failed",
+        "detail": "<urlopen error [Errno -2] Name or service not known>",
+        "latency_ms": 102
+      },
+      "burn_in": [],
+      "decoder": {
+        "status": "not-tested"
+      }
+    },
+    {
+      "tvg_id": "OneAmericaNewsNetwork.us",
+      "url": "https://cdn.klowdtv.net/803B48A/n1.klowdtv.net/live1/oan_720p/playlist.m3u8",
+      "headers": {},
+      "provider_host": "cdn.klowdtv.net",
+      "new_provider_host": false,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "sweetkitten07/US-iptv-playlists",
+          "document_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+          "observed_sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "failed",
+        "detail": "<urlopen error [Errno -3] Temporary failure in name resolution>",
+        "latency_ms": 10024
+      },
+      "burn_in": [],
+      "decoder": {
+        "status": "not-tested"
+      }
+    },
+    {
+      "tvg_id": "Reelz.us",
+      "url": "https://a.jsrdn.com/broadcast/d37066a396/+0000/c.m3u8",
+      "headers": {},
+      "provider_host": "a.jsrdn.com",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "sweetkitten07/US-iptv-playlists",
+          "document_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+          "observed_sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "failed",
+        "detail": "HTTP 301",
+        "http_status": 301,
+        "latency_ms": 2576
+      },
+      "burn_in": [],
+      "decoder": {
+        "status": "not-tested"
+      }
+    },
+    {
+      "tvg_id": "VICETV.us",
+      "url": "https://d2do1g43aq7264.cloudfront.net/playlist.m3u8",
+      "headers": {},
+      "provider_host": "d2do1g43aq7264.cloudfront.net",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "sweetkitten07/US-iptv-playlists",
+          "document_url": "https://raw.githubusercontent.com/sweetkitten07/US-iptv-playlists/main/playlist.m3u",
+          "observed_sha256": "34a05de86a0c8495c0125d3b0564a5a751e0515115779c72a72cfa2018df1dec"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "failed",
+        "detail": "<urlopen error [Errno -5] No address associated with hostname>",
+        "latency_ms": 40
+      },
+      "burn_in": [],
+      "decoder": {
+        "status": "not-tested"
+      }
+    },
+    {
+      "tvg_id": "ESPNews.us",
+      "url": "http://41.205.93.154/ESPNNEWS/index.m3u8",
+      "headers": {},
+      "provider_host": "41.205.93.154",
+      "new_provider_host": false,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "fortvna/iptv",
+          "document_url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u",
+          "observed_sha256": "417d299f31f53256d5b63ce28be5d43490387ac9e4a37e26a319da5f8700c6af"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "ok",
+        "detail": "Valid HLS playlist + segment",
+        "http_status": 200,
+        "final_url": "http://41.205.93.154/ESPNNEWS/tracks-v1a1/mono.m3u8",
+        "latency_ms": 1521,
+        "hls_is_live": true,
+        "hls_media_sequence": 29355,
+        "hls_tail_sha256": "3e0e3d5ca45df9a0a7e0506592567d1e7802b222255e79eb76b8f4f8fc65c361",
+        "hls_segment_count": 4,
+        "measured_width": 1280,
+        "measured_height": 720,
+        "measured_quality": "720P",
+        "quality_source": "hls-master",
+        "available_resolutions": [
+          "1280x720"
+        ]
+      },
+      "burn_in": [
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "http://41.205.93.154/ESPNNEWS/tracks-v1a1/mono.m3u8",
+          "latency_ms": 1521,
+          "hls_is_live": true,
+          "hls_media_sequence": 29355,
+          "hls_tail_sha256": "3e0e3d5ca45df9a0a7e0506592567d1e7802b222255e79eb76b8f4f8fc65c361",
+          "hls_segment_count": 4,
+          "measured_width": 1280,
+          "measured_height": 720,
+          "measured_quality": "720P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1280x720"
+          ]
+        },
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "http://41.205.93.154/ESPNNEWS/tracks-v1a1/mono.m3u8",
+          "latency_ms": 1436,
+          "hls_is_live": true,
+          "hls_media_sequence": 29364,
+          "hls_tail_sha256": "d2b1f9ddb0a2adca8711d4e94e9d97eb4eb25a03ba14e36d3f008953b2d7d8fc",
+          "hls_segment_count": 4,
+          "measured_width": 1280,
+          "measured_height": 720,
+          "measured_quality": "720P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1280x720"
+          ]
+        },
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "http://41.205.93.154/ESPNNEWS/tracks-v1a1/mono.m3u8",
+          "latency_ms": 1509,
+          "hls_is_live": true,
+          "hls_media_sequence": 29372,
+          "hls_tail_sha256": "a1b260a0f8fc035bc4d1d9d28f5cc8023d700bd4630b38bce53920f2fb5b0642",
+          "hls_segment_count": 4,
+          "measured_width": 1280,
+          "measured_height": 720,
+          "measured_quality": "720P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1280x720"
+          ]
+        },
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "http://41.205.93.154/ESPNNEWS/tracks-v1a1/mono.m3u8",
+          "latency_ms": 1516,
+          "hls_is_live": true,
+          "hls_media_sequence": 29380,
+          "hls_tail_sha256": "ad8f7aca81a57c20f533fbd5fd2c541ba6f68a0a653ef2ec458869f29bab88aa",
+          "hls_segment_count": 4,
+          "measured_width": 1280,
+          "measured_height": 720,
+          "measured_quality": "720P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1280x720"
+          ]
+        },
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "http://41.205.93.154/ESPNNEWS/tracks-v1a1/mono.m3u8",
+          "latency_ms": 1466,
+          "hls_is_live": true,
+          "hls_media_sequence": 29389,
+          "hls_tail_sha256": "ddd719db56356c305507cad783d12a194dfb0ee33e62cc66a4f1a50cfffa0e10",
+          "hls_segment_count": 4,
+          "measured_width": 1280,
+          "measured_height": 720,
+          "measured_quality": "720P",
+          "quality_source": "hls-master",
+          "available_resolutions": [
+            "1280x720"
+          ]
+        }
+      ],
+      "decoder": {
+        "status": "ok",
+        "detail": "Passed 2/3 direct-media decoder attempts (requires 2)",
+        "direct_media_survival": {
+          "duration_seconds": 12,
+          "min_decoded_seconds": 10,
+          "fps": 2,
+          "attempts_required": 3,
+          "required_passes": 2,
+          "attempts_completed": 3,
+          "passed_attempts": 2,
+          "attempts": [
+            {
+              "attempt": 1,
+              "decoded_frames": 0,
+              "decoded_seconds": 0.0,
+              "elapsed_seconds": 20.01,
+              "ffmpeg_exit_code": null,
+              "repeat": null,
+              "passed": false,
+              "failure": "timeout"
+            },
+            {
+              "attempt": 2,
+              "decoded_frames": 24,
+              "decoded_seconds": 12.0,
+              "elapsed_seconds": 8.26,
+              "ffmpeg_exit_code": 0,
+              "ffmpeg_error": "[NULL @ 0x5623fc23b040] non-existing SPS 0 referenced in buffering period | [h264 @ 0x5623fc23c480] non-existing SPS 0 referenced in buffering period | [h264 @ 0x5623fc3615c0] error while decoding MB 28 5, bytestream -6",
+              "repeat": null,
+              "passed": true
+            },
+            {
+              "attempt": 3,
+              "decoded_frames": 24,
+              "decoded_seconds": 12.0,
+              "elapsed_seconds": 8.01,
+              "ffmpeg_exit_code": 0,
+              "ffmpeg_error": "",
+              "repeat": null,
+              "passed": true
+            }
+          ],
+          "passed": true
+        }
+      },
+      "burn_in_passed": true,
+      "live_window_advanced": true
+    },
+    {
+      "tvg_id": "NBATV.us",
+      "url": "https://cdn1.ayitistream.com/NBATV/index.m3u8",
+      "headers": {},
+      "provider_host": "cdn1.ayitistream.com",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "fortvna/iptv",
+          "document_url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u",
+          "observed_sha256": "417d299f31f53256d5b63ce28be5d43490387ac9e4a37e26a319da5f8700c6af"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "failed",
+        "detail": "HTTP 404",
+        "http_status": 404,
+        "latency_ms": 272
+      },
+      "burn_in": [],
+      "decoder": {
+        "status": "not-tested"
+      }
+    },
+    {
+      "tvg_id": "Showtime.us",
+      "url": "http://4.30.180.36:8420/showtime/mono.m3u8?token=test",
+      "headers": {},
+      "provider_host": "4.30.180.36",
+      "new_provider_host": false,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "fortvna/iptv",
+          "document_url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u",
+          "observed_sha256": "417d299f31f53256d5b63ce28be5d43490387ac9e4a37e26a319da5f8700c6af"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "ok",
+        "detail": "Valid HLS playlist + segment",
+        "http_status": 200,
+        "final_url": "http://4.30.180.36:8420/showtime/mono.m3u8?token=test",
+        "latency_ms": 354,
+        "hls_is_live": true,
+        "hls_media_sequence": 35939,
+        "hls_tail_sha256": "2e35a21a765144603bfbae47bc9e4309ba5f08677bcd2b0696f3918c252a3387",
+        "hls_segment_count": 4
+      },
+      "burn_in": [
+        {
+          "status": "ok",
+          "detail": "Valid HLS playlist + segment",
+          "http_status": 200,
+          "final_url": "http://4.30.180.36:8420/showtime/mono.m3u8?token=test",
+          "latency_ms": 354,
+          "hls_is_live": true,
+          "hls_media_sequence": 35939,
+          "hls_tail_sha256": "2e35a21a765144603bfbae47bc9e4309ba5f08677bcd2b0696f3918c252a3387",
+          "hls_segment_count": 4
+        },
+        {
+          "status": "failed",
+          "detail": "HTTP 403",
+          "http_status": 403,
+          "latency_ms": 91
+        }
+      ],
+      "decoder": {
+        "status": "not-tested"
+      },
+      "burn_in_passed": false
+    },
+    {
+      "tvg_id": "USANetwork.us",
+      "url": "http://190.11.225.124:5000/live/usa_hd/playlist.m3u8",
+      "headers": {},
+      "provider_host": "190.11.225.124",
+      "new_provider_host": false,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "fortvna/iptv",
+          "document_url": "https://raw.githubusercontent.com/fortvna/iptv/main/playlist.m3u",
+          "observed_sha256": "417d299f31f53256d5b63ce28be5d43490387ac9e4a37e26a319da5f8700c6af"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "failed",
+        "detail": "<urlopen error timed out>",
+        "latency_ms": 6006
+      },
+      "burn_in": [],
+      "decoder": {
+        "status": "not-tested"
+      }
+    },
+    {
+      "tvg_id": "BloombergTV.us",
+      "url": "https://dai.google.com/linear/hls/event/NiumF4GTSGe-pXM-iMsP0A/master.m3u8",
+      "headers": {},
+      "provider_host": "dai.google.com",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "karthiceaswar/IPTV",
+          "document_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+          "observed_sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "failed",
+        "detail": "HTTP 404",
+        "http_status": 404,
+        "latency_ms": 254
+      },
+      "burn_in": [],
+      "decoder": {
+        "status": "not-tested"
+      }
+    },
+    {
+      "tvg_id": "CNBC.us",
+      "url": "https://16live00.akamaized.net/CNBC/index.m3u8",
+      "headers": {},
+      "provider_host": "16live00.akamaized.net",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "karthiceaswar/IPTV",
+          "document_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+          "observed_sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "failed",
+        "detail": "HTTP 403",
+        "http_status": 403,
+        "latency_ms": 190
+      },
+      "burn_in": [],
+      "decoder": {
+        "status": "not-tested"
+      }
+    },
+    {
+      "tvg_id": "FoxNewsChannel.us",
+      "url": "http://trn03.tulix.tv/AsEAeOtIxz/playlist.m3u8",
+      "headers": {},
+      "provider_host": "trn03.tulix.tv",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "karthiceaswar/IPTV",
+          "document_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+          "observed_sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "failed",
+        "detail": "HTTP 404",
+        "http_status": 404,
+        "latency_ms": 204
+      },
+      "burn_in": [],
+      "decoder": {
+        "status": "not-tested"
+      }
+    },
+    {
+      "tvg_id": "NewsmaxTV.us",
+      "url": "https://newsmax-plex.amagi.tv/hls/amagi_hls_data_plexAAAAA-newsmax-plex/CDN/playlist.m3u8",
+      "headers": {},
+      "provider_host": "newsmax-plex.amagi.tv",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "karthiceaswar/IPTV",
+          "document_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+          "observed_sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "failed",
+        "detail": "HTTP 503",
+        "http_status": 503,
+        "latency_ms": 2433
+      },
+      "burn_in": [],
+      "decoder": {
+        "status": "not-tested"
+      }
+    },
+    {
+      "tvg_id": "TennisChannel.us",
+      "url": "https://playoutengine.sinclairstoryline.com/playout/9f87522c-5a0e-4ff4-b82c-d5564216132f.m3u8",
+      "headers": {},
+      "provider_host": "playoutengine.sinclairstoryline.com",
+      "new_provider_host": true,
+      "identity_basis": "exact-tvg-id",
+      "known_fast_standin": false,
+      "provenance": [
+        {
+          "repo": "karthiceaswar/IPTV",
+          "document_url": "https://raw.githubusercontent.com/karthiceaswar/IPTV/main/eng.m3u",
+          "observed_sha256": "b21d9f1a82261ab3a5fca1c346afc5238315536d3011e524ba90cb1720d7b633"
+        }
+      ],
+      "identity_verified": false,
+      "production_approved": false,
+      "health": {
+        "status": "failed",
+        "detail": "HTTP 502",
+        "http_status": 502,
+        "latency_ms": 476
+      },
+      "burn_in": [],
+      "decoder": {
+        "status": "not-tested"
+      }
+    }
+  ]
+}
