@@ -2,6 +2,8 @@ name: Pull request checks
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: ['**']
 permissions:
   contents: read
 jobs:
@@ -27,3 +29,5 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/repo" -v "$RUNNER_TEMP:/report" ghcr.io/gitleaks/gitleaks:v8.24.3 git /repo --redact --report-format json --report-path /report/gitleaks.json --exit-code 0
           python scripts/summarize_gitleaks.py "$RUNNER_TEMP/gitleaks.json"
+      - name: Verify Gitleaks detects a new synthetic credential
+        run: python scripts/test_gitleaks_detection.py
