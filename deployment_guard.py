@@ -63,12 +63,24 @@ def main() -> int:
     status = json.loads(Path("site/status.json").read_text(encoding="utf-8"))
     channels = json.loads(Path("site/diagnostics/channels.json").read_text(encoding="utf-8"))
     baseline = Path(".previous-deployed-status.json")
+    history = {"status": "unavailable", "warning": "Previous deployed status could not be fetched; 30% comparison unavailable; absolute floor and required-channel checks remain active."}
     if baseline.exists():
         try:
             previous = json.loads(baseline.read_text(encoding="utf-8"))
-            status["_previous_deployed_channels"] = previous["channels"]
+            previous_count = int(previous["channels"])
+            if previous_count <= 0:
+                raise ValueError("invalid deployed channel count")
+            status["_previous_deployed_channels"] = previous_count
+            history = {"status": "available", "previous_channels": previous_count, "current_channels": status.get("channels"), "threshold_percent": 30}
         except (OSError, ValueError, KeyError, TypeError):
-            print("WARNING: previous deployment status unavailable or invalid; retaining absolute floor", file=sys.stderr)
+            history["warning"] = "Previous deployed status invalid; 30% comparison unavailable; absolute floor and required-channel checks remain active."
+    if history["status"] == "unavailable":
+        print("WARNING: " + history["warning"], file=sys.stderr)
+    diagnostics = Path("site/diagnostics/deployment-baseline.json")
+    diagnostics.parent.mkdir(parents=True, exist_ok=True)
+    diagnostics.write_text(json.dumps(history, indent=2) + "\n", encoding="utf-8")
+    status["deployment_baseline"] = history
+    Path("site/status.json").write_text(json.dumps(status, indent=2) + "\\n", encoding="utf-8")
     errors = evaluate_deployment_guard(config, status, channels)
     settings = config.get("deployment_guard") or {}
     print(
