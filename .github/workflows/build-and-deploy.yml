@@ -191,6 +191,7 @@ jobs:
       contents: read
       issues: write
     steps:
+      - uses: actions/checkout@v7
       - name: Open or update a credential-safe build failure issue
         env:
           GH_TOKEN: ${{ github.token }}
@@ -200,7 +201,7 @@ jobs:
         run: |
           set -euo pipefail
           title="Automated Stremio-TV deployment failure"
-          body="A scheduled or main-branch deployment failed. Review the Actions run: ${RUN_URL}. No build logs, source URLs, or environment values are included in this report."
+          body="$(python -c 'import sys; from failure_report import issue_body; print(issue_body(sys.argv[1]))' "$RUN_URL")"
           existing="$(gh issue list --repo "$GH_REPO" --state open --search "$title in:title" --json number,title --jq '.[] | select(.title == "Automated Stremio-TV deployment failure") | .number' | head -n 1)"
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --repo "$GH_REPO" --body "$body"
