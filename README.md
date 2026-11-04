@@ -243,3 +243,7 @@ The upstream-exposure report treats different hostnames as **potential alternati
 - The project does not bypass DRM or manufacture authorization tokens.
 - Public availability is not a guarantee of ownership, reliability, or regional availability.
 - Upstream rights holders and source maintainers control availability.
+
+## Interim source notice and contact
+
+This project indexes third-party stream URLs and does not claim ownership of third-party programming or trademarks. Availability and permissions may vary by provider. For a correction, removal, or rights-related request, open a GitHub issue in this repository with the affected channel and relevant details; do not include private credentials or access tokens. A fuller source-provenance review is planned before v2.0.
