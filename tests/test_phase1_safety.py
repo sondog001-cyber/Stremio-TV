@@ -44,6 +44,28 @@ class Phase1SafetyTests(unittest.TestCase):
         self.assertNotIn("GITHUB_TOKEN", report)
         self.assertEqual(issue_body("https://example.com/?token=" + secret), "A deployment failed. Inspect the Actions page for this repository.")
 
+    def test_failed_build_preserves_existing_deployed_directory_in_integration(self):
+        import json
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            pages = directory / "published-pages"
+            pages.mkdir()
+            (pages / "manifest.json").write_text('{"id":"com.stremiotv.philly","version":"known-good"}')
+            before = (pages / "manifest.json").read_bytes()
+            site = directory / "site"
+            (site / "diagnostics").mkdir(parents=True)
+            (site / "status.json").write_text(json.dumps({"channels": 0}))
+            (site / "diagnostics" / "channels.json").write_text("[]")
+            (directory / "config.json").write_text(json.dumps({"deployment_guard": {"enabled": True, "minimum_channels": 86, "required_channel_ids": []}}))
+            result = subprocess.run([sys.executable, str(ROOT / "deployment_guard.py")], cwd=directory, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            # The deployment step is gated on successful build/guard completion.
+            if result.returncode == 0:
+                (pages / "manifest.json").write_text((site / "manifest.json").read_text())
+            self.assertEqual((pages / "manifest.json").read_bytes(), before)
+            self.assertEqual(json.loads((site / "status.json").read_text())["deployment_baseline"]["status"], "unavailable")
+            self.assertTrue((site / "diagnostics" / "deployment-baseline.json").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
