@@ -1,0 +1,21 @@
+name: Pull request checks
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Assemble builder
+        run: python assemble_build.py
+      - name: Compile Python source
+        run: python -m compileall -q stremio_tv build.py deployment_guard.py
+      - name: Run existing tests
+        run: python -m unittest discover -s tests -v
