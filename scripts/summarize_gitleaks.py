@@ -22,6 +22,12 @@ def main(path):
         # Only print a file path if it contains no control characters.
         if file.isprintable() and len(file) < 200:
             print(f"File: {file} | occurrences: {number}")
+    for row in records:
+        commit = str(row.get("Commit", "unknown"))
+        line = row.get("StartLine", "unknown")
+        rule = str(row.get("RuleID", "unknown"))
+        file = str(row.get("File", "unknown"))
+        print(f"Finding: rule={rule} file={file} commit={commit} line={line}")
     return 1 if count else 0
 
 
