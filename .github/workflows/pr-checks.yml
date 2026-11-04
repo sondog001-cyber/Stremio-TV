@@ -10,6 +10,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -21,3 +23,5 @@ jobs:
         run: python -m compileall -q stremio_tv build.py deployment_guard.py
       - name: Run existing tests
         run: python -m unittest discover -s tests -v
+      - name: Scan full git history for exposed secrets (redacted)
+        run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.24.3 git /repo --redact --exit-code 1
