@@ -24,4 +24,6 @@ jobs:
       - name: Run existing tests
         run: python -m unittest discover -s tests -v
       - name: Scan full git history for exposed secrets (redacted)
-        run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.24.3 git /repo --redact --exit-code 1
+        run: |
+          docker run --rm -v "$PWD:/repo" -v "$RUNNER_TEMP:/report" ghcr.io/gitleaks/gitleaks:v8.24.3 git /repo --redact --report-format json --report-path /report/gitleaks.json --exit-code 0
+          python scripts/summarize_gitleaks.py "$RUNNER_TEMP/gitleaks.json"
