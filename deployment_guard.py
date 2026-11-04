@@ -80,7 +80,7 @@ def main() -> int:
     diagnostics.parent.mkdir(parents=True, exist_ok=True)
     diagnostics.write_text(json.dumps(history, indent=2) + "\n", encoding="utf-8")
     status["deployment_baseline"] = history
-    Path("site/status.json").write_text(json.dumps(status, indent=2) + "\\n", encoding="utf-8")
+    Path("site/status.json").write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
     errors = evaluate_deployment_guard(config, status, channels)
     settings = config.get("deployment_guard") or {}
     print(
