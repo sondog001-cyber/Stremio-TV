@@ -24,6 +24,16 @@ def evaluate_deployment_guard(
     errors: list[str] = []
     floor = int(settings.get("minimum_channels", 65))
     count = int(status.get("channels") or 0)
+    if count <= 0:
+        errors.append("build published zero channels")
+    previous = status.get("_previous_deployed_channels")
+    if previous is not None:
+        try:
+            previous_count = int(previous)
+            if previous_count > 0 and count * 10 <= previous_count * 7:
+                errors.append(f"channel regression >=30%: {count} versus previously deployed {previous_count}")
+        except (ValueError, TypeError):
+            errors.append("invalid previous deployed channel count")
     if count < floor:
         errors.append(f"published channels {count} below established floor {floor}")
     if count != len(published):
@@ -52,6 +62,13 @@ def main() -> int:
     config = json.loads(Path("config.json").read_text(encoding="utf-8"))
     status = json.loads(Path("site/status.json").read_text(encoding="utf-8"))
     channels = json.loads(Path("site/diagnostics/channels.json").read_text(encoding="utf-8"))
+    baseline = Path(".previous-deployed-status.json")
+    if baseline.exists():
+        try:
+            previous = json.loads(baseline.read_text(encoding="utf-8"))
+            status["_previous_deployed_channels"] = previous["channels"]
+        except (OSError, ValueError, KeyError, TypeError):
+            print("WARNING: previous deployment status unavailable or invalid; retaining absolute floor", file=sys.stderr)
     errors = evaluate_deployment_guard(config, status, channels)
     settings = config.get("deployment_guard") or {}
     print(
