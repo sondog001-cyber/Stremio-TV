@@ -1,0 +1,33 @@
+name: Pull request checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: ['**']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Assemble builder
+        run: python assemble_build.py
+      - name: Compile Python source
+        run: python -m compileall -q stremio_tv build.py deployment_guard.py
+      - name: Run existing tests
+        run: python -m unittest discover -s tests -v
+      - name: Scan full git history for exposed secrets (redacted)
+        run: |
+          docker run --rm -v "$PWD:/repo" -v "$RUNNER_TEMP:/report" ghcr.io/gitleaks/gitleaks:v8.24.3 git /repo --redact --report-format json --report-path /report/gitleaks.json --exit-code 0
+          python scripts/summarize_gitleaks.py "$RUNNER_TEMP/gitleaks.json"
+      - name: Verify Gitleaks detects a new synthetic credential
+        run: python scripts/test_gitleaks_detection.py

@@ -63,6 +63,26 @@ class DeploymentGuardTests(unittest.TestCase):
         errors = evaluate_deployment_guard(self.config, {"channels": 0}, [])
         self.assertEqual(errors, [])
 
+    def test_zero_channels_are_rejected_even_without_floor(self):
+        self.config["deployment_guard"]["minimum_channels"] = 0
+        errors = evaluate_deployment_guard(self.config, {"channels": 0}, [])
+        self.assertTrue(any("zero channels" in error for error in errors))
+
+    def test_thirty_percent_drop_from_last_deployment_is_blocked(self):
+        self.config["deployment_guard"]["minimum_channels"] = 0
+        errors = evaluate_deployment_guard(self.config, {"channels": 70, "_previous_deployed_channels": 100}, self.published[:70])
+        self.assertTrue(any("regression >=30%" in error for error in errors))
+
+    def test_below_thirty_percent_drop_passes_without_floor(self):
+        self.config["deployment_guard"]["minimum_channels"] = 0
+        self.config["deployment_guard"]["required_channel_ids"] = []
+        errors = evaluate_deployment_guard(self.config, {"channels": 71, "_previous_deployed_channels": 100}, self.published[:71])
+        self.assertEqual(errors, [])
+
+    def test_missing_historical_baseline_preserves_floor(self):
+        errors = evaluate_deployment_guard(self.config, {"channels": 85}, self.published[:85])
+        self.assertTrue(errors)
+
 
 if __name__ == "__main__":
     unittest.main()
