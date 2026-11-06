@@ -1,0 +1,58 @@
+name: Probe independent Cooking and E! alternatives (research only)
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/e-cooking-independent-probes.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  read-only-media-probes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install FFmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Probe alternate origins without affecting curated streams
+        shell: bash
+        run: |
+          mkdir -p research/diagnostics
+          python3 - <<'PY'
+          import json, subprocess, time
+          from urllib.parse import urlsplit
+          candidates = [
+              {"channel":"CookingChannel.us","label":"historic-167-cooking","url":"http://167.114.119.209:1935/flu555/_definst_/cookingchannel/playlist.m3u8","identity":"UNVERIFIED","freshness":"historic playlist; independent origin"},
+              {"channel":"CookingChannel.us","label":"moveonjoy-cooking","url":"http://fl3.moveonjoy.com/COOKING_CHANNEL/index.m3u8","identity":"UNVERIFIED","freshness":"distinct host; prior family known to be unreliable"},
+              {"channel":"CookingChannel.us","label":"historic-161-cooking","url":"http://161.0.157.5/PLTV/88888888/224/3221226201/index.m3u8","identity":"UNVERIFIED","freshness":"historic playlist; independent origin"},
+              {"channel":"E.us@East","label":"tier1-e-west-NOT-east","url":"https://gpuserver3.tier1streams.com/E_ENTERTAINMENT_WEST/index.m3u8","identity":"WEST-NOT-EAST","freshness":"separate host; wrong regional identity unless independently verified"},
+              {"channel":"E.us@East","label":"moveonjoy-e-east","url":"http://fl2.moveonjoy.com/E_ENTERTAINMENT_TELEVISION/index.m3u8","identity":"UNVERIFIED","freshness":"distinct host; prior family known to be unreliable"}
+          ]
+          results=[]
+          for c in candidates:
+              row={k:v for k,v in c.items() if k!="url"}
+              row["host"]=urlsplit(c["url"]).netloc
+              row["checks"]=[]
+              for seconds in (12,12,65):
+                  cmd=["ffmpeg","-hide_banner","-nostdin","-v","error","-rw_timeout","12000000","-i",c["url"],"-t",str(seconds),"-map","0:v:0","-an","-f","null","-"]
+                  start=time.monotonic()
+                  try:
+                      p=subprocess.run(cmd,capture_output=True,text=True,timeout=seconds+22)
+                      check={"seconds":seconds,"returncode":p.returncode,"elapsed_s":round(time.monotonic()-start,1),"error":p.stderr[-300:]}
+                  except subprocess.TimeoutExpired:
+                      check={"seconds":seconds,"returncode":"timeout","elapsed_s":round(time.monotonic()-start,1),"error":"probe timeout"}
+                  row["checks"].append(check)
+                  if check["returncode"]!=0:break
+              row["media_pass"]=len(row["checks"])==3 and all(c["returncode"]==0 for c in row["checks"])
+              row["identity_verified"]=False
+              results.append(row)
+              print(row["channel"],row["label"],"media_pass=",row["media_pass"],"checks=",[(a["seconds"],a["returncode"]) for a in row["checks"]],flush=True)
+          with open("research/diagnostics/e-cooking-alt-origin-probes.json","w") as f:json.dump({"disclaimer":"No source selection, playlist edit, DRM/auth bypass, channel identity promotion, or deployment. Video identity is NOT confirmed.", "results":results},f,indent=2)
+          PY
+      - name: Upload research artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cooking-e-origin-probe
+          path: research/diagnostics/e-cooking-alt-origin-probes.json
+          retention-days: 14
