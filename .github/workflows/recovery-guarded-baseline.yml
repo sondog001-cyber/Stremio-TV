@@ -1,0 +1,32 @@
+name: Recovery guarded staging baseline
+on:
+  push:
+    branches: [diagnostics/recovery-20261109]
+    paths: ['.github/workflows/recovery-guarded-baseline.yml']
+permissions:
+  contents: read
+jobs:
+  staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements.txt
+      - run: python assemble_build.py
+      - run: python -m unittest discover -s tests
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: python build.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: python tests/verify_published_logos.py
+      - run: python deployment_guard.py
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: recovery-guarded-baseline
+          path: |
+            site/status.json
+            site/diagnostics/
