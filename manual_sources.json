@@ -411,6 +411,20 @@
       "source_type": "public-third-party",
       "content_kind": "full-linear",
       "content_note": "Exact playlist ID and on-screen ACCN branding verified. Two runner passes through segment checks, 60-second burn-in and final decode in runs 42696518604 and 42696837223."
+    },
+    {
+      "tvg_id": "BBCAmerica.us",
+      "name": "BBC America",
+      "url": "http://23.237.104.106:8080/USA_BBC_AMERICA/index.m3u8",
+      "quality": "SD",
+      "source": "doms9/iptv — BBC America direct HLS",
+      "family": "research-seed",
+      "priority": 12,
+      "philly": false,
+      "headers": {},
+      "source_type": "public-third-party",
+      "content_kind": "full-linear",
+      "content_note": "Visible BBC America branding in artifact 13710945383. Three separate runner passes through segment checks, 60-second burn-in and final decode. Shares an upstream host with the ACC Network candidate."
     }
   ]
 }
