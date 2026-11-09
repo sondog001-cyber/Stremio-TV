@@ -1,0 +1,66 @@
+name: Recovery runner diagnostics
+on:
+  push:
+    branches: [diagnostics/recovery-20261109]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+      - run: python assemble_build.py
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Test historical feeds by stage
+        run: |
+          python - <<'PY'
+          import concurrent.futures, hashlib, json, re, urllib.error, urllib.parse, urllib.request
+          import build
+
+          root = "https://sondog001-cyber.github.io/Stremio-TV"
+          ids = {"AE", "ACCNetwork", "AMC", "BBCAmerica", "MTV2", "Oxygen", "Bravo", "HBOHits", "NickJr", "TeenNick"}
+          settings = json.load(open("config.json"))["stream_health"]
+          with urllib.request.urlopen(root + "/diagnostics/stream-health.json", timeout=20) as response:
+              published = json.load(response)
+          candidates = {
+              row["url"]: row for row in published
+              if row["health"]["status"] == "ok" and row["tvg_id"].split(".")[0] in ids
+          }
+          def classify(error):
+              return {"http_status": error.code} if isinstance(error, urllib.error.HTTPError) else {"error": type(error).__name__}
+          def test(item):
+              url, row = item
+              parsed = urllib.parse.urlsplit(url)
+              result = {"channel": row["tvg_id"], "host": parsed.hostname,
+                        "endpoint_sha256": hashlib.sha256(url.encode()).hexdigest(),
+                        "playlist": "skipped", "segment": "skipped", "decode": "skipped"}
+              if parsed.scheme not in {"http", "https"} or parsed.username or parsed.password or parsed.query:
+                  return result
+              try:
+                  request = urllib.request.Request(url, headers={"User-Agent": build.USER_AGENT})
+                  with urllib.request.urlopen(request, timeout=8) as response:
+                      data = response.read(262144)
+                      result["playlist"] = {"http_status": response.status, "hls": data.lstrip().startswith(b"#EXTM3U")}
+              except (OSError, ValueError) as error:
+                  result["playlist"] = classify(error)
+                  return result
+              if not result["playlist"]["hls"]:
+                  return result
+              health = build._probe_stream({"url": url}, 8, True)
+              result["segment"] = {k: health[k] for k in ("status", "http_status", "continuity_failure") if k in health}
+              if health["status"] == "ok":
+                  qa = build._validate_primary_playback_stream({"url": url, "health": health}, settings["primary_playback_qa"])
+                  result["decode"] = {k: qa[k] for k in ("status", "decoder_failure_class", "continuity_failure") if k in qa}
+              return result
+          with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+              results = list(pool.map(test, candidates.items()))
+          with open("runner-results.json", "w") as output:
+              json.dump(results, output, indent=2)
+          print(json.dumps(results, indent=2))
+          PY
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: recovery-runner-results
+          path: runner-results.json
