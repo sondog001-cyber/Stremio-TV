@@ -12,10 +12,11 @@ jobs:
       - uses: actions/checkout@v7
       - run: python assemble_build.py
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - name: Test independent feeds by stage
+      - name: Burn in Bravo, Nick Jr. and alternate AMC
         run: |
           python - <<'PY'
           import concurrent.futures, hashlib, json, re, urllib.error, urllib.parse, urllib.request
+          import time
           import build
 
           root = "https://sondog001-cyber.github.io/Stremio-TV"
@@ -23,27 +24,15 @@ jobs:
           settings = json.load(open("config.json"))["stream_health"]
           with urllib.request.urlopen(root + "/diagnostics/stream-health.json", timeout=20) as response:
               published = json.load(response)
-          candidates = {}
-          sources = {
-              "THEROCKSSS/sorted-iptv/main/playlists/entertainment-by-language/english.m3u": {"tier1streams.com"},
-              "gogetta69/public-files/main/m3u_formatted.dat": {"moveonjoy.com", "thetvapp.to"},
-              "gdydg/iptv/main/us.m3u": {"akamaihd.net", "tvpass.org"},
+          candidates = {
+              row["url"]: row for row in published
+              if row["health"]["status"] == "ok" and row["tvg_id"] in {"Bravo.us@East", "NickJr.us@East"}
+              and row["provider_host"] != "aynascope.net"
           }
-          allowed = {"tier1streams.com": {"AE", "BBCAmerica"}, "moveonjoy.com": {"ACCNetwork", "AMC"}, "thetvapp.to": {"ACCNetwork", "BBCAmerica"}, "akamaihd.net": {"BBCAmerica"}, "tvpass.org": {"AE"}}
-          for source, domains in sources.items():
-              with urllib.request.urlopen("https://raw.githubusercontent.com/" + source, timeout=20) as response:
-                  lines = response.read(2000000).decode("utf-8", "replace").splitlines()
-              tag = ""
-              for line in lines:
-                  line = line.strip()
-                  if line.startswith("#EXTINF"):
-                      match = re.search(r'tvg-id="([^"]+)"', line)
-                      tag = match[1] if match else ""
-                  if tag and line.startswith(("http://", "https://")):
-                      host = urllib.parse.urlsplit(line).hostname or ""
-                      for domain in domains:
-                          if (host == domain or host.endswith("." + domain)) and tag.split(".")[0] in allowed[domain]:
-                              candidates[line] = {"tvg_id": tag}
+          with urllib.request.urlopen("https://raw.githubusercontent.com/iptv-org/iptv/master/streams/us.m3u", timeout=20) as response:
+              listing = response.read(2000000).decode()
+          for match in re.finditer(r'tvg-id="(AMC\.us@EastHD)"[^\n]*\n(https?://41\.205\.93\.154[^\s]+)', listing):
+              candidates[match[2]] = {"tvg_id": match[1]}
 
           def classify(error):
               return {"http_status": error.code} if isinstance(error, urllib.error.HTTPError) else {"error": type(error).__name__}
@@ -68,6 +57,17 @@ jobs:
               health = build._probe_stream({"url": url}, 8, True)
               result["segment"] = {k: health[k] for k in ("status", "http_status", "continuity_failure") if k in health}
               if health["status"] == "ok":
+                  policy = settings["burn_in"]
+                  samples = [health["status"]]
+                  for _ in range(policy["duration_seconds"] // policy["interval_seconds"]):
+                      time.sleep(policy["interval_seconds"])
+                      health = build._probe_stream({"url": url}, 8, True)
+                      samples.append(health["status"])
+                      if health["status"] != "ok":
+                          break
+                  result["burn_in"] = samples
+                  if samples[-1] != "ok":
+                      return result
                   qa = build._validate_primary_playback_stream({"url": url, "health": health}, settings["primary_playback_qa"])
                   result["decode"] = {k: qa[k] for k in ("status", "decoder_failure_class", "continuity_failure") if k in qa}
               return result
