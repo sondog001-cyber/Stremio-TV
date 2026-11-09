@@ -425,20 +425,6 @@
       "source_type": "public-third-party",
       "content_kind": "full-linear",
       "content_note": "Visible BBC America branding in artifact 13710945383. Three separate runner passes through segment checks, 60-second burn-in and final decode. Shares an upstream host with the ACC Network candidate."
-    },
-    {
-      "tvg_id": "StarzComedy.us",
-      "name": "Starz Comedy",
-      "url": "http://23.237.104.106:8080/USA_STARZ_COMEDY/index.m3u8",
-      "quality": "SD",
-      "source": "arquerido/mych — Starz Comedy direct HLS",
-      "family": "research-seed",
-      "priority": 12,
-      "philly": false,
-      "headers": {},
-      "source_type": "public-third-party",
-      "content_kind": "full-linear",
-      "content_note": "Two runner QA passes (42698859825 and 42699261984). Capture 13710971317 shows Dinocroc vs. Supergator during its Nov 9 Eastern Starz Comedy schedule slot. Shares an upstream host with the ACC Network and BBC America candidates."
     }
   ]
 }
