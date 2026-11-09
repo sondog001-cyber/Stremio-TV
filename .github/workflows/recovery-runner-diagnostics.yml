@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v7
       - run: python assemble_build.py
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - name: Test fresh MTV2, AMC and USA endpoints
+      - name: Test CBS Sports Network, ACC Network and BBC America
         run: |
           python - <<'PY'
           import concurrent.futures, hashlib, json, re, urllib.error, urllib.parse, urllib.request
@@ -21,9 +21,9 @@ jobs:
 
           settings = json.load(open("config.json"))["stream_health"]
           candidates = {
-              "http://40.160.24.53/MTV2/index.m3u8": {"tvg_id": "MTV2.us"},
-              "https://streamer1.nexgen.bz/AMC/index.m3u8": {"tvg_id": "AMC.us"},
-              "http://190.11.225.124:5000/live/usa_hd/playlist.m3u8": {"tvg_id": "USANetwork.us@East"},
+              "https://gpuserver3.tier1streams.com/CBS_SPORTS_NETWORK/index.m3u8": {"tvg_id": "CBSSportsNetworkUSA.us@SD"},
+              "http://23.237.104.106:8080/USA_ACCN/index.m3u8": {"tvg_id": "ACCNetwork.us@SD"},
+              "http://40.160.24.56/BBC_AMERICA_SD/index.m3u8": {"tvg_id": "BBCAmerica.us@East"},
           }
           def classify(error):
               return {"http_status": error.code} if isinstance(error, urllib.error.HTTPError) else {"error": type(error).__name__}
