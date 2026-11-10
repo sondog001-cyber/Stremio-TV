@@ -1,0 +1,41 @@
+name: Nicktoons AynaScope on-screen/metadata identity (no deploy)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/research-nicktoons-onscreen-identity.yml"
+      - "research/nicktoons_visual_identity_audit.py"
+      - "tests/test_nicktoons_visual_identity_audit.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  nicktoons-screen-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify security and no-false-identity tests
+        run: |
+          python3 -m compileall -q research/nicktoons_visual_identity_audit.py
+          python3 -m unittest tests.test_nicktoons_visual_identity_audit -v
+      - name: Install real decoder and local-only text recognizer
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq -y ffmpeg tesseract-ocr
+          ffprobe -version
+          tesseract --version
+      - name: Read codec and on-screen words, discard every frame in memory
+        run: |
+          python3 -m research.nicktoons_visual_identity_audit \
+            --output research-results/identity/nicktoons-visual-metadata.json
+      - name: Save keywords and metadata only — NO video or screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nicktoons-screen-identity-ocr-only
+          path: research-results/identity/nicktoons-visual-metadata.json
+          if-no-files-found: warn
+          retention-days: 7

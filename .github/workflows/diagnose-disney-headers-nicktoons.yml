@@ -1,0 +1,108 @@
+name: Diagnose Disney, Public Headers and Nicktoons (research only)
+
+on:
+  pull_request:
+    paths:
+      - "research/fresh_origin_discovery.py"
+      - "research/disney_fallback_diagnostic.py"
+      - "research/nicktoons_repeat_diagnostic.py"
+      - "research/public_header_recheck.py"
+      - "research/bravo_nicktoons_decoder_research.py"
+      - "tests/test_research_public_headers.py"
+      - "tests/test_disney_nicktoons_diagnostics.py"
+      - "tests/test_public_header_recheck.py"
+      - ".github/workflows/diagnose-disney-headers-nicktoons.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run production-neutral research unit tests
+        run: |
+          python3 -m compileall -q research/fresh_origin_discovery.py research/disney_fallback_diagnostic.py research/nicktoons_repeat_diagnostic.py research/bravo_nicktoons_decoder_research.py research/public_header_recheck.py
+          python3 -m unittest tests.test_fresh_origin_discovery tests.test_research_public_headers tests.test_disney_nicktoons_diagnostics tests.test_public_header_recheck -v
+
+  header-recheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe distinct public-header CDN gateway families without credentials
+        run: python3 -m research.public_header_recheck --out research-results/public-header-recheck.json
+      - name: Store redacted gateway-preflight results (never deploy)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-header-recheck-no-deploy
+          path: research-results/public-header-recheck.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  disney-fallback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read latest known successful public build diagnostics only
+        uses: actions/download-artifact@v4
+        with:
+          name: stremio-tv-diagnostics
+          run-id: 38398285114
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          path: .research-baseline
+      - name: Report Disney duplicate lineages + probe configured candidates (no promotion)
+        run: |
+          python3 -m research.disney_fallback_diagnostic \
+            --stream-health .research-baseline/diagnostics/stream-health.json \
+            --channels .research-baseline/diagnostics/channels.json \
+            --probe --out research-results/disney-fallback-diagnostic.json
+      - name: Save redacted research outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: disney-diagnostic-no-deploy
+          path: research-results/disney-fallback-diagnostic.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  nicktoons-continuity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read published EPG identification metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: stremio-tv-diagnostics
+          run-id: 38398285114
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          path: .research-baseline
+      - name: Install real FFmpeg decoder (fail setup if absent)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq -y ffmpeg
+          ffmpeg -version
+      - name: Test three independent 60-second direct Nicktoons decodes
+        run: |
+          python3 -m research.nicktoons_repeat_diagnostic \
+            --rounds 3 --pause-seconds 15 \
+            --channels .research-baseline/diagnostics/channels.json \
+            --epg-matches .research-baseline/diagnostics/epg-matches.json \
+            --out research-results/nicktoons-repeat.json
+      - name: Upload Nicktoons technical-only outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nicktoons-three-window-no-deploy
+          path: research-results/nicktoons-repeat.json
+          if-no-files-found: warn
+          retention-days: 7

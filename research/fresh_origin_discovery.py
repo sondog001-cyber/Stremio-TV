@@ -102,6 +102,45 @@ def valid_public_url(url):
         pass
     return True
 
+PUBLIC_HEADER_NAMES = {"referer": "Referer", "origin": "Origin", "user-agent": "User-Agent"}
+VLCOPT_HEADER_KEYS = {
+    "http-referer": "Referer", "http-referrer": "Referer",
+    "http-origin": "Origin", "http-user-agent": "User-Agent",
+}
+
+
+def vetted_public_headers(headers):
+    """Only non-secret, public playback context; fail closed on auth/cookies."""
+    clean = {}
+    for key, value in (headers or {}).items():
+        name = PUBLIC_HEADER_NAMES.get(str(key).lower())
+        val = str(value).strip().strip('"')
+        if not name or not val or len(val) > 300 or any(ord(c) < 32 for c in val + str(key)):
+            raise ValueError("disallowed-private-or-malformed-header")
+        if name in ("Origin", "Referer"):
+            parsed = urllib.parse.urlsplit(val)
+            if not valid_public_url(val) or parsed.query or parsed.fragment:
+                raise ValueError("non-public-or-tokenized-referrer")
+            if name == "Origin" and parsed.path not in ("", "/"):
+                raise ValueError("origin-must-not-contain-path")
+        clean[name] = val
+    return clean
+
+
+def split_stream_locator(raw, vlcopts=None):
+    """Remove Kodi/VLC public-header suffixes from URLs before HTTP requests.
+
+    Never retain cookie/auth/key material in reports, even when malformed.
+    """
+    path, delim, extra = raw.partition("|")
+    headers = dict(vlcopts or {})
+    if delim:
+        for section in extra.split("|"):
+            for key, value in urllib.parse.parse_qsl(section, keep_blank_values=True):
+                headers[key.strip()] = value
+    return path.strip(), vetted_public_headers(headers)
+
+
 class PublicRedirectOnly(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         if not valid_public_url(newurl):
@@ -110,10 +149,12 @@ class PublicRedirectOnly(urllib.request.HTTPRedirectHandler):
 
 OPENER = urllib.request.build_opener(PublicRedirectOnly)
 
-def fetch(url, limit, timeout=9):
+def fetch(url, limit, timeout=9, headers=None):
     if not valid_public_url(url):
         raise ValueError("unsafe-input-URL")
-    request = urllib.request.Request(url, headers={"User-Agent": DEFAULT_AGENT})
+    request_headers = {"User-Agent": DEFAULT_AGENT}
+    request_headers.update(vetted_public_headers(headers))
+    request = urllib.request.Request(url, headers=request_headers)
     with OPENER.open(request, timeout=timeout) as response:
         final = response.geturl()
         if not valid_public_url(final):
@@ -125,16 +166,42 @@ def fetch(url, limit, timeout=9):
 
 def parse_m3u(text):
     inf = None
+    opts = {}
+    invalid = False
     for raw in text.splitlines():
         line = raw.strip()
         if line.startswith("#EXTINF"):
-            inf = line
+            inf, opts, invalid = line, {}, False
+        elif inf and line.upper().startswith("#EXTVLCOPT:"):
+            key, delim, val = line.partition(":")[2].partition("=")
+            name = VLCOPT_HEADER_KEYS.get(key.strip().lower())
+            if not delim or not name:
+                invalid = True
+            else:
+                opts[name] = val
+        elif inf and line.upper().startswith("#KODIPROP:"):
+            # Never ingest manifests requiring DRM, license keys or playback sessions.
+            invalid = True
         elif inf and line and not line.startswith("#"):
             meta = inf.split(",", 1)
             name = meta[1].strip() if len(meta) > 1 else ""
-            match = re.search(r'tvg-id\s*=\s*["\x27]([^"\x27]*)', inf, re.I)
-            yield {"tvg_id": match.group(1).strip() if match else "", "name": name, "url": line}
-            inf = None
+            match = re.search(r'tvg-id\s*=\s*["\\x27]([^"\\x27]*)', inf, re.I)
+            try:
+                if invalid:
+                    raise ValueError("unsupported-playback-property")
+                clean_url, headers = split_stream_locator(line, opts)
+                if not valid_public_url(clean_url):
+                    raise ValueError("unsupported-or-credentialed-URL")
+                yield {"tvg_id": match.group(1).strip() if match else "",
+                       "name": name, "url": clean_url, "public_headers": headers,
+                       "invalid": False}
+            except (ValueError, TypeError):
+                # DO NOT expose rejected raw URL or inline auth details to artifacts.
+                yield {"tvg_id": match.group(1).strip() if match else "",
+                       "name": name, "url": "", "public_headers": {},
+                       "invalid": True}
+            inf, opts, invalid = None, {}, False
+
 
 def exact_target(entry, targets):
     channel_id = entry["tvg_id"]
@@ -206,11 +273,11 @@ def parse_hls_snapshot(text):
             "segments": segments, "target_duration": int(duration.group(1)) if duration else 6}
 
 
-def media_snapshot(url):
+def media_snapshot(url, headers=None):
     """Follow only validated public HLS variant references (maximum two levels)."""
     current = url
     for _ in range(3):
-        p = fetch(current, MAX_MEDIA_MANIFEST, timeout=10)
+        p = fetch(current, MAX_MEDIA_MANIFEST, timeout=10, headers=headers)
         parsed = parse_hls_snapshot(p["data"].decode("utf-8-sig", "replace"))
         if parsed["kind"] != "master":
             return p, parsed
@@ -220,12 +287,13 @@ def media_snapshot(url):
     raise ValueError("excessive-master-indirection")
 
 
-def fetch_media_sample(url):
+def fetch_media_sample(url, headers=None):
     """Read at most 2KB from a direct segment; never save, proxy or retransmit video."""
     if not valid_public_url(url):
         raise ValueError("unsafe-media-segment-url")
-    req = urllib.request.Request(
-        url, headers={"User-Agent": DEFAULT_AGENT, "Range": "bytes=0-2047"})
+    request_headers = {"User-Agent": DEFAULT_AGENT, "Range": "bytes=0-2047"}
+    request_headers.update(vetted_public_headers(headers))
+    req = urllib.request.Request(url, headers=request_headers)
     with OPENER.open(req, timeout=10) as response:
         final_url = response.geturl()
         if response.status not in (200, 206) or not valid_public_url(final_url):
@@ -237,14 +305,14 @@ def fetch_media_sample(url):
         return {"readable": True, "final_media_host": host(final_url)}
 
 
-def probe_manifest(url):
+def probe_manifest(url, headers=None):
     """Isolated *preflight*, not authorization, exact-ID verification or decoder QA.
 
     Require two readable live media manifests showing actual segment-window movement
     plus nonempty segment bytes. Never mark production eligible based on this alone.
     """
     try:
-        first, before = media_snapshot(url)
+        first, before = media_snapshot(url, headers=headers)
         base = {"http_status": first["status"], "final_host": host(first["final"]),
                 "final_family": host_family(host(first["final"])),
                 "redirected": first["final"] != url,
@@ -254,7 +322,7 @@ def probe_manifest(url):
             return dict(base, stage="not-live-readable-hls")
         delay = min(15, max(6, before["target_duration"] * 1.5))
         time.sleep(delay)
-        second, after = media_snapshot(url)
+        second, after = media_snapshot(url, headers=headers)
         if after["kind"] != "media":
             return dict(base, stage="second-media-manifest-unreadable")
         seq_advanced = before["sequence"] is not None and after["sequence"] is not None and (
@@ -264,7 +332,7 @@ def probe_manifest(url):
             return dict(base, stage="hls-window-not-progressing",
                         sequence_before=before["sequence"], sequence_after=after["sequence"])
         segment_url = urllib.parse.urljoin(second["final"], after["segments"][-1])
-        sample = fetch_media_sample(segment_url)
+        sample = fetch_media_sample(segment_url, headers=headers)
         return dict(base, stage="progressing-hls-readable-not-decoded",
                     sequence_before=before["sequence"], sequence_after=after["sequence"],
                     media_host=sample["final_media_host"], media_bytes_readable=True,
@@ -296,7 +364,7 @@ def run(batch, artifact):
                 continue
             url = entry["url"]
             h = host(url)
-            if not valid_public_url(url):
+            if entry.get("invalid") or not valid_public_url(url):
                 state = "reject-credentials-private-or-unsupported"
             elif url in disabled:
                 state = "reject-exact-disabled-url"
@@ -309,16 +377,19 @@ def run(batch, artifact):
                 "name": entry["name"], "tvg_id_from_playlist": entry["tvg_id"],
                 "identity_evidence": evidence, "source": seed["name"],
                 "source_repo": seed["repo"],
-                "url": url if "reject-credentials" not in state else "[excluded: credentialed/private]",
+                "url": url if "reject-credentials" not in state else "[excluded: unsafe locator]",
+                "header_names": sorted(entry.get("public_headers", {})),
+                "public_headers": entry.get("public_headers", {}),
                 "entry_host": h, "entry_host_family": host_family(h),
                 "host_known_in_deployed_diagnostics": h in known_hosts,
                 "discovery_class": state, "authorized_origin_confirmed": False,
                 "verified_channel_identity": False, "production_eligible": False,
             })
-    # Same URL in multiple discovery repos is one lead, not independent origins.
+    # Same URL with different PUBLIC playback context can differ in reachability.
+    # Same entry host is still NOT proof of distinct media origins.
     uniq = {}
     for row in results:
-        key = (row["channel"], row["url"])
+        key = (row["channel"], row["url"], tuple(sorted(row.get("public_headers", {}).items())))
         uniq.setdefault(key, row)
     results = list(uniq.values())
     # Probe at most two distinct new-host families per channel per run:
@@ -334,7 +405,7 @@ def run(batch, artifact):
                 continue
             probed_groups.add(group)
             probed_by_channel[row["channel"]] += 1
-            row["manifest_probe"] = probe_manifest(row["url"])
+            row["manifest_probe"] = probe_manifest(row["url"], headers=row.get("public_headers"))
             final = row["manifest_probe"].get("final_host")
             if final and final in known_hosts:
                 row["discovery_class"] = "redirects-to-known-host"

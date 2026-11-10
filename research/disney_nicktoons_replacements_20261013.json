@@ -1,0 +1,88 @@
+{
+  "date": "2026-10-13",
+  "purpose": "Isolated original-host lineage + bounded direct HLS/FFmpeg research; never production selection or local-test auto-promotion",
+  "production_disney": {
+    "tvg_id": "DisneyChannel.us",
+    "host": "212.5.144.156",
+    "note": "Two selected list records but same exact URL; the current single point of failure"
+  },
+  "production_nicktoons": {
+    "tvg_id": "Nicktoons.us",
+    "host": "41.205.93.154",
+    "note": "Three-window FFmpeg research found short loops and 8-second freeze in third window"
+  },
+  "candidates": [
+    {
+      "tvg_id": "DisneyChannel.us",
+      "name": "Disney Channel East",
+      "entry_url": "https://e5.thetvapp.to/hls/DisneyChannelEast/index.m3u8",
+      "source_ref": "https://github.com/iptv-org/iptv/issues/28387",
+      "family": "thetvapp",
+      "identity_evidence": "iptv-org issue labelled DisneyChannel.us East",
+      "caution": "Third-party relay; 2025 submission; availability, provenance and rights unknown"
+    },
+    {
+      "tvg_id": "DisneyChannel.us",
+      "name": "Disney Channel East",
+      "entry_url": "http://fl12.moveonjoy.com/DISNEY/index.m3u8",
+      "source_ref": "https://github.com/judy-gotv/iptv/blob/main/Moveonjoy.m3u",
+      "family": "moveonjoy",
+      "identity_evidence": "DisneyChannel.us@East in public GitHub list",
+      "caution": "Old relay family, routinely refused; control not fresh original video CDN"
+    },
+    {
+      "tvg_id": "DisneyChannel.us",
+      "name": "Disney Channel",
+      "entry_url": "http://iptvcdn.airlinktt.co/ttorigin07/live/smil:DISNEY.smil/playlist.m3u8",
+      "source_ref": "https://github.com/bbest1716/67uyuyuyuyuyuyuyuy/blob/main/LOCAB2K24.m3u8",
+      "family": "airlink",
+      "identity_evidence": "Disney label in community playlist",
+      "caution": "Same Airlink family as failed httpstreamer01...; sibling host NOT independent backup"
+    },
+    {
+      "tvg_id": "Nicktoons.us",
+      "name": "Nicktoons East",
+      "entry_url": "https://gpuserver5.tier1streams.com/NICKTOONS/index.m3u8",
+      "source_ref": "https://github.com/iptv-org/iptv/issues/47917",
+      "family": "tier1streams",
+      "identity_evidence": "iptv-org Nicktoons.us@East issue August 7, 2026",
+      "caution": "Unverified third-party streaming gateway, not proven broadcaster origin"
+    },
+    {
+      "tvg_id": "Nicktoons.us",
+      "name": "Nicktoons East",
+      "entry_url": "http://tvsen7.aynascope.net/nicktoons/index.m3u8",
+      "source_ref": "https://github.com/iptv-org/iptv/issues/48485",
+      "family": "aynascope",
+      "identity_evidence": "iptv-org Nicktoons.us@East issue August 16, 2026",
+      "caution": "Do not reproduce expiring query tokens or provider-account URLs"
+    },
+    {
+      "tvg_id": "Nicktoons.us",
+      "name": "Nicktoons East",
+      "entry_url": "http://206.212.244.63/3151/index.m3u8",
+      "source_ref": "https://github.com/iptv-org/iptv/issues/45330",
+      "family": "206.212.244.63",
+      "identity_evidence": "iptv-org Nicktoons.us@East issue July 17, 2026",
+      "caution": "Shared older direct-IP relay; independence and uptime unknown"
+    }
+  ],
+  "excluded": [
+    {
+      "source": "tvsen7.aynascope.net/disney/index.m3u8",
+      "reason": "IPTV-org US list labels same endpoint DisneyJunior.us, conflicts with Disney Channel-labelled third party listing; do not risk false Disney full-linear identity"
+    },
+    {
+      "source": "216.5.144.156 / Disney mirror re-labels",
+      "reason": "No distinct original upstream; do not count clones"
+    },
+    {
+      "source": "thetvapp signed token playlist examples",
+      "reason": "No rotating subscriber/session IDs, expiring signed credentials, or URL token extraction"
+    },
+    {
+      "source": "nickname French/Latin-American Nicktoons",
+      "reason": "Wrong regional network feed"
+    }
+  ]
+}
