@@ -1,0 +1,32 @@
+name: Find independent provider media origins (research only)
+on:
+  pull_request:
+    paths:
+      - "research/fresh_provider_family_hunt.py"
+      - "tests/test_fresh_provider_family_hunt.py"
+      - ".github/workflows/fresh-provider-family-hunt.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fresh-source-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install FFmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Run safe origin novelty and credential filter tests
+        run: python -m unittest discover -s tests -p 'test_fresh_provider_family_hunt.py' -v
+      - name: Hunt independent US media origins without any manifest mutation
+        run: python research/fresh_provider_family_hunt.py
+      - name: Upload research report including origin family and rejection reasons
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fresh-provider-family-hunt
+          path: research/diagnostics/fresh-provider-family-hunt.json
+          retention-days: 14

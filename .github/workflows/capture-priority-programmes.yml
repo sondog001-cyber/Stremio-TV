@@ -1,0 +1,26 @@
+name: Capture priority Disney NatGeo Food Cooking programmes (research only)
+on:
+  pull_request:
+    paths:
+      - "research/capture_priority_programmes.py"
+      - ".github/workflows/capture-priority-programmes.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  identity-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install FFmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Capture time-spaced network identity frames
+        run: python3 research/capture_priority_programmes.py
+      - name: Upload footage review contact material
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: priority-network-programme-identity-frames
+          path: research/diagnostics/priority-identity-frames/
+          retention-days: 14
