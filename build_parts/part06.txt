@@ -510,6 +510,7 @@
             "dynamic_discovery_candidates": len(discovered_entries),
             "dynamic_discovery_events": len(discovery_results),
             "daddylive_resolver": {
+                "startup_status": os.environ.get("DADDYLIVE_STARTUP_STATUS", "not-reported"),
                 "status": daddylive_resolver_report.get("status"),
                 "targets": daddylive_resolver_report.get("targets", 0),
                 "resolved": daddylive_resolver_report.get("resolved", 0),
