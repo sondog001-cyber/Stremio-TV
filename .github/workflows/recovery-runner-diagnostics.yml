@@ -14,10 +14,10 @@ jobs:
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Validate public provider candidates without deploying
         run: |
-          python - provider-validation github-runner <<'PYCODE'
-          import pathlib,json
+          python - provider-validation github-runner-repeat <<'PYCODE'
+          import pathlib
           p=pathlib.Path("provider-validation");p.mkdir(exist_ok=True)
-          (p/"candidates.json").write_text('[{"provider": "eja.tv", "source_page": "http://eja.tv/?search=Hallmark&country=us", "channel_label": "Hallmark Channel", "tvg_id": "HallmarkChannel.us", "url": "http://41.205.93.154/HALLMARK/index.m3u8", "endpoint_sha256": "39b6db2bc71015cc1dfa9577bcc6c48bb2ccb5bdd8a776e64e6d9041857e4269", "host": "41.205.93.154", "screening": "test", "identity": "Conflicts with project Hallmark Mystery mapping; no recovery credit"}, {"provider": "eja.tv", "source_page": "http://eja.tv/?search=Fox+News&country=us", "channel_label": "Fox News Channel", "tvg_id": "FoxNewsChannel.us", "url": "https://tvsen6.aynaott.com/foxnews/index.m3u8", "endpoint_sha256": "a07b89b6faf7a6472524df6d5a3a3077e0f17dd28cc26a84d0f0e5f84574e768", "host": "tvsen6.aynaott.com", "screening": "test", "identity": "unverified"}, {"provider": "eja.tv", "source_page": "http://eja.tv/?search=Fox+News&country=us", "channel_label": "Fox News Channel", "tvg_id": "FoxNewsChannel.us", "url": "http://138.121.15.230:9002/FOX-NEWS/index.m3u8", "endpoint_sha256": "484285302bbd57f2e2af0fab4a1fc53236ff2bf41ce56650103aa6ffcba744a9", "host": "138.121.15.230", "screening": "test", "identity": "unverified"}, {"provider": "eja.tv", "source_page": "http://eja.tv/?search=USA+Network&country=us", "channel_label": "USA Network", "tvg_id": "USANetwork.us", "url": "https://tvsen3.aynaott.com/dbbcY6NG/index.m3u8", "endpoint_sha256": "6b4f4dc7af547cbaf949139396c2fd081ccbe953515cd7986b2d3c1dc0d5c416", "host": "tvsen3.aynaott.com", "screening": "test", "identity": "unverified"}, {"provider": "Global Free TV", "source_page": "https://globalfreetv.com/channels/FoxNewsChannel.us", "channel_label": "Fox News Channel", "tvg_id": "FoxNewsChannel.us", "url": "https://247preview.foxnews.com/hls/live/2020027/fncv3preview/primary.m3u8", "host": "247preview.foxnews.com", "screening": "test", "identity": "Preview endpoint; ineligible until full-linear identity proven", "endpoint_sha256": "1d0f9530b58779c9543f5c86283bd2016421c2df0bf64f820e113f5ec035dafe"}]')
+          (p/"candidates.json").write_text('[{"provider": "eja.tv", "source_page": "http://eja.tv/?search=Fox+News&country=us", "channel_label": "Fox News Channel", "tvg_id": "FoxNewsChannel.us", "url": "https://tvsen6.aynaott.com/foxnews/index.m3u8", "endpoint_sha256": "a07b89b6faf7a6472524df6d5a3a3077e0f17dd28cc26a84d0f0e5f84574e768", "host": "tvsen6.aynaott.com", "screening": "test", "identity": "unverified"}, {"provider": "eja.tv", "source_page": "http://eja.tv/?search=USA+Network&country=us", "channel_label": "USA Network", "tvg_id": "USANetwork.us", "url": "https://tvsen3.aynaott.com/dbbcY6NG/index.m3u8", "endpoint_sha256": "6b4f4dc7af547cbaf949139396c2fd081ccbe953515cd7986b2d3c1dc0d5c416", "host": "tvsen3.aynaott.com", "screening": "test", "identity": "unverified"}, {"provider": "eja.tv", "source_page": "http://eja.tv/?search=NFL+Network&country=us", "channel_label": "NFL Network", "tvg_id": "NFLNetwork.us", "url": "https://tvsen6.aynaott.com/nfl/index.m3u8", "host": "tvsen6.aynaott.com", "endpoint_sha256": "956abb40da052a817ff0219e1b3a38a7453e617a803587c81b532a12889bbde2", "screening": "test", "identity": "Unverified; latest production loss"}]')
           import concurrent.futures,datetime,hashlib,json,pathlib,subprocess,sys,urllib.request,urllib.error
           sys.path.insert(0,str(pathlib.Path('repo').resolve()) if pathlib.Path('repo/build.py').exists() else str(pathlib.Path('.').resolve()))
           import build
@@ -62,9 +62,19 @@ jobs:
             except subprocess.TimeoutExpired:r['sustained_av']={'status':'failed','error':'90-second timeout'}
           (root/'results.json').write_text(json.dumps(results,indent=2))
           for r in results:print(r['provider'],r['channel_label'],r['host'],'playlist',r['playlist'].get('status'),'segment',r['segment'].get('status'),'burn',r['burn_in'].get('status'),'decode',r['decode'].get('status'),'AV60',r['sustained_av'].get('status'))
+          
+          for row in results:
+              if row['decode'].get('status')!='ok':continue
+              prefix=row['tvg_id'].replace('.','-')
+              try:
+                  cmd=['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-rw_timeout','8000000','-i',row['url'],'-vf','fps=1/20,scale=640:-2','-frames:v','4','-t','80','-y',str(root/(prefix+'-%02d.jpg'))]
+                  cp=subprocess.run(cmd,capture_output=True,text=True,timeout=100)
+                  row['identity_capture']={'exit_code':cp.returncode,'error':cp.stderr[-500:]}
+              except subprocess.TimeoutExpired:row['identity_capture']={'error':'timeout'}
+          (root/'results.json').write_text(json.dumps(results,indent=2))
           PYCODE
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: recovery-provider-validation
+          name: recovery-provider-validation-repeat
           path: provider-validation/
