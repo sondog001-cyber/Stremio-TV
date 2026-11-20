@@ -58,7 +58,7 @@ jobs:
              p=subprocess.run(cmd,capture_output=True,text=True,timeout=90)
              times=[int(x.split('=',1)[1]) for x in p.stdout.splitlines() if x.startswith('out_time_us=') and x.split('=',1)[1].isdigit()]
              seconds=max(times,default=0)/1e6
-             r['sustained_av']={'status':'ok' if p.returncode==0 and seconds>=59 else 'failed','decoded_seconds':seconds,'exit_code':p.returncode,'error':p.stderr[-1000:]}
+             r['sustained_av']={'status':'ok' if p.returncode==0 and seconds>=60 else 'failed','decoded_seconds':seconds,'exit_code':p.returncode,'error':p.stderr[-1000:]}
             except subprocess.TimeoutExpired:r['sustained_av']={'status':'failed','error':'90-second timeout'}
           (root/'results.json').write_text(json.dumps(results,indent=2))
           for r in results:print(r['provider'],r['channel_label'],r['host'],'playlist',r['playlist'].get('status'),'segment',r['segment'].get('status'),'burn',r['burn_in'].get('status'),'decode',r['decode'].get('status'),'AV60',r['sustained_av'].get('status'))
