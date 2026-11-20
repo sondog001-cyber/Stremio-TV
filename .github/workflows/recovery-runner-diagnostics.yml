@@ -12,12 +12,12 @@ jobs:
       - uses: actions/checkout@v7
       - run: python assemble_build.py
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - name: Validate public provider candidates without deploying
+      - name: Validate fresh five-channel sources
         run: |
-          python - provider-validation github-runner-repeat <<'PYCODE'
+          python - five-channel-recovery github-runner <<'PYCODE'
           import pathlib
-          p=pathlib.Path("provider-validation");p.mkdir(exist_ok=True)
-          (p/"candidates.json").write_text('[{"provider": "eja.tv", "source_page": "http://eja.tv/?search=Fox+News&country=us", "channel_label": "Fox News Channel", "tvg_id": "FoxNewsChannel.us", "url": "https://tvsen6.aynaott.com/foxnews/index.m3u8", "endpoint_sha256": "a07b89b6faf7a6472524df6d5a3a3077e0f17dd28cc26a84d0f0e5f84574e768", "host": "tvsen6.aynaott.com", "screening": "test", "identity": "unverified"}, {"provider": "eja.tv", "source_page": "http://eja.tv/?search=USA+Network&country=us", "channel_label": "USA Network", "tvg_id": "USANetwork.us", "url": "https://tvsen3.aynaott.com/dbbcY6NG/index.m3u8", "endpoint_sha256": "6b4f4dc7af547cbaf949139396c2fd081ccbe953515cd7986b2d3c1dc0d5c416", "host": "tvsen3.aynaott.com", "screening": "test", "identity": "unverified"}, {"provider": "eja.tv", "source_page": "http://eja.tv/?search=NFL+Network&country=us", "channel_label": "NFL Network", "tvg_id": "NFLNetwork.us", "url": "https://tvsen6.aynaott.com/nfl/index.m3u8", "host": "tvsen6.aynaott.com", "endpoint_sha256": "956abb40da052a817ff0219e1b3a38a7453e617a803587c81b532a12889bbde2", "screening": "test", "identity": "Unverified; latest production loss"}]')
+          p=pathlib.Path("five-channel-recovery");p.mkdir(exist_ok=True)
+          (p/"candidates.json").write_text('[{"tvg_id": "CBSSportsNetwork.us", "channel_label": "CBSSportsNetwork.us", "url": "https://cdn2.aluku91.foundation/usa-cbssport.m3u8", "provider": "cdn2.aluku91.foundation", "source_page": "https://huggingface.co/spaces/Gigipop/Mytv/blob/main/ustv2.json", "host": "cdn2.aluku91.foundation", "endpoint_sha256": "1a339e12bd9b79af15ade6b6c983a090bf254b68aeb041eb6b5a8aa7ed3516ad", "identity": "unverified", "screening": "test"}, {"tvg_id": "CBSSportsNetwork.us", "channel_label": "CBSSportsNetwork.us", "url": "https://tx3.nexgen.bz:4000/CBS_SPORTS/index.m3u8", "provider": "tx3.nexgen.bz", "source_page": "https://t.me/s/bdixlink?before=1286", "host": "tx3.nexgen.bz", "endpoint_sha256": "734279d6a81746a74828d2eec7c3b299656c6f6b26673e865ad9385184234d79", "identity": "unverified", "screening": "test"}, {"tvg_id": "NFLNetwork.us", "channel_label": "NFLNetwork.us", "url": "https://t.freetv.fun/live/nfl-network.m3u8", "provider": "t.freetv.fun", "source_page": "https://freetv.fun/search/NFL", "host": "t.freetv.fun", "endpoint_sha256": "4d57671a0c3e96f434a30f8419f681ee045ab2e642546952d06a03a2369a2445", "identity": "unverified", "screening": "test"}, {"tvg_id": "Pop.us", "channel_label": "Pop.us", "url": "http://n1.klowdtv.net/live2/pop_720p/playlist.m3u8", "provider": "n1.klowdtv.net", "source_page": "https://github.com/Valchrist23/VikT", "host": "n1.klowdtv.net", "endpoint_sha256": "7a3e3d02386ddd9f6b06e8d5764ceef09a8631e7ec99e1b81940116b210ebb99", "identity": "unverified", "screening": "test"}, {"tvg_id": "Pop.us", "channel_label": "Pop.us", "url": "https://live-poptv-fastly-prod.global.ssl.fastly.net/pop/master.m3u8", "provider": "live-poptv-fastly-prod.global.ssl.fastly.net", "source_page": "https://community.getchannels.com/t/provider-xfinity/18118?page=24", "host": "live-poptv-fastly-prod.global.ssl.fastly.net", "endpoint_sha256": "ab620df624209bd177c4229095d91a3c3ef12167634f1f4c1f4caa4a1f16c41e", "identity": "unverified", "screening": "test"}, {"tvg_id": "USANetwork.us", "channel_label": "USANetwork.us", "url": "https://s3.rtzhx12.online/usa-usanetwork.m3u8", "provider": "s3.rtzhx12.online", "source_page": "https://huggingface.co/spaces/Gigipop/Mytv/blob/a022b8ed863f1b87a6072c1e13d5eeb8d3454127/ustv.json", "host": "s3.rtzhx12.online", "endpoint_sha256": "29ced5188710eaa575880b77aa6c26eaa59224210c4bcdb712f222ab5b599394", "identity": "unverified", "screening": "test"}, {"tvg_id": "Fox.us@WTXFTV", "channel_label": "Fox.us@WTXFTV", "url": "https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg00488-foxdigital-fox29philadelphiawtx-vizious/playlist.m3u8", "provider": "cdn-uw2-prod.tsv2.amagi.tv", "source_page": "https://www.fox29.com/live", "host": "cdn-uw2-prod.tsv2.amagi.tv", "endpoint_sha256": "58492a4c7a2ed5a4992d277f56f92385da4706361982fd1e5dd39bd51fc8010f", "identity": "unverified", "screening": "test"}]')
           import concurrent.futures,datetime,hashlib,json,pathlib,subprocess,sys,urllib.request,urllib.error
           sys.path.insert(0,str(pathlib.Path('repo').resolve()) if pathlib.Path('repo/build.py').exists() else str(pathlib.Path('.').resolve()))
           import build
@@ -62,19 +62,44 @@ jobs:
             except subprocess.TimeoutExpired:r['sustained_av']={'status':'failed','error':'90-second timeout'}
           (root/'results.json').write_text(json.dumps(results,indent=2))
           for r in results:print(r['provider'],r['channel_label'],r['host'],'playlist',r['playlist'].get('status'),'segment',r['segment'].get('status'),'burn',r['burn_in'].get('status'),'decode',r['decode'].get('status'),'AV60',r['sustained_av'].get('status'))
-          
-          for row in results:
-              if row['decode'].get('status')!='ok':continue
-              prefix=row['tvg_id'].replace('.','-')
-              try:
-                  cmd=['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-rw_timeout','8000000','-i',row['url'],'-vf','fps=1/20,scale=640:-2','-frames:v','4','-t','80','-y',str(root/(prefix+'-%02d.jpg'))]
-                  cp=subprocess.run(cmd,capture_output=True,text=True,timeout=100)
-                  row['identity_capture']={'exit_code':cp.returncode,'error':cp.stderr[-500:]}
-              except subprocess.TimeoutExpired:row['identity_capture']={'error':'timeout'}
-          (root/'results.json').write_text(json.dumps(results,indent=2))
+          PYCODE
+      - name: Diagnose verified MPEG-TS input compatibility for WTXF
+        run: |
+          python - <<'PYCODE'
+          import urllib.request,urllib.parse,subprocess,hashlib,json,pathlib
+          import build
+          root=pathlib.Path('five-channel-recovery');root.mkdir(exist_ok=True)
+          u='https://amg00488-foxdigital-fox29philadelphiawtx-vizious-x0v1b.amagi.tv/playlist/amg00488-foxdigital-fox29philadelphiawtx-vizious/playlist.m3u8'
+          result={'url':u,'channel':'Fox.us@WTXFTV','reason':'Official WTXF stream uses extensionless HTTPS tracking redirects to MPEG-TS media'}
+          try:
+           with urllib.request.urlopen(u,timeout=10) as p:t=p.read(262144).decode();base=p.url
+           variants=build._parse_hls_variants(t,base);v=max(variants,key=lambda x:(x['height'],x['bandwidth']));media=v['url']
+           with urllib.request.urlopen(media,timeout=10) as p:t=p.read(262144).decode();base=p.url
+           seg=next(x.strip() for x in t.splitlines() if x.strip() and not x.startswith('#'));seg=urllib.parse.urljoin(base,seg)
+           assert urllib.parse.urlsplit(seg).scheme=='https' and urllib.parse.urlsplit(seg).hostname==urllib.parse.urlsplit(u).hostname
+           with urllib.request.urlopen(seg,timeout=10) as p:b=p.read(6000000);ctype=p.headers.get('Content-Type','')
+           assert ctype.startswith('video/') and b[:1]==b'G' and b[188:189]==b'G'
+           result['segment']={'bytes':len(b),'content_type':ctype,'mpeg_ts_sync':True,'sha256':hashlib.sha256(b).hexdigest()}
+           for label,target,extra in [('master-default',u,[]),('rendition-extensionless',media,['-extension_picky','0'])]:
+            cmd=['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-rw_timeout','10000000']+extra+['-i',target,'-t','10','-map','0:v:0','-vf','fps=2,scale=160:-2','-an','-f','framemd5','-']
+            try:
+             cp=subprocess.run(cmd,capture_output=True,text=True,timeout=35);hashes=build._framemd5_hashes(cp.stdout);rep=build._find_repeated_frame_clip(hashes,2,2,4)
+             result[label]={'returncode':cp.returncode,'frames':len(hashes),'repeat':rep,'error':cp.stderr[-1800:]}
+            except subprocess.TimeoutExpired:result[label]={'error':'timeout'}
+            if result[label].get('frames',0)>=16 and not rep:
+             cmd=['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-rw_timeout','10000000']+extra+['-i',target,'-t','60','-map','0:v:0','-map','0:a:0','-progress','pipe:1','-f','null','-']
+             try:
+              cp=subprocess.run(cmd,capture_output=True,text=True,timeout=90);times=[int(x.split('=',1)[1]) for x in cp.stdout.splitlines() if x.startswith('out_time_us=') and x.split('=',1)[1].isdigit()];result[label]['av60']={'exit_code':cp.returncode,'decoded_seconds':max(times,default=0)/1e6,'error':cp.stderr[-1000:]}
+             except subprocess.TimeoutExpired:result[label]['av60']={'error':'timeout'}
+             try:
+              cp=subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-rw_timeout','8000000']+extra+['-i',target,'-frames:v','1','-y',str(root/('fox-'+label+'.jpg'))],capture_output=True,text=True,timeout=25);result[label]['capture_exit']=cp.returncode
+             except subprocess.TimeoutExpired:result[label]['capture_error']='timeout'
+          except Exception as e:result['error']=type(e).__name__+': '+str(e)
+          (root/'fox-format-experiment.json').write_text(json.dumps(result,indent=2))
+          print(json.dumps({k:v for k,v in result.items() if k!='url'},indent=2))
           PYCODE
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: recovery-provider-validation-repeat
-          path: provider-validation/
+          name: five-channel-recovery-batch1
+          path: five-channel-recovery/
