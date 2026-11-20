@@ -1881,6 +1881,78 @@ def _classify_decoder_attempts(attempts: list[dict[str, Any]]) -> str:
     return "insufficient-decode"
 
 
+def _verified_wtxf_decoder_input(url: str, headers: dict[str, str]) -> tuple[str, list[str]]:
+    """Handle WTXF's extensionless beacon URLs only after verifying native TS.
+
+    This changes FFmpeg input handling, not decoded-frame, repeat or survival
+    requirements. Published playback URLs remain the direct upstream masters.
+    """
+    slug = "amg00488-foxdigital-fox29philadelphiawtx-vizious"
+    host = slug + "-x0v1b.amagi.tv"
+    roots = {
+        ("cdn-uw2-prod.tsv2.amagi.tv", "/linear/" + slug + "/playlist.m3u8"),
+        (host, "/playlist/" + slug + "/playlist.m3u8"),
+    }
+    try:
+        parsed = urllib.parse.urlsplit(url)
+        if (parsed.scheme != "https" or parsed.username or parsed.password
+                or parsed.port not in (None, 443) or parsed.query or parsed.fragment
+                or (parsed.hostname, parsed.path) not in roots):
+            return url, []
+    except ValueError:
+        return url, []
+
+    def trusted(target: str) -> bool:
+        item = urllib.parse.urlsplit(target)
+        return (item.scheme == "https" and item.hostname == host
+                and item.port in (None, 443) and not item.username and not item.password)
+
+    def fetch(target: str, limit: int, media: bool = False) -> tuple[str, str, bytes]:
+        request_headers = {"User-Agent": USER_AGENT, **headers}
+        if media:
+            request_headers["Range"] = "bytes=0-1023"
+        request = urllib.request.Request(target, headers=request_headers)
+        with urllib.request.urlopen(request, timeout=8) as response:
+            final = response.geturl()
+            if not trusted(final):
+                raise ValueError("Untrusted WTXF redirect")
+            return final, response.headers.get("Content-Type", ""), response.read(limit)
+
+    try:
+        master_url, _content_type, body = fetch(url, 262144)
+        text = body.decode("utf-8")
+        if not text.lstrip().startswith("#EXTM3U"):
+            return url, []
+        variants = _parse_hls_variants(text, master_url)
+        if not variants:
+            return url, []
+        rendition = max(variants, key=lambda row: (row["height"], row["width"], row["bandwidth"]))["url"]
+        if not trusted(rendition):
+            return url, []
+        media_url, _content_type, body = fetch(rendition, 262144)
+        text = body.decode("utf-8")
+        if not text.lstrip().startswith("#EXTM3U"):
+            return url, []
+        # This compatibility path is for multiplexed, unencrypted MPEG-TS only.
+        if "#EXT-X-MAP:" in text or any(
+            line.startswith("#EXT-X-KEY:") and "METHOD=NONE" not in line
+            for line in text.splitlines()
+        ):
+            return url, []
+        segments = [urllib.parse.urljoin(media_url, line.strip())
+                    for line in text.splitlines() if line.strip() and not line.startswith("#")]
+        if not segments or not all(trusted(segment) for segment in segments):
+            return url, []
+        _final_url, content_type, sample = fetch(segments[0], 1024, media=True)
+        if (content_type.split(";", 1)[0].strip().lower() != "video/mp2t"
+                or len(sample) < 565 or any(sample[offset] != 0x47 for offset in (0, 188, 376, 564))):
+            return url, []
+        return media_url, ["-extension_picky", "0", "-protocol_whitelist", "https,tls,tcp,httpproxy"]
+    except (OSError, ValueError, TypeError, KeyError, UnicodeError):
+        # Keep the original strict decoder behavior when verification fails.
+        return url, []
+
+
 def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     """Require repeated successful decoded connections for direct media."""
     if not bool(settings.get("enabled", False)):
@@ -1916,6 +1988,7 @@ def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, 
     )
 
     headers = stream.get("headers") or {}
+    decoder_url, input_options = _verified_wtxf_decoder_input(url, headers)
     base_command = [
         ffmpeg,
         "-hide_banner",
@@ -1932,9 +2005,10 @@ def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, 
             "-headers",
             "".join(f"{key}: {value}\r\n" for key, value in headers.items()),
         ])
+    base_command.extend(input_options)
     base_command.extend([
         "-i",
-        url,
+        decoder_url,
         "-t",
         str(duration),
         "-map",
