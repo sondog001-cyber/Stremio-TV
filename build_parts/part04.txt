@@ -1904,6 +1904,14 @@ def _verified_native_hls_decoder_input(url: str, headers: dict[str, str]) -> tup
         "/live/0sdzfll1dvild80gw1jbx/master.m3u8",
         "/live/0hzz30t0ddti3x1upnrpx/master.m3u8",
     }
+    # Additional exact public-catalog roots are tested anonymously: no supplied
+    # Referer, Origin or other access headers may enable this profile.
+    tvnow_header_free_paths = {
+        "/live/0xq54zb1c24z9k1lvm90r/master.m3u8",
+        "/live/0o5darq1spb8040ytc566/master.m3u8",
+        "/live/0a8a7o303jcm7q0igvapt/master.m3u8",
+        "/live/13uvzx71qqozoy080ilon/master.m3u8",
+    }
     candy_hosts = {"edge1.candyshop.st", "edge2.candyshop.st", "edge.candyshop.st", "candyshop.st"}
     try:
         parsed = urllib.parse.urlsplit(url)
@@ -1912,8 +1920,9 @@ def _verified_native_hls_decoder_input(url: str, headers: dict[str, str]) -> tup
             return url, []
         if (parsed.hostname, parsed.path) in roots and not parsed.query:
             pass
-        elif (parsed.hostname == "cache0.wonvt.st" and parsed.path in tvnow_paths
-                and not parsed.query and headers.get("Referer") == "https://tvnow.st/"):
+        elif (parsed.hostname == "cache0.wonvt.st" and not parsed.query
+                and ((parsed.path in tvnow_paths and headers.get("Referer") == "https://tvnow.st/")
+                     or (parsed.path in tvnow_header_free_paths and not headers))):
             profile = "tvnow"
             trusted_hosts = {"cache0.wonvt.st", "silver-harbor-27.lifeisaware.workers.dev"}
             accepted_types.add("application/octet-stream")

@@ -79,4 +79,18 @@ class NativeTransportProfileTests(unittest.TestCase):
             with mock.patch('build.urllib.request.urlopen', side_effect=responses):
                 self.assertEqual(build._verified_native_hls_decoder_input(root, {}), (root, []))
 
+    def test_exact_new_catalog_roots_allow_only_anonymous_native_media(self):
+        root = 'https://cache0.wonvt.st/live/0o5darq1spb8040ytc566/master.m3u8'
+        segment = 'https://silver-harbor-27.lifeisaware.workers.dev/s/native'
+        playlist = f'#EXTM3U\n#EXTINF:6,\n{segment}\n'.encode()
+        responses = [self.response(root, playlist), self.response(segment, self.ts, 'application/octet-stream')]
+        with mock.patch('build.urllib.request.urlopen', side_effect=responses):
+            url, options = build._verified_native_hls_decoder_input(root, {})
+        self.assertEqual(url, root)
+        self.assertIn('-extension_picky', options)
+        with mock.patch('build.urllib.request.urlopen') as fetch:
+            for headers in [{'Referer':'https://tvnow.st/'}, {'Origin':'https://tvnow.st'}, {'Authorization':'test'}]:
+                self.assertEqual(build._verified_native_hls_decoder_input(root, headers), (root, []))
+        fetch.assert_not_called()
+
 if __name__ == '__main__': unittest.main()
