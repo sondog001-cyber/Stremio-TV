@@ -16,10 +16,10 @@ jobs:
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Validate next fresh five-channel source batch
         run: |
-          python - five-channel-recovery/batch9 github-runner <<'PYCODE'
+          python - five-channel-recovery/batch10 github-runner <<'PYCODE'
           import pathlib,json
-          p=pathlib.Path('five-channel-recovery/batch9');p.mkdir(parents=True,exist_ok=True)
-          (p/'candidates.json').write_text('[\n  {\n    "url": "https://dbrb49pjoymg4.cloudfront.net/v1/master/3fec3e5cac39a52b2132f9c66c83dae043dc17d4/prod_default_xumo-ams-aws/master.m3u8?ads.xumo_channelId=99991709",\n    "tvg_id": "HallmarkMoviesMore.us@SD",\n    "provider": "Official Xumo Hallmark Movies More",\n    "source_page": "https://play.xumo.com/",\n    "channel_label": "Hallmark Movies & More",\n    "host": "dbrb49pjoymg4.cloudfront.net",\n    "endpoint_sha256": "c7276c526d0adfc8a3e73d309fe16699ae7c30b7f251c0d85f12f552fff70fc5",\n    "screening": "test",\n    "identity": "Exact established channel; new staging decoder failure; video identity required"\n  }\n]')
+          p=pathlib.Path('five-channel-recovery/batch10');p.mkdir(parents=True,exist_ok=True)
+          (p/'candidates.json').write_text('[\n  {\n    "url": "https://one.c37c5ccda41b4ac6.click/live/nflnetwork/playlist.m3u8?_HLS_skip=YES",\n    "channel_label": "NFL Network (DAZN listing; identity unverified)",\n    "tvg_id": "NFLNetwork.us",\n    "provider": "Sporcafe native origin lead",\n    "host": "one.c37c5ccda41b4ac6.click",\n    "source_page": "https://gist.github.com/ukusgul-a11y/daa167880fc0133fe325f7e6096aac82",\n    "identity": "unverified",\n    "screening": "test",\n    "endpoint_sha256": "b33848364c18789d579db087cbd7cc7777d2c84fbf30053f3cbd3e1ed2333f49"\n  }\n]')
           import time,concurrent.futures,datetime,hashlib,json,pathlib,subprocess,sys,urllib.request,urllib.error
           sys.path.insert(0,str(pathlib.Path('repo').resolve()) if pathlib.Path('repo/build.py').exists() else str(pathlib.Path('.').resolve()))
           import build
@@ -80,5 +80,5 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: five-channel-recovery-batch9-hallmark
-          path: five-channel-recovery/batch9/
+          name: five-channel-recovery-batch10-independent-nfl
+          path: five-channel-recovery/batch10/
