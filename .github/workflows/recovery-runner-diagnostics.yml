@@ -11,41 +11,27 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: 0aca2d06bdefb078397a712baa3e83b3d543c83d
+          ref: 35800ddc5b19ee17019dc349da887b55c83d473f
       - run: python assemble_build.py
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Validate next fresh five-channel source batch
         run: |
-          python - five-channel-recovery/batch13 github-runner <<'PYCODE'
-          import urllib.request, urllib.parse, urllib.error, pathlib, json, re, hashlib, ipaddress
-          p=pathlib.Path('five-channel-recovery/batch13');p.mkdir(parents=True,exist_ok=True)
-          page='https://taifood-blog.asia/embed/nfl-network'
-          rows=[];access={'public_player_page':page,'headers_supplied':False}
-          try:
-              # One ordinary anonymous GET; do not retry a denial or add access headers.
-              with urllib.request.urlopen(page,timeout=12) as response:
-                  body=response.read(500000).decode('utf-8',errors='replace')
-                  access['http_status']=response.status
-              if re.search(r'widevine|playready|licenseUrl',body,re.I):
-                  access['result']='DRM-related player configuration; not a direct-play candidate'
-              else:
-                  urls=list(dict.fromkeys(re.findall(r'https://[^\s<>\"\'`]+\.m3u8(?:\?[^\s<>\"\'`]*)?',body.replace('\\/','/'))))
-                  for url in urls[:2]:
-                      parsed=urllib.parse.urlsplit(url)
-                      if parsed.username or parsed.password or parsed.query or parsed.fragment:continue
-                      if not parsed.hostname or parsed.hostname in {'localhost','localhost.localdomain'} or parsed.hostname.endswith('.local'):continue
-                      try:
-                          if not ipaddress.ip_address(parsed.hostname).is_global:continue
-                      except ValueError:pass
-                      rows.append(dict(url=url,channel_label='NFL Network — PPV public always-live listing',tvg_id='NFLNetwork.us',provider='PPV public player',host=parsed.hostname,source_page=page,headers={},endpoint_sha256=hashlib.sha256(url.encode()).hexdigest(),identity='Unverified; exact API listing always_live=1, English; video identity required',screening='test'))
-                  access['literal_hls_count']=len(urls);access['eligible_header_free_query_free_candidates']=len(rows)
-              del body
-          except Exception as error:
-              access['result']='public player access failed; no alternate route attempted'
-              access['error']=str(error)
+          python - five-channel-recovery/batch14 github-runner <<'PYCODE'
+          import urllib.request,urllib.parse,json,pathlib,hashlib
+          p=pathlib.Path('five-channel-recovery/batch14');p.mkdir(parents=True,exist_ok=True)
+          # Public front-end catalog; retain only four exact, query-free playback fields.
+          ids={'acc-network':('ACCNetwork.us','0xq54zb1c24z9k1lvm90r'),'amc':('AMC.us','0o5darq1spb8040ytc566'),'bbc-america':('BBCAmerica.us','0a8a7o303jcm7q0igvapt'),'oxygen':('Oxygen.us','13uvzx71qqozoy080ilon')}
+          with urllib.request.urlopen('https://tvnow.st/api/channels',timeout=12) as response:catalog=json.load(response)
+          rows=[]
+          for item in catalog.get('channels',[]):
+              if item.get('slug') not in ids:continue
+              channel,known_id=ids[item['slug']];url=item.get('playback','');parsed=urllib.parse.urlsplit(url)
+              if parsed.scheme!='https' or parsed.hostname!='cache0.wonvt.st' or parsed.query or parsed.fragment or parsed.username or parsed.password or parsed.path!='/live/'+known_id+'/master.m3u8':continue
+              rows.append(dict(url=url,channel_label=item['name'],tvg_id=channel,provider='tvnow',host=parsed.hostname,source_page='https://tvnow.st/api/channels',headers={},endpoint_sha256=hashlib.sha256(url.encode()).hexdigest(),identity='Exact public catalog label; video identity and repeat testing required',screening='test'))
+          del catalog
           assert not any(x.get('headers') for x in rows)
-          (p/'candidates.json').write_text(json.dumps(rows,indent=2));(p/'public-page-results.json').write_text(json.dumps(access,indent=2))
-          print(json.dumps(access))
+          (p/'candidates.json').write_text(json.dumps(rows,indent=2))
+          print('Selected',len(rows),'exact anonymous catalog candidates; raw catalog not retained')
           import time,concurrent.futures,datetime,hashlib,json,pathlib,subprocess,sys,urllib.request,urllib.error
           sys.path.insert(0,str(pathlib.Path('repo').resolve()) if pathlib.Path('repo/build.py').exists() else str(pathlib.Path('.').resolve()))
           import build
@@ -88,8 +74,14 @@ jobs:
              p=subprocess.run(cmd,capture_output=True,text=True,timeout=150)
              times=[int(x.split('=',1)[1]) for x in p.stdout.splitlines() if x.startswith('out_time_us=') and x.split('=',1)[1].isdigit()]
              seconds=max(times,default=0)/1e6
-             r['sustained_av']={'status':'ok' if p.returncode==0 and seconds>=120 else 'failed','decoded_seconds':seconds,'exit_code':p.returncode,'error':p.stderr[-1000:]}
-            except subprocess.TimeoutExpired:r['sustained_av']={'status':'failed','error':'150-second timeout'}
+             r['sustained_av']={'status':'ok' if p.returncode==0 and seconds>=120 else 'failed','decoded_seconds':seconds,'exit_code':p.returncode,'error':build._sanitize_ffmpeg_error(p.stderr,r['url'],1000)}
+            except subprocess.TimeoutExpired as error:
+             progress=error.stdout or b''
+             if isinstance(progress,bytes):progress=progress.decode(errors='replace')
+             times=[int(x.split('=',1)[1]) for x in progress.splitlines() if x.startswith('out_time_us=') and x.split('=',1)[1].isdigit()]
+             detail=error.stderr or b''
+             if isinstance(detail,bytes):detail=detail.decode(errors='replace')
+             r['sustained_av']={'status':'failed','error':'150-second timeout','decoded_seconds':max(times,default=0)/1e6,'detail':build._sanitize_ffmpeg_error(detail,r['url'],1000)}
           (root/'results.json').write_text(json.dumps(results,indent=2))
           for r in results:print(r['provider'],r['channel_label'],r['host'],'playlist',r['playlist'].get('status'),'segment',r['segment'].get('status'),'burn',r['burn_in'].get('status'),'decode',r['decode'].get('status'),'AV60',r['sustained_av'].get('status'))
 
@@ -106,5 +98,5 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: five-channel-recovery-batch13-public-nfl-player
-          path: five-channel-recovery/batch13/
+          name: five-channel-recovery-batch14-anonymous-new-channels
+          path: five-channel-recovery/batch14/
