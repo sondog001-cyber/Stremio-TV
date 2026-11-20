@@ -309,6 +309,32 @@ _SENSITIVE_REQUEST_HEADERS = {
 }
 
 
+def _account_credential_url_reason(url: str) -> str | None:
+    """Recognize account credentials before a candidate can reach any probe."""
+    try:
+        parsed = urllib.parse.urlsplit(url)
+    except ValueError:
+        return None
+    if parsed.username is not None or parsed.password is not None:
+        return "embedded-url-credentials"
+    credential_keys = {"user", "username", "pass", "password", "pwd"}
+    query_keys = {key.lower() for key, _ in urllib.parse.parse_qsl(parsed.query)}
+    if query_keys & credential_keys:
+        return "embedded-account-query-credentials"
+    parts = [urllib.parse.unquote(part) for part in parsed.path.split("/") if part]
+    account_path = (
+        len(parts) >= 4 and parts[0].lower() in {"live", "movie", "series"}
+        and parts[-1].split(".")[0].isdecimal()
+    ) or (
+        len(parts) == 3
+        and parts[0].lower() not in {"api", "stream", "channel", "channels", "video", "videos", "hls"}
+        and parts[-1].split(".")[0].isdecimal()
+    )
+    if account_path or any(re.fullmatch(r"[^/@\s]+@[^/@\s]+\.[^/@\s]+", part) for part in parts):
+        return "embedded-account-path-credentials"
+    return None
+
+
 def apply_safety_controls(
     entries: list[dict[str, Any]],
     config: dict[str, Any],
@@ -364,13 +390,7 @@ def apply_safety_controls(
         elif url in disabled_urls:
             reason = "url-kill-switch"
         else:
-            try:
-                parsed = urllib.parse.urlsplit(url)
-            except Exception:
-                parsed = None
-
-            if parsed is not None and (parsed.username is not None or parsed.password is not None):
-                reason = "embedded-url-credentials"
+            reason = _account_credential_url_reason(url)
 
             headers = entry.get("headers") or {}
             if reason is None and isinstance(headers, dict):
@@ -404,12 +424,17 @@ def apply_safety_controls(
             kept.append(entry)
             continue
 
+        report_url = url
+        if _account_credential_url_reason(url) is not None:
+            report_parts = urllib.parse.urlsplit(url)
+            report_url = urllib.parse.urlunsplit((report_parts.scheme, report_parts.hostname or "", "/[credential-url-redacted]", "", ""))
         rejected.append({
             "name": entry.get("name"),
             "tvg_id": tvg_id,
             "source": entry.get("source"),
             "family": entry.get("family"),
-            "url": url,
+            "url": report_url,
+            "url_sha256": hashlib.sha256(url.encode("utf-8")).hexdigest(),
             "reason": reason,
         })
 
