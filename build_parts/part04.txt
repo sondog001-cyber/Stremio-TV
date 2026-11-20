@@ -1917,6 +1917,11 @@ def _verified_native_hls_decoder_input(url: str, headers: dict[str, str]) -> tup
             profile = "tvnow"
             trusted_hosts = {"cache0.wonvt.st", "silver-harbor-27.lifeisaware.workers.dev"}
             accepted_types.add("application/octet-stream")
+        elif (parsed.hostname == "dbrb49pjoymg4.cloudfront.net"
+                and parsed.path == "/v1/master/3fec3e5cac39a52b2132f9c66c83dae043dc17d4/prod_default_xumo-ams-aws/master.m3u8"
+                and urllib.parse.parse_qs(parsed.query, strict_parsing=True) == {"ads.xumo_channelId": ["99991709"]}):
+            profile = "hallmark-movies-more"
+            trusted_hosts = {"dbrb49pjoymg4.cloudfront.net", "hls-beacons-us.xumo.com", "live-content-cf.xumo.com"}
         elif parsed.hostname in candy_hosts:
             channel = next((item for item in ("F128", "F191")
                             if parsed.path == "/live3/" + item + "/index.m3u8"), None)

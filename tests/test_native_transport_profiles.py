@@ -61,4 +61,22 @@ class NativeTransportProfileTests(unittest.TestCase):
             self.assertEqual(build._verified_native_hls_decoder_input(self.tvnow, {'Referer': 'https://tvnow.st/'}), (self.tvnow, []))
             self.assertEqual(fetch.call_count, 1)
 
+    def test_exact_xumo_hallmark_feed_requires_native_media_and_trusted_hosts(self):
+        root = 'https://dbrb49pjoymg4.cloudfront.net/v1/master/3fec3e5cac39a52b2132f9c66c83dae043dc17d4/prod_default_xumo-ams-aws/master.m3u8?ads.xumo_channelId=99991709'
+        segment = 'https://hls-beacons-us.xumo.com/native-media'
+        playlist = f'#EXTM3U\n#EXTINF:6,\n{segment}\n'.encode()
+        responses = [self.response(root, playlist), self.response('https://live-content-cf.xumo.com/native.ts', self.ts, 'video/MP2T')]
+        with mock.patch('build.urllib.request.urlopen', side_effect=responses):
+            url, options = build._verified_native_hls_decoder_input(root, {})
+        self.assertEqual(url, root)
+        self.assertIn('-extension_picky', options)
+        with mock.patch('build.urllib.request.urlopen') as fetch:
+            for wrong in [root.replace('99991709', '99999999'), root + '&extra=value', root.replace('cloudfront.net/', 'cloudfront.net.evil.test/')]:
+                self.assertEqual(build._verified_native_hls_decoder_input(wrong, {}), (wrong, []))
+        fetch.assert_not_called()
+        for final, data in [('https://untrusted.test/segment.ts', self.ts), (segment, b'not transport stream' * 50)]:
+            responses = [self.response(root, playlist), self.response(final, data, 'video/mp2t')]
+            with mock.patch('build.urllib.request.urlopen', side_effect=responses):
+                self.assertEqual(build._verified_native_hls_decoder_input(root, {}), (root, []))
+
 if __name__ == '__main__': unittest.main()
