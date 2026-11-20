@@ -5,30 +5,82 @@ on:
 permissions:
   contents: read
 jobs:
-  stop-rejected-diagnostic:
+  probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
-    permissions:
-      actions: write
-      contents: read
+    timeout-minutes: 20
     steps:
-      - name: Stop only the exact diagnostic run rejected by automatic review
-        uses: actions/github-script@v8
+      - uses: actions/checkout@v7
         with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const run_id = 44784759208;
-            const {data: run} = await github.rest.actions.getWorkflowRun({owner, repo, run_id});
-            if (run.head_branch !== 'diagnostics/recovery-20261109' ||
-                run.head_sha !== '2d18efcf31fdeea109efa03205a4146c7402395d' ||
-                run.event !== 'push' ||
-                run.path !== '.github/workflows/recovery-runner-diagnostics.yml') {
-              throw new Error('Refusing to cancel a run outside the exact rejected diagnostic scope');
-            }
-            if (run.status !== 'completed') {
-              await github.rest.actions.cancelWorkflowRun({owner, repo, run_id});
-              core.info('Requested cancellation of the exact rejected diagnostic only');
-            } else {
-              core.info('Rejected diagnostic already completed; no cancellation performed');
-            }
+          ref: 0aca2d06bdefb078397a712baa3e83b3d543c83d
+      - run: python assemble_build.py
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Validate next fresh five-channel source batch
+        run: |
+          python - five-channel-recovery/batch12 github-runner <<'PYCODE'
+          import pathlib,json
+          p=pathlib.Path('five-channel-recovery/batch12');p.mkdir(parents=True,exist_ok=True)
+          rows=[{'tvg_id': 'NFLNetwork.us', 'channel_label': 'NFLNetwork.us', 'url': 'http://line.bestvplus.com/live/channel/NFLNetwork/playlist.m3u8', 'source_page': 'https://github.com/AMKODE123/1/blob/3fe6cf38c27c9fad888627a602eaa148894f1220/english.csv', 'headers': {}, 'provider': 'Bestvplus published native HLS', 'host': 'line.bestvplus.com', 'endpoint_sha256': 'ec87bddb936511955ffd169101b1dc50a9078b8ba09ab059cb38afc69962c36d', 'identity': 'unverified', 'authorization': 'unknown', 'screening': 'test', 'independence': 'unverified; 40.160 range grouped as one provider'}, {'tvg_id': 'Pop.us', 'channel_label': 'Pop.us', 'url': 'http://40.160.24.55/POP/index.m3u8', 'source_page': 'https://github.com/atim2515/TIM-CABLE-TV/blob/5bfa7964f9e3fcf38e800489e0f7624ce84fba97/tim', 'headers': {}, 'provider': '40.160 independently listed feed', 'host': '40.160.24.55', 'endpoint_sha256': '9532abde26e70bcb6777835a782bea08580ba82d80840dc8e885937ab10f57ee', 'identity': 'unverified', 'authorization': 'unknown', 'screening': 'test', 'independence': 'unverified; 40.160 range grouped as one provider'}, {'tvg_id': 'NFLNetwork.us', 'channel_label': 'NFLNetwork.us', 'url': 'http://40.160.24.53/NFL_Network/index.m3u8', 'source_page': 'https://github.com/Freeman0501/freelist/blob/2d775f745ef27ef0dc4fec0e08b5f27505eca6c8/freeTV/2026-09-09%20playlist.txt', 'headers': {}, 'provider': '40.160 independently listed feed', 'host': '40.160.24.53', 'endpoint_sha256': '4e0d7da5bb7aa1abdbcd5c445286a3f7aabe85df9d31f6f4996907474af5a110', 'identity': 'unverified', 'authorization': 'unknown', 'screening': 'test', 'independence': 'unverified; 40.160 range grouped as one provider'}]
+          assert not any(x.get('headers') for x in rows), 'This diagnostic allows no supplied headers'
+          (p/'candidates.json').write_text(json.dumps(rows,indent=2))
+          import time,concurrent.futures,datetime,hashlib,json,pathlib,subprocess,sys,urllib.request,urllib.error
+          sys.path.insert(0,str(pathlib.Path('repo').resolve()) if pathlib.Path('repo/build.py').exists() else str(pathlib.Path('.').resolve()))
+          import build
+          root=pathlib.Path(sys.argv[1]) if len(sys.argv)>1 else pathlib.Path('provider-validation')
+          config=json.load(open('repo/config.json' if pathlib.Path('repo/config.json').exists() else 'config.json'))
+          candidates=json.load(open(root/'candidates.json'));results=[]
+          kept,quarantined=build.apply_stream_quarantine([dict(c,name=c['channel_label'],source=c['provider']) for c in candidates],config)
+          allowed={c['url'] for c in kept}
+          candidates=[c for c in candidates if c['url'] in allowed]
+          (root/'quarantined.json').write_text(json.dumps(quarantined,indent=2))
+          def test(c):
+           time.sleep(8)
+           r={**c,'environment':sys.argv[2] if len(sys.argv)>2 else 'local','tested_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'playlist':{'status':'not-tested'},'segment':{'status':'not-tested'},'burn_in':{'status':'not-tested'},'decode':{'status':'not-tested'},'sustained_av':{'status':'not-tested'}}
+           try:
+            req=urllib.request.Request(c['url'],headers={'User-Agent':build.USER_AGENT, **c.get('headers',{})})
+            with urllib.request.urlopen(req,timeout=8) as p:b=p.read(262144);r['playlist']={'status':('ok' if b.lstrip().startswith(b'#EXTM3U') else 'direct-media' if b[:1]==b'G' and b[188:189]==b'G' else 'invalid'),'http_status':p.status,'bytes':len(b),'final_url':p.url}
+           except Exception as e:
+            r['playlist']={'status':'failed','error':type(e).__name__,'detail':str(e)}
+            return r
+           if r['playlist']['status'] not in ('ok','direct-media'):return r
+           health=build._probe_stream({'url':c['url'],'headers':c.get('headers',{})},8,True);r['segment']=health
+           return r
+          with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:results=list(pool.map(test,candidates))
+          (root/'results.json').write_text(json.dumps(results,indent=2))
+          entries=[{'url':r['url'],'name':r['channel_label'],'tvg_id':r['tvg_id'],'source':'Provider catalog validation','family':r['provider'],'quality':'Unknown','headers':r.get('headers',{})} for r in results if r['segment'].get('status')=='ok']
+          if entries:
+           good,rows,state=build.probe_candidate_entries(entries,config)
+           byurl={r['url']:r for r in rows}
+           for r in results:
+            if r['url'] not in byurl:continue
+            health=byurl[r['url']]['health'];r['burn_in']=health
+            if health.get('status')!='ok':continue
+            stream={'url':r['url'],'health':health,'headers':r.get('headers',{})}
+            r['decode']=build._validate_primary_playback_stream(stream,config['stream_health']['primary_playback_qa'])
+            if r['decode'].get('status')!='ok':continue
+            # Require 60 seconds of BOTH video and audio decoding, in addition to configured repeat/stall QA.
+            av_url,av_options=build._verified_native_hls_decoder_input(r['url'],r.get('headers',{}))
+            cmd=['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-user_agent',build.USER_AGENT,'-rw_timeout','10000000']+av_options+['-headers',''.join(k+': '+v+'\r\n' for k,v in r.get('headers',{}).items()),'-i',av_url,'-t','120','-map','0:v:0','-map','0:a:0','-progress','pipe:1','-f','null','-']
+            try:
+             p=subprocess.run(cmd,capture_output=True,text=True,timeout=150)
+             times=[int(x.split('=',1)[1]) for x in p.stdout.splitlines() if x.startswith('out_time_us=') and x.split('=',1)[1].isdigit()]
+             seconds=max(times,default=0)/1e6
+             r['sustained_av']={'status':'ok' if p.returncode==0 and seconds>=120 else 'failed','decoded_seconds':seconds,'exit_code':p.returncode,'error':p.stderr[-1000:]}
+            except subprocess.TimeoutExpired:r['sustained_av']={'status':'failed','error':'150-second timeout'}
+          (root/'results.json').write_text(json.dumps(results,indent=2))
+          for r in results:print(r['provider'],r['channel_label'],r['host'],'playlist',r['playlist'].get('status'),'segment',r['segment'].get('status'),'burn',r['burn_in'].get('status'),'decode',r['decode'].get('status'),'AV60',r['sustained_av'].get('status'))
+
+          for row in results:
+              if row['decode'].get('status')!='ok':continue
+              name=row['tvg_id'].replace('.','-')
+              cap_url,cap_options=build._verified_native_hls_decoder_input(row['url'],row.get('headers',{}))
+              try:
+                  cp=subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-rw_timeout','8000000']+cap_options+['-headers',''.join(k+': '+v+'\r\n' for k,v in row.get('headers',{}).items()),'-i',cap_url,'-t','30','-vf','fps=1/10','-frames:v','3','-y',str(root/(name+'-%02d.jpg'))],capture_output=True,text=True,timeout=50)
+                  row['capture_exit']=cp.returncode
+              except subprocess.TimeoutExpired:row['capture_error']='timeout'
+          (root/'results.json').write_text(json.dumps(results,indent=2))
+          PYCODE
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: five-channel-recovery-batch12-header-free
+          path: five-channel-recovery/batch12/
