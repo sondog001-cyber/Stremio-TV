@@ -14,7 +14,7 @@ jobs:
           python - <<'PYCODE'
           import urllib.request,urllib.parse,re,json,pathlib,html
           from html.parser import HTMLParser
-          p=pathlib.Path('five-channel-recovery/batch15');p.mkdir(parents=True,exist_ok=True)
+          p=pathlib.Path('five-channel-recovery/batch16');p.mkdir(parents=True,exist_ok=True)
           page='https://taifood-blog.asia/embed/nfl-network'
           class Tags(HTMLParser):
            def __init__(self):super().__init__();self.assets=[]
@@ -26,14 +26,26 @@ jobs:
            return u if x.scheme=='https' and not x.username and not x.password and not x.query and not x.fragment else None
           out={'page':page,'headers_supplied':False}
           try:
-           with urllib.request.urlopen(page,timeout=12) as response:body=response.read(500000).decode(errors='replace');out['http_status']=response.status
+           with urllib.request.urlopen(page,timeout=12) as response:body=response.read(500000).decode(errors='replace');out['http_status']=response.status;out['content_type']=response.headers.get('Content-Type')
+           out['body_length']=len(body)
+           out['body_empty']=not bool(body.strip())
+           out['known_denial_markers']=[term for term in ['access denied','forbidden','unauthorized','not authorized','invalid referer','invalid referrer','invalid token','not found'] if term in body.lower()]
+           out['has_inline_script']=bool(re.search(r'<script(?:\s|>)',body,re.I))
+           out['has_video_tag']=bool(re.search(r'<video(?:\s|>)',body,re.I))
+           out['query_free_public_url_literals']=sorted({safe for value in re.findall(r'https://[^\s<>\"\'`]+',body.replace('\\/','/')) if (safe:=safe_url(value,page))})[:12]
+           if body.lstrip().startswith('{'):
+            try:
+             schema=json.loads(body)
+             out['json_schema_keys']=sorted(schema.keys())[:30] if isinstance(schema,dict) else []
+             del schema
+            except ValueError:pass
            out['title']=re.findall(r'<title>(.*?)</title>',body,re.S)[:1]
            out['challenge_detected']=bool(re.search(r'challenge-platform|cf-chl-|turnstile|captcha',body,re.I))
            out['drm_detected']=bool(re.search(r'widevine|playready|licenseUrl',body,re.I))
            parser=Tags();parser.feed(body)
            out['public_assets']=[{'tag':tag,'url':u} for tag,value in parser.assets if (u:=safe_url(value,page))]
            out['script_metadata']=[]
-           if not out['challenge_detected'] and not out['drm_detected']:
+           if not out['challenge_detected'] and not out['drm_detected'] and not out['known_denial_markers']:
             scripts=[x['url'] for x in out['public_assets'] if x['tag']=='script' and urllib.parse.urlsplit(x['url']).hostname==urllib.parse.urlsplit(page).hostname]
             for url in scripts[:2]:
              try:
@@ -49,5 +61,5 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: five-channel-recovery-batch15-public-player-metadata
-          path: five-channel-recovery/batch15/
+          name: five-channel-recovery-batch16-public-player-metadata
+          path: five-channel-recovery/batch16/
