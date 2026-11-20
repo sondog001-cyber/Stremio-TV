@@ -5,61 +5,90 @@ on:
 permissions:
   contents: read
 jobs:
-  metadata:
+  probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 20
     steps:
-      - name: Inspect only public NFL player metadata without access headers
+      - uses: actions/checkout@v7
+        with:
+          ref: ede9623de716e86000dfb5fadf6767e7f3eaef1b
+      - run: python assemble_build.py
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Validate next fresh five-channel source batch
         run: |
-          python - <<'PYCODE'
-          import urllib.request,urllib.parse,re,json,pathlib,html
-          from html.parser import HTMLParser
-          p=pathlib.Path('five-channel-recovery/batch16');p.mkdir(parents=True,exist_ok=True)
-          page='https://taifood-blog.asia/embed/nfl-network'
-          class Tags(HTMLParser):
-           def __init__(self):super().__init__();self.assets=[]
-           def handle_starttag(self,tag,attrs):
-            attrs=dict(attrs)
-            if tag in ('script','iframe','video','source') and attrs.get('src'):self.assets.append((tag,attrs['src']))
-          def safe_url(value,base):
-           u=urllib.parse.urljoin(base,html.unescape(value));x=urllib.parse.urlsplit(u)
-           return u if x.scheme=='https' and not x.username and not x.password and not x.query and not x.fragment else None
-          out={'page':page,'headers_supplied':False}
-          try:
-           with urllib.request.urlopen(page,timeout=12) as response:body=response.read(500000).decode(errors='replace');out['http_status']=response.status;out['content_type']=response.headers.get('Content-Type')
-           out['body_length']=len(body)
-           out['body_empty']=not bool(body.strip())
-           out['known_denial_markers']=[term for term in ['access denied','forbidden','unauthorized','not authorized','invalid referer','invalid referrer','invalid token','not found'] if term in body.lower()]
-           out['has_inline_script']=bool(re.search(r'<script(?:\s|>)',body,re.I))
-           out['has_video_tag']=bool(re.search(r'<video(?:\s|>)',body,re.I))
-           out['query_free_public_url_literals']=sorted({safe for value in re.findall(r'https://[^\s<>\"\'`]+',body.replace('\\/','/')) if (safe:=safe_url(value,page))})[:12]
-           if body.lstrip().startswith('{'):
+          python - five-channel-recovery/batch17 github-runner <<'PYCODE'
+          import pathlib,json
+          p=pathlib.Path('five-channel-recovery/batch17');p.mkdir(parents=True,exist_ok=True)
+          rows=[{'url': 'http://74.48.44.156:1234/stream/asd/438/master.m3u8', 'channel_label': 'USA Network — independent public listing', 'tvg_id': 'USANetwork.us', 'provider': '74.48 public direct listing', 'host': '74.48.44.156', 'source_page': 'https://github.com/InsolenceWillow/insolencetvgo/blob/580aa80cca92bd22915a8d8188def8359d8bf2b1/insolencetvgo.m3u', 'headers': {}, 'endpoint_sha256': '6d922125fe82b739a211701957b99b15f1332fb3e904a079c74847eae7caf189', 'identity': 'Unverified; exact listing label; video identity and repeat QA required', 'screening': 'test'}]
+          assert not any(x.get('headers') for x in rows)
+          (p/'candidates.json').write_text(json.dumps(rows,indent=2))
+          import time,concurrent.futures,datetime,hashlib,json,pathlib,subprocess,sys,urllib.request,urllib.error
+          sys.path.insert(0,str(pathlib.Path('repo').resolve()) if pathlib.Path('repo/build.py').exists() else str(pathlib.Path('.').resolve()))
+          import build
+          root=pathlib.Path(sys.argv[1]) if len(sys.argv)>1 else pathlib.Path('provider-validation')
+          config=json.load(open('repo/config.json' if pathlib.Path('repo/config.json').exists() else 'config.json'))
+          candidates=json.load(open(root/'candidates.json'));results=[]
+          safe,safety_rejected=build.apply_safety_controls([dict(c,name=c['channel_label'],source=c['provider']) for c in candidates],config)
+          (root/'safety-rejected.json').write_text(json.dumps(safety_rejected,indent=2))
+          kept,quarantined=build.apply_stream_quarantine(safe,config)
+          allowed={c['url'] for c in kept}
+          candidates=[c for c in candidates if c['url'] in allowed]
+          (root/'quarantined.json').write_text(json.dumps(quarantined,indent=2))
+          def test(c):
+           time.sleep(8)
+           r={**c,'environment':sys.argv[2] if len(sys.argv)>2 else 'local','tested_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'playlist':{'status':'not-tested'},'segment':{'status':'not-tested'},'burn_in':{'status':'not-tested'},'decode':{'status':'not-tested'},'sustained_av':{'status':'not-tested'}}
+           try:
+            req=urllib.request.Request(c['url'],headers={'User-Agent':build.USER_AGENT, **c.get('headers',{})})
+            with urllib.request.urlopen(req,timeout=8) as p:b=p.read(262144);r['playlist']={'status':('ok' if b.lstrip().startswith(b'#EXTM3U') else 'direct-media' if b[:1]==b'G' and b[188:189]==b'G' else 'invalid'),'http_status':p.status,'bytes':len(b),'final_url':p.url}
+           except Exception as e:
+            r['playlist']={'status':'failed','error':type(e).__name__,'detail':str(e)}
+            return r
+           if r['playlist']['status'] not in ('ok','direct-media'):return r
+           health=build._probe_stream({'url':c['url'],'headers':c.get('headers',{})},8,True);r['segment']=health
+           return r
+          with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:results=list(pool.map(test,candidates))
+          (root/'results.json').write_text(json.dumps(results,indent=2))
+          entries=[{'url':r['url'],'name':r['channel_label'],'tvg_id':r['tvg_id'],'source':'Provider catalog validation','family':r['provider'],'quality':'Unknown','headers':r.get('headers',{})} for r in results if r['segment'].get('status')=='ok']
+          if entries:
+           good,rows,state=build.probe_candidate_entries(entries,config)
+           byurl={r['url']:r for r in rows}
+           for r in results:
+            if r['url'] not in byurl:continue
+            health=byurl[r['url']]['health'];r['burn_in']=health
+            if health.get('status')!='ok':continue
+            stream={'url':r['url'],'health':health,'headers':r.get('headers',{})}
+            r['decode']=build._validate_primary_playback_stream(stream,config['stream_health']['primary_playback_qa'])
+            if r['decode'].get('status')!='ok':continue
+            # Require 60 seconds of BOTH video and audio decoding, in addition to configured repeat/stall QA.
+            av_url,av_options=build._verified_native_hls_decoder_input(r['url'],r.get('headers',{}))
+            cmd=['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-user_agent',build.USER_AGENT,'-rw_timeout','10000000']+av_options+['-headers',''.join(k+': '+v+'\r\n' for k,v in r.get('headers',{}).items()),'-i',av_url,'-t','120','-map','0:v:0','-map','0:a:0','-progress','pipe:1','-f','null','-']
             try:
-             schema=json.loads(body)
-             out['json_schema_keys']=sorted(schema.keys())[:30] if isinstance(schema,dict) else []
-             del schema
-            except ValueError:pass
-           out['title']=re.findall(r'<title>(.*?)</title>',body,re.S)[:1]
-           out['challenge_detected']=bool(re.search(r'challenge-platform|cf-chl-|turnstile|captcha',body,re.I))
-           out['drm_detected']=bool(re.search(r'widevine|playready|licenseUrl',body,re.I))
-           parser=Tags();parser.feed(body)
-           out['public_assets']=[{'tag':tag,'url':u} for tag,value in parser.assets if (u:=safe_url(value,page))]
-           out['script_metadata']=[]
-           if not out['challenge_detected'] and not out['drm_detected'] and not out['known_denial_markers']:
-            scripts=[x['url'] for x in out['public_assets'] if x['tag']=='script' and urllib.parse.urlsplit(x['url']).hostname==urllib.parse.urlsplit(page).hostname]
-            for url in scripts[:2]:
-             try:
-              with urllib.request.urlopen(url,timeout=12) as response:script=response.read(500000).decode(errors='replace')
-              apis=sorted(set(re.findall(r'[\"\'](/api/[A-Za-z0-9_./-]+)[\"\']',script)))
-              out['script_metadata'].append({'url':url,'bytes':len(script),'public_api_paths':apis,'has_hls_literal':'.m3u8' in script,'mentions_drm':bool(re.search(r'widevine|playready|licenseUrl',script,re.I))})
-              del script
-             except Exception as error:out['script_metadata'].append({'url':url,'error':str(error)})
-           del body
-          except Exception as error:out['error']=str(error)
-          (p/'metadata.json').write_text(json.dumps(out,indent=2));print(json.dumps(out,indent=2))
+             p=subprocess.run(cmd,capture_output=True,text=True,timeout=150)
+             times=[int(x.split('=',1)[1]) for x in p.stdout.splitlines() if x.startswith('out_time_us=') and x.split('=',1)[1].isdigit()]
+             seconds=max(times,default=0)/1e6
+             r['sustained_av']={'status':'ok' if p.returncode==0 and seconds>=120 else 'failed','decoded_seconds':seconds,'exit_code':p.returncode,'error':build._sanitize_ffmpeg_error(p.stderr,r['url'],1000)}
+            except subprocess.TimeoutExpired as error:
+             progress=error.stdout or b''
+             if isinstance(progress,bytes):progress=progress.decode(errors='replace')
+             times=[int(x.split('=',1)[1]) for x in progress.splitlines() if x.startswith('out_time_us=') and x.split('=',1)[1].isdigit()]
+             detail=error.stderr or b''
+             if isinstance(detail,bytes):detail=detail.decode(errors='replace')
+             r['sustained_av']={'status':'failed','error':'150-second timeout','decoded_seconds':max(times,default=0)/1e6,'detail':build._sanitize_ffmpeg_error(detail,r['url'],1000)}
+          (root/'results.json').write_text(json.dumps(results,indent=2))
+          for r in results:print(r['provider'],r['channel_label'],r['host'],'playlist',r['playlist'].get('status'),'segment',r['segment'].get('status'),'burn',r['burn_in'].get('status'),'decode',r['decode'].get('status'),'AV60',r['sustained_av'].get('status'))
+
+          for row in results:
+              if row['decode'].get('status')!='ok':continue
+              name=row['tvg_id'].replace('.','-')
+              cap_url,cap_options=build._verified_native_hls_decoder_input(row['url'],row.get('headers',{}))
+              try:
+                  cp=subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-rw_timeout','8000000']+cap_options+['-headers',''.join(k+': '+v+'\r\n' for k,v in row.get('headers',{}).items()),'-i',cap_url,'-t','30','-vf','fps=1/10','-frames:v','3','-y',str(root/(name+'-%02d.jpg'))],capture_output=True,text=True,timeout=50)
+                  row['capture_exit']=cp.returncode
+              except subprocess.TimeoutExpired:row['capture_error']='timeout'
+          (root/'results.json').write_text(json.dumps(results,indent=2))
           PYCODE
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: five-channel-recovery-batch16-public-player-metadata
-          path: five-channel-recovery/batch16/
+          name: five-channel-recovery-batch17-independent-usa
+          path: five-channel-recovery/batch17/
