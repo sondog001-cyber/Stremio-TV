@@ -10,23 +10,25 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: 6a09f5f2602e81b386bb8f9d27d6e597b0545454
       - run: python assemble_build.py
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Validate next fresh five-channel source batch
         run: |
-          python - five-channel-recovery/batch4 github-runner <<'PYCODE'
+          python - five-channel-recovery/batch5 github-runner <<'PYCODE'
           import urllib.request,urllib.parse,json,re,time,pathlib,hashlib
-          p=pathlib.Path('five-channel-recovery/batch4');p.mkdir(parents=True,exist_ok=True)
+          p=pathlib.Path('five-channel-recovery/batch5');p.mkdir(parents=True,exist_ok=True)
           rows=[];access=[]
           for channel,stream in [('USANetwork.us','F191'),('CBSSportsNetwork.us','F128')]:
-           page='https://siempreon.shop/fslivepro.php?stream='+stream
+           page='https://xstream.st/fslivepro.php?stream='+stream
            try:
-            with urllib.request.urlopen(urllib.request.Request(page,headers={'User-Agent':'Mozilla/5.0'}),timeout=12) as r:s=r.read(1500000).decode()
+            with urllib.request.urlopen(urllib.request.Request(page,headers={'User-Agent':'Mozilla/5.0','Referer':'https://wikisport.info/'}),timeout=12) as r:s=r.read(1500000).decode()
             match=re.search(r'const\s+streamUrls\s*=\s*(\[.*?\]);',s)
             urls=json.loads(match.group(1)) if match else[]
             for u in urls:
              parsed=urllib.parse.urlsplit(u);q=urllib.parse.parse_qs(parsed.query)
-             if parsed.scheme!='https' or parsed.hostname!='edge1.candyshop.st' or parsed.path!='/live3/'+stream+'/index.m3u8' or parsed.username or parsed.password or set(q)!={'st','e'}:continue
+             if parsed.scheme!='https' or parsed.hostname not in {'edge1.candyshop.st','edge2.candyshop.st','edge.candyshop.st','candyshop.st'} or parsed.path!='/live3/'+stream+'/index.m3u8' or parsed.username or parsed.password or set(q)!={'st','e'}:continue
              if not re.fullmatch('[A-Za-z0-9_-]{16,128}',q['st'][0]) or int(q['e'][0])-int(time.time())<10680:continue
              rows.append({'url':u,'channel_label':channel,'tvg_id':channel,'provider':'FSL new public player','host':parsed.hostname,'headers':{'Referer':page},'source_page':page,'expires_at':int(q['e'][0]),'endpoint_sha256':hashlib.sha256(u.encode()).hexdigest(),'identity':'unverified','screening':'test'})
              break
@@ -34,6 +36,10 @@ jobs:
            except Exception as e:access.append({'channel':channel,'error':str(e)})
           (p/'candidates.json').write_text(json.dumps(rows,indent=2));(p/'public-page-results.json').write_text(json.dumps(access,indent=2))
           print(json.dumps(access))
+          
+          fox='https://amg00488-foxdigital-fox29philadelphiawtx-vizious-x0v1b.amagi.tv/playlist/amg00488-foxdigital-fox29philadelphiawtx-vizious/playlist.m3u8'
+          rows.append({'url':fox,'channel_label':'Fox.us@WTXFTV','tvg_id':'Fox.us@WTXFTV','provider':'WTXF native upstream','host':'amg00488-foxdigital-fox29philadelphiawtx-vizious-x0v1b.amagi.tv','source_page':'https://www.fox29.com/live','endpoint_sha256':hashlib.sha256(fox.encode()).hexdigest(),'identity':'BAM show capture from previous runner; repeat QA required','screening':'test'})
+          (p/'candidates.json').write_text(json.dumps(rows,indent=2))
           import concurrent.futures,datetime,hashlib,json,pathlib,subprocess,sys,urllib.request,urllib.error
           sys.path.insert(0,str(pathlib.Path('repo').resolve()) if pathlib.Path('repo/build.py').exists() else str(pathlib.Path('.').resolve()))
           import build
@@ -69,7 +75,8 @@ jobs:
             r['decode']=build._validate_primary_playback_stream(stream,config['stream_health']['primary_playback_qa'])
             if r['decode'].get('status')!='ok':continue
             # Require 60 seconds of BOTH video and audio decoding, in addition to configured repeat/stall QA.
-            cmd=['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-user_agent',build.USER_AGENT,'-rw_timeout','10000000','-headers',''.join(k+': '+v+'\r\n' for k,v in r.get('headers',{}).items()),'-i',r['url'],'-t','60','-map','0:v:0','-map','0:a:0','-progress','pipe:1','-f','null','-']
+            av_url,av_options=build._verified_wtxf_decoder_input(r['url'],r.get('headers',{}))
+            cmd=['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-user_agent',build.USER_AGENT,'-rw_timeout','10000000']+av_options+['-headers',''.join(k+': '+v+'\r\n' for k,v in r.get('headers',{}).items()),'-i',av_url,'-t','60','-map','0:v:0','-map','0:a:0','-progress','pipe:1','-f','null','-']
             try:
              p=subprocess.run(cmd,capture_output=True,text=True,timeout=90)
              times=[int(x.split('=',1)[1]) for x in p.stdout.splitlines() if x.startswith('out_time_us=') and x.split('=',1)[1].isdigit()]
@@ -82,8 +89,9 @@ jobs:
           for row in results:
               if row['decode'].get('status')!='ok':continue
               name=row['tvg_id'].replace('.','-')
+              cap_url,cap_options=build._verified_wtxf_decoder_input(row['url'],row.get('headers',{}))
               try:
-                  cp=subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-rw_timeout','8000000','-headers',''.join(k+': '+v+'\r\n' for k,v in row.get('headers',{}).items()),'-i',row['url'],'-frames:v','1','-y',str(root/(name+'.jpg'))],capture_output=True,text=True,timeout=25)
+                  cp=subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-rw_timeout','8000000']+cap_options+['-headers',''.join(k+': '+v+'\r\n' for k,v in row.get('headers',{}).items()),'-i',cap_url,'-frames:v','1','-y',str(root/(name+'.jpg'))],capture_output=True,text=True,timeout=25)
                   row['capture_exit']=cp.returncode
               except subprocess.TimeoutExpired:row['capture_error']='timeout'
           (root/'results.json').write_text(json.dumps(results,indent=2))
@@ -91,5 +99,5 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: five-channel-recovery-batch4-fresh-fsl
-          path: five-channel-recovery/batch4/
+          name: five-channel-recovery-batch5-fsl-wtxf
+          path: five-channel-recovery/batch5/
