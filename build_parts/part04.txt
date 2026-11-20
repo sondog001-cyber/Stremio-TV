@@ -1881,11 +1881,13 @@ def _classify_decoder_attempts(attempts: list[dict[str, Any]]) -> str:
     return "insufficient-decode"
 
 
-def _verified_wtxf_decoder_input(url: str, headers: dict[str, str]) -> tuple[str, list[str]]:
-    """Handle WTXF's extensionless beacon URLs only after verifying native TS.
+def _verified_native_hls_decoder_input(url: str, headers: dict[str, str]) -> tuple[str, list[str]]:
+    """Verify native TS before handling unconventional URLs on known feeds.
 
     This changes FFmpeg input handling, not decoded-frame, repeat or survival
     requirements. Published playback URLs remain the direct upstream masters.
+    Unknown roots, foreign segment hosts, encryption and non-media keep the
+    original strict decoder behavior.
     """
     slug = "amg00488-foxdigital-fox29philadelphiawtx-vizious"
     host = slug + "-x0v1b.amagi.tv"
@@ -1893,18 +1895,49 @@ def _verified_wtxf_decoder_input(url: str, headers: dict[str, str]) -> tuple[str
         ("cdn-uw2-prod.tsv2.amagi.tv", "/linear/" + slug + "/playlist.m3u8"),
         (host, "/playlist/" + slug + "/playlist.m3u8"),
     }
+    profile = "wtxf"
+    trusted_hosts = {host}
+    accepted_types = {"video/mp2t"}
+    tvnow_paths = {
+        "/live/1ht5wwv045ffdr1yt1h5m/master.m3u8",
+        "/live/0auxff509zda3k1x9tqd3/master.m3u8",
+        "/live/0sdzfll1dvild80gw1jbx/master.m3u8",
+        "/live/0hzz30t0ddti3x1upnrpx/master.m3u8",
+    }
+    candy_hosts = {"edge1.candyshop.st", "edge2.candyshop.st", "edge.candyshop.st", "candyshop.st"}
     try:
         parsed = urllib.parse.urlsplit(url)
         if (parsed.scheme != "https" or parsed.username or parsed.password
-                or parsed.port not in (None, 443) or parsed.query or parsed.fragment
-                or (parsed.hostname, parsed.path) not in roots):
+                or parsed.port not in (None, 443) or parsed.fragment):
             return url, []
-    except ValueError:
+        if (parsed.hostname, parsed.path) in roots and not parsed.query:
+            pass
+        elif (parsed.hostname == "cache0.wonvt.st" and parsed.path in tvnow_paths
+                and not parsed.query and headers.get("Referer") == "https://tvnow.st/"):
+            profile = "tvnow"
+            trusted_hosts = {"cache0.wonvt.st", "silver-harbor-27.lifeisaware.workers.dev"}
+            accepted_types.add("application/octet-stream")
+        elif parsed.hostname in candy_hosts:
+            channel = next((item for item in ("F128", "F191")
+                            if parsed.path == "/live3/" + item + "/index.m3u8"), None)
+            query = urllib.parse.parse_qs(parsed.query, strict_parsing=True)
+            pages = {"https://" + site + "/fslivepro.php?stream=" + str(channel)
+                     for site in ("xstream.st", "siempreon.shop")}
+            if (not channel or headers.get("Referer") not in pages
+                    or set(query) != {"st", "e"} or any(len(values) != 1 for values in query.values())
+                    or not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", query["st"][0])
+                    or int(query["e"][0]) <= int(dt.datetime.now(UTC).timestamp())):
+                return url, []
+            profile = "fsl"
+            trusted_hosts = {parsed.hostname}
+        else:
+            return url, []
+    except (ValueError, TypeError, KeyError):
         return url, []
 
     def trusted(target: str) -> bool:
         item = urllib.parse.urlsplit(target)
-        return (item.scheme == "https" and item.hostname == host
+        return (item.scheme == "https" and item.hostname in trusted_hosts
                 and item.port in (None, 443) and not item.username and not item.password)
 
     def fetch(target: str, limit: int, media: bool = False) -> tuple[str, str, bytes]:
@@ -1915,7 +1948,7 @@ def _verified_wtxf_decoder_input(url: str, headers: dict[str, str]) -> tuple[str
         with urllib.request.urlopen(request, timeout=8) as response:
             final = response.geturl()
             if not trusted(final):
-                raise ValueError("Untrusted WTXF redirect")
+                raise ValueError("Untrusted native-media redirect")
             return final, response.headers.get("Content-Type", ""), response.read(limit)
 
     try:
@@ -1924,13 +1957,16 @@ def _verified_wtxf_decoder_input(url: str, headers: dict[str, str]) -> tuple[str
         if not text.lstrip().startswith("#EXTM3U"):
             return url, []
         variants = _parse_hls_variants(text, master_url)
-        if not variants:
+        if variants:
+            rendition = max(variants, key=lambda row: (row["height"], row["width"], row["bandwidth"]))["url"]
+            if not trusted(rendition):
+                return url, []
+            media_url, _content_type, body = fetch(rendition, 262144)
+            text = body.decode("utf-8")
+        elif profile != "wtxf":
+            media_url = master_url
+        else:
             return url, []
-        rendition = max(variants, key=lambda row: (row["height"], row["width"], row["bandwidth"]))["url"]
-        if not trusted(rendition):
-            return url, []
-        media_url, _content_type, body = fetch(rendition, 262144)
-        text = body.decode("utf-8")
         if not text.lstrip().startswith("#EXTM3U"):
             return url, []
         # This compatibility path is for multiplexed, unencrypted MPEG-TS only.
@@ -1944,7 +1980,7 @@ def _verified_wtxf_decoder_input(url: str, headers: dict[str, str]) -> tuple[str
         if not segments or not all(trusted(segment) for segment in segments):
             return url, []
         _final_url, content_type, sample = fetch(segments[0], 1024, media=True)
-        if (content_type.split(";", 1)[0].strip().lower() != "video/mp2t"
+        if (content_type.split(";", 1)[0].strip().lower() not in accepted_types
                 or len(sample) < 565 or any(sample[offset] != 0x47 for offset in (0, 188, 376, 564))):
             return url, []
         return media_url, ["-extension_picky", "0", "-protocol_whitelist", "https,tls,tcp,httpproxy"]
@@ -1988,7 +2024,7 @@ def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, 
     )
 
     headers = stream.get("headers") or {}
-    decoder_url, input_options = _verified_wtxf_decoder_input(url, headers)
+    decoder_url, input_options = _verified_native_hls_decoder_input(url, headers)
     base_command = [
         ffmpeg,
         "-hide_banner",

@@ -25,7 +25,7 @@ class WtxfNativeTransportTests(unittest.TestCase):
         return [Response(self.root, self.master), Response(self.rendition, playlist or self.playlist), Response(f'https://{self.host}/segment.ts', self.ts if sample is None else sample, content_type)]
     def test_verified_native_ts_uses_scoped_input_options_and_https_only(self):
         with mock.patch('build.urllib.request.urlopen', side_effect=self.responses()) as fetch:
-            url, options = build._verified_wtxf_decoder_input(self.root, {})
+            url, options = build._verified_native_hls_decoder_input(self.root, {})
         self.assertEqual(url, self.rendition)
         self.assertEqual(options, ['-extension_picky', '0', '-protocol_whitelist', 'https,tls,tcp,httpproxy'])
         self.assertEqual(fetch.call_count, 3)
@@ -33,25 +33,25 @@ class WtxfNativeTransportTests(unittest.TestCase):
     def test_other_hosts_insecure_urls_and_lookalikes_keep_strict_decoder(self):
         urls = [self.root.replace('https:', 'http:'), self.root.replace(self.host, self.host + '.example.test'), self.root.replace(self.slug + '/playlist.m3u8', 'other/playlist.m3u8'), self.root + '?token=example', 'https://example.test/playlist.m3u8']
         with mock.patch('build.urllib.request.urlopen') as fetch:
-            for url in urls: self.assertEqual(build._verified_wtxf_decoder_input(url, {}), (url, []))
+            for url in urls: self.assertEqual(build._verified_native_hls_decoder_input(url, {}), (url, []))
         fetch.assert_not_called()
     def test_external_or_local_segment_uris_do_not_receive_compatibility_options(self):
         for segment in ['https://other.test/media', 'http://127.0.0.1/media', 'file:///etc/passwd']:
             playlist = f'#EXTM3U\n#EXTINF:6,\n{segment}\n'.encode()
             with mock.patch('build.urllib.request.urlopen', side_effect=self.responses(playlist=playlist)) as fetch:
-                self.assertEqual(build._verified_wtxf_decoder_input(self.root, {}), (self.root, []))
+                self.assertEqual(build._verified_native_hls_decoder_input(self.root, {}), (self.root, []))
                 self.assertEqual(fetch.call_count, 2)
     def test_encrypted_or_fragmented_media_keeps_strict_decoder(self):
         for tag in ['#EXT-X-KEY:METHOD=AES-128,URI="key"', '#EXT-X-MAP:URI="init.mp4"']:
             playlist = ('#EXTM3U\n' + tag + '\n#EXTINF:6,\n' + self.beacon + '\n').encode()
             with mock.patch('build.urllib.request.urlopen', side_effect=self.responses(playlist=playlist)):
-                self.assertEqual(build._verified_wtxf_decoder_input(self.root, {}), (self.root, []))
+                self.assertEqual(build._verified_native_hls_decoder_input(self.root, {}), (self.root, []))
     def test_images_invalid_transport_and_wrong_content_type_do_not_get_options(self):
         for sample, kind in [(b'\x89PNG' + b'\x00' * 1020, 'video/MP2T'), (b'\x00' * 1024, 'video/MP2T'), (self.ts, 'text/html')]:
             with mock.patch('build.urllib.request.urlopen', side_effect=self.responses(sample=sample, content_type=kind)):
-                self.assertEqual(build._verified_wtxf_decoder_input(self.root, {}), (self.root, []))
+                self.assertEqual(build._verified_native_hls_decoder_input(self.root, {}), (self.root, []))
     def test_network_failure_keeps_strict_decoder(self):
         with mock.patch('build.urllib.request.urlopen', side_effect=OSError('timeout')):
-            self.assertEqual(build._verified_wtxf_decoder_input(self.root, {}), (self.root, []))
+            self.assertEqual(build._verified_native_hls_decoder_input(self.root, {}), (self.root, []))
 
 if __name__ == '__main__': unittest.main()
