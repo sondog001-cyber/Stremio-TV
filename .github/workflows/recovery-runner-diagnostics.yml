@@ -16,12 +16,36 @@ jobs:
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Validate next fresh five-channel source batch
         run: |
-          python - five-channel-recovery/batch12 github-runner <<'PYCODE'
-          import pathlib,json
-          p=pathlib.Path('five-channel-recovery/batch12');p.mkdir(parents=True,exist_ok=True)
-          rows=[{'tvg_id': 'NFLNetwork.us', 'channel_label': 'NFLNetwork.us', 'url': 'http://line.bestvplus.com/live/channel/NFLNetwork/playlist.m3u8', 'source_page': 'https://github.com/AMKODE123/1/blob/3fe6cf38c27c9fad888627a602eaa148894f1220/english.csv', 'headers': {}, 'provider': 'Bestvplus published native HLS', 'host': 'line.bestvplus.com', 'endpoint_sha256': 'ec87bddb936511955ffd169101b1dc50a9078b8ba09ab059cb38afc69962c36d', 'identity': 'unverified', 'authorization': 'unknown', 'screening': 'test', 'independence': 'unverified; 40.160 range grouped as one provider'}, {'tvg_id': 'Pop.us', 'channel_label': 'Pop.us', 'url': 'http://40.160.24.55/POP/index.m3u8', 'source_page': 'https://github.com/atim2515/TIM-CABLE-TV/blob/5bfa7964f9e3fcf38e800489e0f7624ce84fba97/tim', 'headers': {}, 'provider': '40.160 independently listed feed', 'host': '40.160.24.55', 'endpoint_sha256': '9532abde26e70bcb6777835a782bea08580ba82d80840dc8e885937ab10f57ee', 'identity': 'unverified', 'authorization': 'unknown', 'screening': 'test', 'independence': 'unverified; 40.160 range grouped as one provider'}, {'tvg_id': 'NFLNetwork.us', 'channel_label': 'NFLNetwork.us', 'url': 'http://40.160.24.53/NFL_Network/index.m3u8', 'source_page': 'https://github.com/Freeman0501/freelist/blob/2d775f745ef27ef0dc4fec0e08b5f27505eca6c8/freeTV/2026-09-09%20playlist.txt', 'headers': {}, 'provider': '40.160 independently listed feed', 'host': '40.160.24.53', 'endpoint_sha256': '4e0d7da5bb7aa1abdbcd5c445286a3f7aabe85df9d31f6f4996907474af5a110', 'identity': 'unverified', 'authorization': 'unknown', 'screening': 'test', 'independence': 'unverified; 40.160 range grouped as one provider'}]
-          assert not any(x.get('headers') for x in rows), 'This diagnostic allows no supplied headers'
-          (p/'candidates.json').write_text(json.dumps(rows,indent=2))
+          python - five-channel-recovery/batch13 github-runner <<'PYCODE'
+          import urllib.request, urllib.parse, urllib.error, pathlib, json, re, hashlib, ipaddress
+          p=pathlib.Path('five-channel-recovery/batch13');p.mkdir(parents=True,exist_ok=True)
+          page='https://taifood-blog.asia/embed/nfl-network'
+          rows=[];access={'public_player_page':page,'headers_supplied':False}
+          try:
+              # One ordinary anonymous GET; do not retry a denial or add access headers.
+              with urllib.request.urlopen(page,timeout=12) as response:
+                  body=response.read(500000).decode('utf-8',errors='replace')
+                  access['http_status']=response.status
+              if re.search(r'widevine|playready|licenseUrl',body,re.I):
+                  access['result']='DRM-related player configuration; not a direct-play candidate'
+              else:
+                  urls=list(dict.fromkeys(re.findall(r'https://[^\s<>\"\'`]+\.m3u8(?:\?[^\s<>\"\'`]*)?',body.replace('\\/','/'))))
+                  for url in urls[:2]:
+                      parsed=urllib.parse.urlsplit(url)
+                      if parsed.username or parsed.password or parsed.query or parsed.fragment:continue
+                      if not parsed.hostname or parsed.hostname in {'localhost','localhost.localdomain'} or parsed.hostname.endswith('.local'):continue
+                      try:
+                          if not ipaddress.ip_address(parsed.hostname).is_global:continue
+                      except ValueError:pass
+                      rows.append(dict(url=url,channel_label='NFL Network — PPV public always-live listing',tvg_id='NFLNetwork.us',provider='PPV public player',host=parsed.hostname,source_page=page,headers={},endpoint_sha256=hashlib.sha256(url.encode()).hexdigest(),identity='Unverified; exact API listing always_live=1, English; video identity required',screening='test'))
+                  access['literal_hls_count']=len(urls);access['eligible_header_free_query_free_candidates']=len(rows)
+              del body
+          except Exception as error:
+              access['result']='public player access failed; no alternate route attempted'
+              access['error']=str(error)
+          assert not any(x.get('headers') for x in rows)
+          (p/'candidates.json').write_text(json.dumps(rows,indent=2));(p/'public-page-results.json').write_text(json.dumps(access,indent=2))
+          print(json.dumps(access))
           import time,concurrent.futures,datetime,hashlib,json,pathlib,subprocess,sys,urllib.request,urllib.error
           sys.path.insert(0,str(pathlib.Path('repo').resolve()) if pathlib.Path('repo/build.py').exists() else str(pathlib.Path('.').resolve()))
           import build
@@ -82,5 +106,5 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: five-channel-recovery-batch12-header-free
-          path: five-channel-recovery/batch12/
+          name: five-channel-recovery-batch13-public-nfl-player
+          path: five-channel-recovery/batch13/
