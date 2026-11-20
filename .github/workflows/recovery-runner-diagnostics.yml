@@ -16,9 +16,9 @@ jobs:
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Validate next fresh five-channel source batch
         run: |
-          python - five-channel-recovery/batch7 github-runner <<'PYCODE'
+          python - five-channel-recovery/batch8 github-runner <<'PYCODE'
           import urllib.request,urllib.parse,json,re,time,pathlib,hashlib
-          p=pathlib.Path('five-channel-recovery/batch7');p.mkdir(parents=True,exist_ok=True)
+          p=pathlib.Path('five-channel-recovery/batch8');p.mkdir(parents=True,exist_ok=True)
           rows=[];access=[]
           for channel,stream in [('CBSSportsNetwork.us','F128')]:
            page='https://xstream.st/fslivepro.php?stream='+stream
@@ -36,11 +36,11 @@ jobs:
            except Exception as e:access.append({'channel':channel,'error':str(e)})
           (p/'candidates.json').write_text(json.dumps(rows,indent=2));(p/'public-page-results.json').write_text(json.dumps(access,indent=2))
           print(json.dumps(access))
-          
+
           fox='https://amg00488-foxdigital-fox29philadelphiawtx-vizious-x0v1b.amagi.tv/playlist/amg00488-foxdigital-fox29philadelphiawtx-vizious/playlist.m3u8'
           rows.append({'url':fox,'channel_label':'Fox.us@WTXFTV','tvg_id':'Fox.us@WTXFTV','provider':'WTXF native upstream','host':'amg00488-foxdigital-fox29philadelphiawtx-vizious-x0v1b.amagi.tv','source_page':'https://www.fox29.com/live','endpoint_sha256':hashlib.sha256(fox.encode()).hexdigest(),'identity':'BAM show capture from previous runner; repeat QA required','screening':'test'})
           (p/'candidates.json').write_text(json.dumps(rows,indent=2))
-          
+
           with urllib.request.urlopen(urllib.request.Request('https://tvnow.st/api/channels',headers={'User-Agent':'Mozilla/5.0','Accept':'application/json'}),timeout=12) as response:
               catalog=json.load(response)
           ids={'cbs-sports-network':'CBSSportsNetwork.us','nfl-network':'NFLNetwork.us','pop-tv':'Pop.us','usa-network':'USANetwork.us'}
@@ -49,6 +49,10 @@ jobs:
               target=item['playback']
               rows.append({'url':target,'channel_label':item['name'],'tvg_id':ids[item['slug']],'provider':'tvnow','host':urllib.parse.urlsplit(target).hostname,'source_page':'https://tvnow.st/api/channels','headers':{'Referer':'https://tvnow.st/'},'endpoint_sha256':hashlib.sha256(target.encode()).hexdigest(),'identity':'Exact catalog label; requires video identity','screening':'test'})
           (p/'candidates.json').write_text(json.dumps(rows,indent=2))
+
+          rows=[x for x in rows if x['provider']!='tvnow' or x['tvg_id']=='USANetwork.us']
+          (p/'candidates.json').write_text(json.dumps(rows,indent=2))
+
           import time,concurrent.futures,datetime,hashlib,json,pathlib,subprocess,sys,urllib.request,urllib.error
           sys.path.insert(0,str(pathlib.Path('repo').resolve()) if pathlib.Path('repo/build.py').exists() else str(pathlib.Path('.').resolve()))
           import build
@@ -86,22 +90,22 @@ jobs:
             if r['decode'].get('status')!='ok':continue
             # Require 60 seconds of BOTH video and audio decoding, in addition to configured repeat/stall QA.
             av_url,av_options=build._verified_native_hls_decoder_input(r['url'],r.get('headers',{}))
-            cmd=['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-user_agent',build.USER_AGENT,'-rw_timeout','10000000']+av_options+['-headers',''.join(k+': '+v+'\r\n' for k,v in r.get('headers',{}).items()),'-i',av_url,'-t','60','-map','0:v:0','-map','0:a:0','-progress','pipe:1','-f','null','-']
+            cmd=['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-user_agent',build.USER_AGENT,'-rw_timeout','10000000']+av_options+['-headers',''.join(k+': '+v+'\r\n' for k,v in r.get('headers',{}).items()),'-i',av_url,'-t','120','-map','0:v:0','-map','0:a:0','-progress','pipe:1','-f','null','-']
             try:
-             p=subprocess.run(cmd,capture_output=True,text=True,timeout=90)
+             p=subprocess.run(cmd,capture_output=True,text=True,timeout=150)
              times=[int(x.split('=',1)[1]) for x in p.stdout.splitlines() if x.startswith('out_time_us=') and x.split('=',1)[1].isdigit()]
              seconds=max(times,default=0)/1e6
-             r['sustained_av']={'status':'ok' if p.returncode==0 and seconds>=60 else 'failed','decoded_seconds':seconds,'exit_code':p.returncode,'error':p.stderr[-1000:]}
-            except subprocess.TimeoutExpired:r['sustained_av']={'status':'failed','error':'90-second timeout'}
+             r['sustained_av']={'status':'ok' if p.returncode==0 and seconds>=120 else 'failed','decoded_seconds':seconds,'exit_code':p.returncode,'error':p.stderr[-1000:]}
+            except subprocess.TimeoutExpired:r['sustained_av']={'status':'failed','error':'150-second timeout'}
           (root/'results.json').write_text(json.dumps(results,indent=2))
           for r in results:print(r['provider'],r['channel_label'],r['host'],'playlist',r['playlist'].get('status'),'segment',r['segment'].get('status'),'burn',r['burn_in'].get('status'),'decode',r['decode'].get('status'),'AV60',r['sustained_av'].get('status'))
-          
+
           for row in results:
               if row['decode'].get('status')!='ok':continue
               name=row['tvg_id'].replace('.','-')
               cap_url,cap_options=build._verified_native_hls_decoder_input(row['url'],row.get('headers',{}))
               try:
-                  cp=subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-rw_timeout','8000000']+cap_options+['-headers',''.join(k+': '+v+'\r\n' for k,v in row.get('headers',{}).items()),'-i',cap_url,'-frames:v','1','-y',str(root/(name+'.jpg'))],capture_output=True,text=True,timeout=25)
+                  cp=subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-nostdin','-rw_timeout','8000000']+cap_options+['-headers',''.join(k+': '+v+'\r\n' for k,v in row.get('headers',{}).items()),'-i',cap_url,'-t','30','-vf','fps=1/10','-frames:v','3','-y',str(root/(name+'-%02d.jpg'))],capture_output=True,text=True,timeout=50)
                   row['capture_exit']=cp.returncode
               except subprocess.TimeoutExpired:row['capture_error']='timeout'
           (root/'results.json').write_text(json.dumps(results,indent=2))
@@ -109,5 +113,5 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: five-channel-recovery-batch7-native
-          path: five-channel-recovery/batch7/
+          name: five-channel-recovery-batch8-repeat-120s
+          path: five-channel-recovery/batch8/
