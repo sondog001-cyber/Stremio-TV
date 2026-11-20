@@ -592,7 +592,7 @@ def _parse_fsl_public_player(text: str, source: dict[str, Any]) -> list[dict[str
     if not isinstance(urls, list):
         return []
     entries = []
-    for url in urls[:3]:
+    for url in urls[:4]:
         if not isinstance(url, str):
             continue
         try:
@@ -600,7 +600,7 @@ def _parse_fsl_public_player(text: str, source: dict[str, Any]) -> list[dict[str
             query = urllib.parse.parse_qs(media.query, strict_parsing=True)
             expiry = int(query.get("e", ["0"])[0])
             valid = (media.scheme == "https" and media.hostname in
-                     {"instreams.pro", "instreams.live", "instreams.xyz"}
+                     {"instreams.pro", "instreams.live", "instreams.xyz", "edge1.candyshop.st"}
                      and media.port is None and not media.username and not media.password
                      and not media.fragment and media.path == "/live3/" + stream_id + "/index.m3u8"
                      and set(query) == {"st", "e"} and all(len(v) == 1 for v in query.values())
@@ -1881,6 +1881,119 @@ def _classify_decoder_attempts(attempts: list[dict[str, Any]]) -> str:
     return "insufficient-decode"
 
 
+def _verified_native_hls_decoder_input(url: str, headers: dict[str, str]) -> tuple[str, list[str]]:
+    """Verify native TS before handling unconventional URLs on known feeds.
+
+    This changes FFmpeg input handling, not decoded-frame, repeat or survival
+    requirements. Published playback URLs remain the direct upstream masters.
+    Unknown roots, foreign segment hosts, encryption and non-media keep the
+    original strict decoder behavior.
+    """
+    slug = "amg00488-foxdigital-fox29philadelphiawtx-vizious"
+    host = slug + "-x0v1b.amagi.tv"
+    roots = {
+        ("cdn-uw2-prod.tsv2.amagi.tv", "/linear/" + slug + "/playlist.m3u8"),
+        (host, "/playlist/" + slug + "/playlist.m3u8"),
+    }
+    profile = "wtxf"
+    trusted_hosts = {host}
+    accepted_types = {"video/mp2t"}
+    tvnow_paths = {
+        "/live/1ht5wwv045ffdr1yt1h5m/master.m3u8",
+        "/live/0auxff509zda3k1x9tqd3/master.m3u8",
+        "/live/0sdzfll1dvild80gw1jbx/master.m3u8",
+        "/live/0hzz30t0ddti3x1upnrpx/master.m3u8",
+    }
+    candy_hosts = {"edge1.candyshop.st", "edge2.candyshop.st", "edge.candyshop.st", "candyshop.st"}
+    try:
+        parsed = urllib.parse.urlsplit(url)
+        if (parsed.scheme != "https" or parsed.username or parsed.password
+                or parsed.port not in (None, 443) or parsed.fragment):
+            return url, []
+        if (parsed.hostname, parsed.path) in roots and not parsed.query:
+            pass
+        elif (parsed.hostname == "cache0.wonvt.st" and parsed.path in tvnow_paths
+                and not parsed.query and headers.get("Referer") == "https://tvnow.st/"):
+            profile = "tvnow"
+            trusted_hosts = {"cache0.wonvt.st", "silver-harbor-27.lifeisaware.workers.dev"}
+            accepted_types.add("application/octet-stream")
+        elif (parsed.hostname == "dbrb49pjoymg4.cloudfront.net"
+                and parsed.path == "/v1/master/3fec3e5cac39a52b2132f9c66c83dae043dc17d4/prod_default_xumo-ams-aws/master.m3u8"
+                and urllib.parse.parse_qs(parsed.query, strict_parsing=True) == {"ads.xumo_channelId": ["99991709"]}):
+            profile = "hallmark-movies-more"
+            trusted_hosts = {"dbrb49pjoymg4.cloudfront.net", "hls-beacons-us.xumo.com", "live-content-cf.xumo.com"}
+        elif parsed.hostname in candy_hosts:
+            channel = next((item for item in ("F128", "F191")
+                            if parsed.path == "/live3/" + item + "/index.m3u8"), None)
+            query = urllib.parse.parse_qs(parsed.query, strict_parsing=True)
+            pages = {"https://" + site + "/fslivepro.php?stream=" + str(channel)
+                     for site in ("xstream.st", "siempreon.shop")}
+            if (not channel or headers.get("Referer") not in pages
+                    or set(query) != {"st", "e"} or any(len(values) != 1 for values in query.values())
+                    or not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", query["st"][0])
+                    or int(query["e"][0]) <= int(dt.datetime.now(UTC).timestamp())):
+                return url, []
+            profile = "fsl"
+            trusted_hosts = {parsed.hostname}
+        else:
+            return url, []
+    except (ValueError, TypeError, KeyError):
+        return url, []
+
+    def trusted(target: str) -> bool:
+        item = urllib.parse.urlsplit(target)
+        return (item.scheme == "https" and item.hostname in trusted_hosts
+                and item.port in (None, 443) and not item.username and not item.password)
+
+    def fetch(target: str, limit: int, media: bool = False) -> tuple[str, str, bytes]:
+        request_headers = {"User-Agent": USER_AGENT, **headers}
+        if media:
+            request_headers["Range"] = "bytes=0-1023"
+        request = urllib.request.Request(target, headers=request_headers)
+        with urllib.request.urlopen(request, timeout=8) as response:
+            final = response.geturl()
+            if not trusted(final):
+                raise ValueError("Untrusted native-media redirect")
+            return final, response.headers.get("Content-Type", ""), response.read(limit)
+
+    try:
+        master_url, _content_type, body = fetch(url, 262144)
+        text = body.decode("utf-8")
+        if not text.lstrip().startswith("#EXTM3U"):
+            return url, []
+        variants = _parse_hls_variants(text, master_url)
+        if variants:
+            rendition = max(variants, key=lambda row: (row["height"], row["width"], row["bandwidth"]))["url"]
+            if not trusted(rendition):
+                return url, []
+            media_url, _content_type, body = fetch(rendition, 262144)
+            text = body.decode("utf-8")
+        elif profile != "wtxf":
+            media_url = master_url
+        else:
+            return url, []
+        if not text.lstrip().startswith("#EXTM3U"):
+            return url, []
+        # This compatibility path is for multiplexed, unencrypted MPEG-TS only.
+        if "#EXT-X-MAP:" in text or any(
+            line.startswith("#EXT-X-KEY:") and "METHOD=NONE" not in line
+            for line in text.splitlines()
+        ):
+            return url, []
+        segments = [urllib.parse.urljoin(media_url, line.strip())
+                    for line in text.splitlines() if line.strip() and not line.startswith("#")]
+        if not segments or not all(trusted(segment) for segment in segments):
+            return url, []
+        _final_url, content_type, sample = fetch(segments[0], 1024, media=True)
+        if (content_type.split(";", 1)[0].strip().lower() not in accepted_types
+                or len(sample) < 565 or any(sample[offset] != 0x47 for offset in (0, 188, 376, 564))):
+            return url, []
+        return media_url, ["-extension_picky", "0", "-protocol_whitelist", "https,tls,tcp,httpproxy"]
+    except (OSError, ValueError, TypeError, KeyError, UnicodeError):
+        # Keep the original strict decoder behavior when verification fails.
+        return url, []
+
+
 def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
     """Require repeated successful decoded connections for direct media."""
     if not bool(settings.get("enabled", False)):
@@ -1916,6 +2029,7 @@ def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, 
     )
 
     headers = stream.get("headers") or {}
+    decoder_url, input_options = _verified_native_hls_decoder_input(url, headers)
     base_command = [
         ffmpeg,
         "-hide_banner",
@@ -1932,9 +2046,10 @@ def _validate_direct_media_survival(stream: dict[str, Any], settings: dict[str, 
             "-headers",
             "".join(f"{key}: {value}\r\n" for key, value in headers.items()),
         ])
+    base_command.extend(input_options)
     base_command.extend([
         "-i",
-        url,
+        decoder_url,
         "-t",
         str(duration),
         "-map",
